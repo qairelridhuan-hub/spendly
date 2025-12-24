@@ -75,7 +75,7 @@ export default function Login() {
               alignItems: 'center',
               justifyContent: 'center',
               alignSelf: 'center',
-              marginBottom: 20,
+              marginBottom: 16,
             }}
           >
             <Text style={{ fontSize: 28, color: '#fff' }}>💰</Text>
