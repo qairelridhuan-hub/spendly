@@ -13,7 +13,7 @@ import {
 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth, db } from '../../lib/firebase/firebase'; // ✅ FIXED PATH
 
 export default function Register() {
   const [fullName, setFullName] = useState('');

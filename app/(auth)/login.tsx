@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth } from '../../lib/firebase/firebase'; // ✅ FIXED PATH
 
 export default function Login() {
   const [email, setEmail] = useState('');
