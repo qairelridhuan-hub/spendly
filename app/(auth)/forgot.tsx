@@ -9,35 +9,29 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
 } from 'react-native';
 
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth } from '../../lib/firebase/firebase'; // ✅ FIXED PATH
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleReset = async () => {
     setError('');
 
-    if (!email.trim()) {
+    if (!email) {
       setError('Email is required');
       return;
     }
 
     try {
       setLoading(true);
-
       await sendPasswordResetEmail(auth, email);
-
-      Alert.alert(
-        'Email Sent',
-        'Please check your inbox to reset your password.',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      alert('Password reset email sent');
+      router.back();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -52,11 +46,7 @@ export default function ForgotPassword() {
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          padding: 24,
-        }}
+        style={{ flex: 1, justifyContent: 'center', padding: 24 }}
       >
         <View
           style={{
@@ -65,7 +55,7 @@ export default function ForgotPassword() {
             padding: 28,
           }}
         >
-          {/* 🔙 BACK */}
+          {/* BACK */}
           <TouchableOpacity
             onPress={() => router.back()}
             style={{ marginBottom: 12 }}
@@ -73,14 +63,10 @@ export default function ForgotPassword() {
             <Text style={{ color: '#4B2BFF' }}>← Back to Login</Text>
           </TouchableOpacity>
 
-          {/* ❌ CLOSE */}
+          {/* CLOSE */}
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-            }}
+            style={{ position: 'absolute', top: 16, right: 16 }}
           >
             <X size={22} color="#6B7280" />
           </TouchableOpacity>
@@ -106,8 +92,8 @@ export default function ForgotPassword() {
             password.
           </Text>
 
-          {/* EMAIL INPUT */}
-          <View style={{ position: 'relative', marginBottom: 16 }}>
+          {/* EMAIL */}
+          <View style={{ position: 'relative', marginBottom: 12 }}>
             <Mail
               size={20}
               color="#9CA3AF"
@@ -131,13 +117,7 @@ export default function ForgotPassword() {
 
           {/* ERROR */}
           {error ? (
-            <Text
-              style={{
-                color: 'red',
-                textAlign: 'center',
-                marginBottom: 12,
-              }}
-            >
+            <Text style={{ color: 'red', textAlign: 'center', marginBottom: 12 }}>
               {error}
             </Text>
           ) : null}
