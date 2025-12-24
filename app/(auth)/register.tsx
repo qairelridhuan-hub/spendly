@@ -11,10 +11,53 @@ import {
   View,
 } from 'react-native';
 
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+
 export default function Register() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    setError('');
+
+    if (!fullName || !email || !password) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        fullName,
+        email,
+        role: 'worker',
+        createdAt: new Date(),
+      });
+
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <LinearGradient colors={['#EEF2FF', '#E0E7FF']} style={{ flex: 1 }}>
@@ -29,7 +72,7 @@ export default function Register() {
             padding: 28,
           }}
         >
-          {/* 🔙 BACK */}
+          {/* BACK */}
           <TouchableOpacity
             onPress={() => router.back()}
             style={{ marginBottom: 16 }}
@@ -120,7 +163,7 @@ export default function Register() {
           </View>
 
           {/* PASSWORD */}
-          <View style={{ position: 'relative', marginBottom: 20 }}>
+          <View style={{ position: 'relative', marginBottom: 12 }}>
             <Lock
               size={20}
               color="#9CA3AF"
@@ -141,12 +184,22 @@ export default function Register() {
             />
           </View>
 
+          {/* ERROR */}
+          {error ? (
+            <Text style={{ color: 'red', textAlign: 'center', marginBottom: 12 }}>
+              {error}
+            </Text>
+          ) : null}
+
           {/* BUTTON */}
           <TouchableOpacity
+            onPress={handleRegister}
+            disabled={loading}
             style={{
               backgroundColor: '#4B2BFF',
               padding: 16,
               borderRadius: 14,
+              opacity: loading ? 0.7 : 1,
             }}
           >
             <Text
@@ -157,7 +210,7 @@ export default function Register() {
                 fontWeight: '600',
               }}
             >
-              Create Account
+              {loading ? 'Creating Account...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
         </View>
