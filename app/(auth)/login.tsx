@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
@@ -11,11 +11,15 @@ import {
   View,
 } from 'react-native';
 
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
 
@@ -34,7 +38,7 @@ export default function Login() {
     return true;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('');
 
     if (!validateEmail()) return;
@@ -49,7 +53,17 @@ export default function Login() {
       return;
     }
 
-    console.log('login input valid');
+    try {
+      setLoading(true);
+
+      await signInWithEmailAndPassword(auth, email, password);
+
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -189,13 +203,15 @@ export default function Login() {
 
           {/* LOGIN BUTTON */}
           <TouchableOpacity
+            onPress={handleLogin}
+            disabled={loading}
             style={{
               backgroundColor: '#4B2BFF',
               padding: 16,
               borderRadius: 14,
               marginBottom: 16,
+              opacity: loading ? 0.7 : 1,
             }}
-            onPress={handleLogin}
           >
             <Text
               style={{
@@ -205,11 +221,11 @@ export default function Login() {
                 fontWeight: '600',
               }}
             >
-              Login
+              {loading ? 'Logging in...' : 'Login'}
             </Text>
           </TouchableOpacity>
 
-          {/* LINKS — ✅ FIXED */}
+          {/* LINKS */}
           <Link href="./forgot" asChild>
             <TouchableOpacity>
               <Text

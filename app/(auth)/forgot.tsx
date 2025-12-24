@@ -9,10 +9,41 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
+
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleReset = async () => {
+    setError('');
+
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await sendPasswordResetEmail(auth, email);
+
+      Alert.alert(
+        'Email Sent',
+        'Please check your inbox to reset your password.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <LinearGradient
@@ -34,17 +65,15 @@ export default function ForgotPassword() {
             padding: 28,
           }}
         >
-          {/* 🔙 BACK TO LOGIN (TEXT BUTTON) */}
+          {/* 🔙 BACK */}
           <TouchableOpacity
             onPress={() => router.back()}
             style={{ marginBottom: 12 }}
           >
-            <Text style={{ color: '#4B2BFF' }}>
-              ← Back to Login
-            </Text>
+            <Text style={{ color: '#4B2BFF' }}>← Back to Login</Text>
           </TouchableOpacity>
 
-          {/* ❌ CLOSE ICON */}
+          {/* ❌ CLOSE */}
           <TouchableOpacity
             onPress={() => router.back()}
             style={{
@@ -78,7 +107,7 @@ export default function ForgotPassword() {
           </Text>
 
           {/* EMAIL INPUT */}
-          <View style={{ position: 'relative', marginBottom: 20 }}>
+          <View style={{ position: 'relative', marginBottom: 16 }}>
             <Mail
               size={20}
               color="#9CA3AF"
@@ -100,12 +129,28 @@ export default function ForgotPassword() {
             />
           </View>
 
+          {/* ERROR */}
+          {error ? (
+            <Text
+              style={{
+                color: 'red',
+                textAlign: 'center',
+                marginBottom: 12,
+              }}
+            >
+              {error}
+            </Text>
+          ) : null}
+
           {/* BUTTON */}
           <TouchableOpacity
+            onPress={handleReset}
+            disabled={loading}
             style={{
               backgroundColor: '#4B2BFF',
               padding: 16,
               borderRadius: 14,
+              opacity: loading ? 0.7 : 1,
             }}
           >
             <Text
@@ -116,7 +161,7 @@ export default function ForgotPassword() {
                 fontWeight: '600',
               }}
             >
-              Send Reset Link
+              {loading ? 'Sending...' : 'Send Reset Link'}
             </Text>
           </TouchableOpacity>
         </View>
