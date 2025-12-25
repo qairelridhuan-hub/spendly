@@ -11,9 +11,6 @@ import {
   View,
 } from 'react-native';
 
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../lib/firebase/firebase'; // ✅ FIXED PATH
-
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,17 +50,13 @@ export default function Login() {
       return;
     }
 
-    try {
-      setLoading(true);
+    // 🔹 SIMULATED LOGIN (UI ONLY)
+    setLoading(true);
 
-      await signInWithEmailAndPassword(auth, email, password);
-
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
+    setTimeout(() => {
       setLoading(false);
-    }
+      router.replace('/(tabs)'); // go to tabs
+    }, 800);
   };
 
   return (

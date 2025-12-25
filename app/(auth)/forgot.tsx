@@ -11,15 +11,12 @@ import {
   View,
 } from 'react-native';
 
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '../../lib/firebase/firebase'; // ✅ FIXED PATH
-
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleReset = async () => {
+  const handleReset = () => {
     setError('');
 
     if (!email) {
@@ -27,16 +24,14 @@ export default function ForgotPassword() {
       return;
     }
 
-    try {
-      setLoading(true);
-      await sendPasswordResetEmail(auth, email);
-      alert('Password reset email sent');
-      router.back();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
+    // 🔹 SIMULATED RESET (UI ONLY)
+    setLoading(true);
+
+    setTimeout(() => {
       setLoading(false);
-    }
+      alert('Reset link sent (simulated)');
+      router.back();
+    }, 800);
   };
 
   return (
@@ -117,7 +112,13 @@ export default function ForgotPassword() {
 
           {/* ERROR */}
           {error ? (
-            <Text style={{ color: 'red', textAlign: 'center', marginBottom: 12 }}>
+            <Text
+              style={{
+                color: 'red',
+                textAlign: 'center',
+                marginBottom: 12,
+              }}
+            >
               {error}
             </Text>
           ) : null}

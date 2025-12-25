@@ -11,10 +11,6 @@ import {
   View,
 } from 'react-native';
 
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../../lib/firebase/firebase'; // ✅ FIXED PATH
-
 export default function Register() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,7 +18,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
+  const handleRegister = () => {
     setError('');
 
     if (!fullName || !email || !password) {
@@ -35,28 +31,13 @@ export default function Register() {
       return;
     }
 
-    try {
-      setLoading(true);
+    // 🔹 SIMULATED REGISTER (UI ONLY)
+    setLoading(true);
 
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        fullName,
-        email,
-        role: 'worker',
-        createdAt: new Date(),
-      });
-
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
+    setTimeout(() => {
       setLoading(false);
-    }
+      router.replace('/(tabs)');
+    }, 800);
   };
 
   return (
@@ -186,7 +167,13 @@ export default function Register() {
 
           {/* ERROR */}
           {error ? (
-            <Text style={{ color: 'red', textAlign: 'center', marginBottom: 12 }}>
+            <Text
+              style={{
+                color: 'red',
+                textAlign: 'center',
+                marginBottom: 12,
+              }}
+            >
               {error}
             </Text>
           ) : null}
