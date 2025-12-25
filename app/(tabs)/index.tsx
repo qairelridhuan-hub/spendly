@@ -1,166 +1,364 @@
+import React, { useState } from "react";
 import {
   View,
   Text,
+  StyleSheet,
   ScrollView,
   TouchableOpacity,
-} from 'react-native';
-import { useEffect, useState } from 'react';
+} from "react-native";
 import {
+  Bell,
   Clock,
   DollarSign,
   Target,
-} from 'lucide-react-native';
+  TrendingUp,
+  Zap,
+  Award,
+  Calendar,
+} from "lucide-react-native";
 
-export default function WorkerHome() {
-  // ⏱ WORK LOGIC
-  const HOURLY_RATE = 10;
-
+export default function WorkerHomeScreen() {
+  // 🔹 EMPTY STATES (connect to DB later)
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [isClockedIn, setIsClockedIn] = useState(false);
-  const [workedMinutes, setWorkedMinutes] = useState(0);
 
-  // 🎯 WEEKLY GOAL
-  const WEEKLY_TARGET_HOURS = 40;
+  const [weeklyGoal, setWeeklyGoal] = useState({
+    current: 0,
+    target: 0,
+  });
 
-  // ⏱ TIMER SIMULATION
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
+  const goalPercentage =
+    weeklyGoal.target === 0
+      ? 0
+      : Math.round((weeklyGoal.current / weeklyGoal.target) * 100);
 
-    if (isClockedIn) {
-      timer = setInterval(() => {
-        setWorkedMinutes(prev => prev + 1);
-      }, 60000); // 1 minute = 1 minute worked
-    }
+  // 🔹 ACTION HANDLERS
+  const handleClockInOut = () => {
+    setIsClockedIn(!isClockedIn);
+  };
 
-    return () => clearInterval(timer);
-  }, [isClockedIn]);
-
-  // 🧮 CALCULATIONS
-  const workedHours = +(workedMinutes / 60).toFixed(2);
-  const weeklyProgress = Math.min(
-    Math.round((workedHours / WEEKLY_TARGET_HOURS) * 100),
-    100
-  );
-
-  const earnings = +(workedHours * HOURLY_RATE).toFixed(2);
+  const handleBreak = () => {
+    console.log("break pressed");
+  };
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: '#F5F7FF' }}
-      contentContainerStyle={{ padding: 16 }}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
     >
-      {/* 👋 HEADER */}
-      <Text style={{ fontSize: 22, fontWeight: '700' }}>
-        Welcome back 👋
-      </Text>
-      <Text style={{ color: '#6B7280', marginBottom: 20 }}>
-        Your work progress updates live
-      </Text>
-
-      {/* 💰 EARNINGS */}
-      <View
-        style={{
-          backgroundColor: '#4F46E5',
-          borderRadius: 20,
-          padding: 20,
-          marginBottom: 20,
-        }}
-      >
-        <Text style={{ color: '#E0E7FF', fontSize: 12 }}>
-          Earnings (This Week)
-        </Text>
-
-        <Text
-          style={{
-            color: 'white',
-            fontSize: 28,
-            fontWeight: '700',
-            marginVertical: 6,
-          }}
-        >
-          RM {earnings}
-        </Text>
-
-        <Text style={{ color: '#E0E7FF', fontSize: 12 }}>
-          Hourly Rate: RM {HOURLY_RATE}
-        </Text>
-      </View>
-
-      {/* ⏰ TODAY’S SHIFT */}
-      <View
-        style={{
-          backgroundColor: 'white',
-          borderRadius: 16,
-          padding: 16,
-          marginBottom: 16,
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ fontWeight: '600' }}>
-            Today’s Shift
-          </Text>
-          <Clock color="#4F46E5" size={20} />
+      {/* 🔔 Notifications */}
+      <View style={styles.notificationCard}>
+        <View style={styles.row}>
+          <Bell size={18} color="#fff" />
+          <Text style={styles.notificationTitle}>latest updates</Text>
         </View>
 
-        <Text style={{ color: '#6B7280', marginTop: 6 }}>
-          Worked: {workedHours} hrs
-        </Text>
-
-        <TouchableOpacity
-          onPress={() => setIsClockedIn(!isClockedIn)}
-          style={{
-            backgroundColor: isClockedIn ? '#DC2626' : '#16A34A',
-            padding: 14,
-            borderRadius: 10,
-            alignItems: 'center',
-            marginTop: 12,
-          }}
-        >
-          <Text style={{ color: 'white', fontWeight: '600' }}>
-            {isClockedIn ? 'Clock Out' : 'Clock In'}
-          </Text>
-        </TouchableOpacity>
+        {notifications.length === 0 ? (
+          <Text style={styles.emptyText}>no notifications yet</Text>
+        ) : (
+          notifications.slice(0, 2).map((n, i) => (
+            <Text key={i} style={styles.notificationText}>
+              • {n.message}
+            </Text>
+          ))
+        )}
       </View>
 
-      {/* 🎯 WEEKLY GOAL */}
-      <View
-        style={{
-          backgroundColor: '#FFF7ED',
-          borderRadius: 16,
-          padding: 16,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Target color="#EA580C" size={20} />
-          <Text style={{ marginLeft: 8, fontWeight: '600' }}>
-            Weekly Goal
-          </Text>
+      {/* 💰 Monthly Salary */}
+      <View style={styles.salaryCard}>
+        <Text style={styles.label}>monthly salary</Text>
+        <Text style={styles.bigValue}>rm —</Text>
+
+        <View style={styles.rowBetween}>
+          <Text style={styles.smallText}>status pending</Text>
+          <Text style={styles.badge}>—</Text>
+        </View>
+      </View>
+
+      {/* ⏰ Today Shift */}
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.cardTitle}>today shift</Text>
+          <Clock size={20} color="#4f46e5" />
         </View>
 
-        <Text style={{ color: '#6B7280', marginVertical: 6 }}>
-          {workedHours}h / {WEEKLY_TARGET_HOURS}h
+        <Text style={styles.smallText}>shift not loaded</Text>
+
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBarFill, { width: "0%" }]} />
+        </View>
+
+        <View style={styles.row}>
+          <TouchableOpacity
+            style={[
+              styles.primaryButton,
+              { backgroundColor: isClockedIn ? "#dc2626" : "#16a34a" },
+            ]}
+            onPress={handleClockInOut}
+          >
+            <Text style={styles.buttonText}>
+              {isClockedIn ? "clock out" : "clock in"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleBreak}
+          >
+            <Text style={styles.secondaryText}>break</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* 🎯 Weekly Goal */}
+      <View style={styles.goalCard}>
+        <View style={styles.rowBetween}>
+          <View style={styles.row}>
+            <Target size={20} color="#ea580c" />
+            <Text style={styles.cardTitle}>weekly goal</Text>
+          </View>
+          <Text style={styles.goalBadge}>{goalPercentage}%</Text>
+        </View>
+
+        <Text style={styles.smallText}>
+          {weeklyGoal.current}h / {weeklyGoal.target}h
         </Text>
 
-        <View
-          style={{
-            height: 10,
-            backgroundColor: 'white',
-            borderRadius: 999,
-          }}
-        >
+        <View style={styles.progressBarBg}>
           <View
-            style={{
-              width: `${weeklyProgress}%`,
-              height: 10,
-              backgroundColor: '#F59E0B',
-              borderRadius: 999,
-            }}
+            style={[
+              styles.goalProgress,
+              { width: `${goalPercentage}%` },
+            ]}
           />
         </View>
+      </View>
 
-        <Text style={{ marginTop: 6, fontSize: 12, color: '#6B7280' }}>
-          {weeklyProgress}% completed
-        </Text>
+      {/* ⚡ Quick Stats */}
+      <View style={styles.grid}>
+        <StatBox icon={<Clock size={16} color="#2563eb" />} label="hours" />
+        <StatBox
+          icon={<DollarSign size={16} color="#16a34a" />}
+          label="earnings"
+        />
+        <StatBox icon={<Target size={16} color="#9333ea" />} label="goals" />
+        <StatBox icon={<Zap size={16} color="#ea580c" />} label="streak" />
+      </View>
+
+      {/* 🏆 Gamification */}
+      <View style={styles.card}>
+        <View style={styles.row}>
+          <Award size={24} color="#ca8a04" />
+          <View>
+            <Text style={styles.cardTitle}>level —</Text>
+            <Text style={styles.smallText}>xp — / —</Text>
+          </View>
+        </View>
+
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBarFill, { width: "0%" }]} />
+        </View>
+      </View>
+
+      {/* 🚀 Quick Actions */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>quick actions</Text>
+
+        <View style={styles.grid}>
+          <ActionBox icon={<Calendar size={20} />} label="schedule" />
+          <ActionBox icon={<DollarSign size={20} />} label="earnings" />
+          <ActionBox icon={<Target size={20} />} label="goals" />
+          <ActionBox icon={<Award size={20} />} label="achievements" />
+        </View>
       </View>
     </ScrollView>
   );
 }
+
+/* 🔹 Components */
+
+function StatBox({ icon, label }: any) {
+  return (
+    <View style={styles.statBox}>
+      {icon}
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>—</Text>
+    </View>
+  );
+}
+
+function ActionBox({ icon, label }: any) {
+  return (
+    <TouchableOpacity style={styles.actionBox}>
+      {icon}
+      <Text style={styles.actionText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+/* 🎨 Styles */
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 48, // ✅ iOS safe-area fix
+    backgroundColor: "#f9fafb",
+  },
+
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  notificationCard: {
+    backgroundColor: "#4f46e5",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  notificationTitle: {
+    color: "#fff",
+    fontSize: 14,
+  },
+  notificationText: {
+    color: "#fff",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  emptyText: {
+    color: "#e5e7eb",
+    fontSize: 12,
+    marginTop: 8,
+  },
+
+  salaryCard: {
+    backgroundColor: "#6366f1",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+  },
+  label: {
+    color: "#e0e7ff",
+    fontSize: 12,
+  },
+  bigValue: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  badge: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    color: "#fff",
+    fontSize: 10,
+  },
+
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  smallText: {
+    fontSize: 12,
+    color: "#6b7280",
+  },
+
+  progressBarBg: {
+    height: 6,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 6,
+    marginVertical: 8,
+  },
+  progressBarFill: {
+    height: 6,
+    backgroundColor: "#4f46e5",
+    borderRadius: 6,
+  },
+  goalProgress: {
+    height: 6,
+    backgroundColor: "#fb923c",
+    borderRadius: 6,
+  },
+
+  primaryButton: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    marginLeft: 8,
+  },
+  secondaryText: {
+    color: "#374151",
+  },
+
+  goalCard: {
+    backgroundColor: "#fff7ed",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 12,
+  },
+  goalBadge: {
+    backgroundColor: "#fed7aa",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontSize: 12,
+  },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 12,
+  },
+  statBox: {
+    width: "47%",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 12,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#6b7280",
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  actionBox: {
+    width: "47%",
+    backgroundColor: "#eef2ff",
+    borderRadius: 14,
+    padding: 12,
+  },
+  actionText: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#111827",
+  },
+});
