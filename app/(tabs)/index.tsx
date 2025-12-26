@@ -1,22 +1,23 @@
-import React, { useState } from "react";
+import { router } from "expo-router";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import {
+  Award,
   Bell,
+  Calendar,
   Clock,
   DollarSign,
+  LogOut,
   Target,
-  Zap,
-  Award,
-  Calendar,
   User,
+  Zap,
 } from "lucide-react-native";
-import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 /* =====================
@@ -49,7 +50,7 @@ export default function WorkerHomeScreen() {
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [events, setEvents] = useState<WorkEvent[]>([]);
 
-  // 👇 summary only (akan di-sync dari module lain)
+  // 🔹 Salary summary (akan sync dari Earnings module)
   const [salarySummary] = useState<SalarySummary>({
     month: "Dec 2025",
     totalEarnings: 0,
@@ -58,8 +59,9 @@ export default function WorkerHomeScreen() {
     estimatedNextAmount: 0,
   });
 
+  // 🔹 Weekly goal (akan datang dari Calendar)
   const weeklyGoal = {
-    current: 0, // akan datang dari calendar
+    current: 0,
     target: 40,
   };
 
@@ -99,11 +101,41 @@ export default function WorkerHomeScreen() {
     logEvent("break_start");
   };
 
+  const handleLogout = () => {
+    // nanti: clear auth / async storage
+    router.replace("/login");
+  };
+
   /* =====================
      UI
   ===================== */
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      {/* 🔝 HEADER */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>💰</Text>
+          </View>
+
+          <View>
+            <Text style={styles.appName}>Spendly</Text>
+            <Text style={styles.greeting}>Hey, John!</Text>
+          </View>
+        </View>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity>
+            <Bell size={22} color="#6b7280" />
+            <View style={styles.dot} />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleLogout}>
+            <LogOut size={22} color="#6b7280" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -170,7 +202,6 @@ export default function WorkerHomeScreen() {
           </View>
 
           <Text style={styles.smallText}>shift loaded</Text>
-
           <View style={styles.progressBarBg} />
 
           <View style={styles.row}>
@@ -259,10 +290,10 @@ export default function WorkerHomeScreen() {
           <Text style={styles.cardTitle}>quick actions</Text>
 
           <View style={styles.grid}>
-            <ActionBox icon={<Calendar size={20} />} label="schedule" onPress={() => router.push("/(tabs)/calendar")} />
-            <ActionBox icon={<DollarSign size={20} />} label="earnings" onPress={() => router.push("/(tabs)/earnings")} />
-            <ActionBox icon={<Target size={20} />} label="goals" onPress={() => router.push("/(tabs)/goals")} />
-            <ActionBox icon={<User size={20} />} label="profile" onPress={() => router.push("/(tabs)/profile")} />
+            <ActionBox icon={<Calendar size={20} />} label="Schedule" onPress={() => router.push("/(tabs)/calendar")} />
+            <ActionBox icon={<DollarSign size={20} />} label="Earnings" onPress={() => router.push("/(tabs)/earnings")} />
+            <ActionBox icon={<Target size={20} />} label="Goals" onPress={() => router.push("/(tabs)/goals")} />
+            <ActionBox icon={<User size={20} />} label="Profile" onPress={() => router.push("/(tabs)/profile")} />
           </View>
         </View>
       </ScrollView>
@@ -303,12 +334,46 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
     backgroundColor: "#f9fafb",
   },
-  row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  rowBetween: {
+
+  /* HEADER */
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    marginBottom: 8,
+    backgroundColor: "#fff",
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#4f46e5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { fontSize: 18 },
+  appName: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  greeting: { fontSize: 13, color: "#6b7280" },
+  headerRight: { flexDirection: "row", gap: 16 },
+  dot: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ef4444",
+  },
+
+  row: { flexDirection: "row", alignItems: "center", gap: 8 },
+  rowBetween: { flexDirection: "row", justifyContent: "space-between" },
 
   notificationCard: {
     backgroundColor: "#4f46e5",
@@ -326,12 +391,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   salaryTitle: { color: "#e5e7eb", fontSize: 14 },
-  salaryAmount: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "700",
-    marginVertical: 6,
-  },
+  salaryAmount: { color: "#fff", fontSize: 28, fontWeight: "700" },
   salaryPill: {
     backgroundColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 12,
@@ -365,7 +425,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginVertical: 8,
   },
-  goalProgress: { height: 6, backgroundColor: "#fb923c", borderRadius: 6 },
+  goalProgress: { height: 6, backgroundColor: "#fb923c" },
 
   primaryButton: {
     flex: 1,
