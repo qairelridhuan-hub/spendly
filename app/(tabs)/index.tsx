@@ -19,23 +19,49 @@ import {
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Activity = {
-  message: string;
+/* =====================
+   TYPES
+===================== */
+
+type WorkEventType = "clock_in" | "clock_out" | "break_start";
+
+type WorkEvent = {
+  type: WorkEventType;
   time: string;
 };
+
+type SalarySummary = {
+  month: string;
+  totalEarnings: number;
+  status: "pending" | "paid";
+  nextPaymentDate: string;
+  estimatedNextAmount: number;
+};
+
+/* =====================
+   SCREEN
+===================== */
 
 export default function WorkerHomeScreen() {
   /* =====================
      STATE
   ===================== */
-  const [notifications] = useState<any[]>([]);
   const [isClockedIn, setIsClockedIn] = useState(false);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [events, setEvents] = useState<WorkEvent[]>([]);
 
-  const [weeklyGoal] = useState({
-    current: 0,
-    target: 40,
+  // 👇 summary only (akan di-sync dari module lain)
+  const [salarySummary] = useState<SalarySummary>({
+    month: "Dec 2025",
+    totalEarnings: 0,
+    status: "pending",
+    nextPaymentDate: "-",
+    estimatedNextAmount: 0,
   });
+
+  const weeklyGoal = {
+    current: 0, // akan datang dari calendar
+    target: 40,
+  };
 
   const goalPercentage =
     weeklyGoal.target === 0
@@ -43,29 +69,34 @@ export default function WorkerHomeScreen() {
       : Math.round((weeklyGoal.current / weeklyGoal.target) * 100);
 
   /* =====================
+     HELPERS
+  ===================== */
+  const logEvent = (type: WorkEventType) => {
+    const time = new Date().toLocaleTimeString();
+    setEvents(prev => [{ type, time }, ...prev]);
+  };
+
+  const getEventLabel = (type: WorkEventType) => {
+    switch (type) {
+      case "clock_in":
+        return "clocked in";
+      case "clock_out":
+        return "clocked out";
+      case "break_start":
+        return "break started";
+    }
+  };
+
+  /* =====================
      ACTIONS
   ===================== */
   const handleClockInOut = () => {
-    const now = new Date().toLocaleTimeString();
-
-    setActivities(prev => [
-      {
-        message: isClockedIn ? "clocked out" : "clocked in",
-        time: now,
-      },
-      ...prev,
-    ]);
-
+    logEvent(isClockedIn ? "clock_out" : "clock_in");
     setIsClockedIn(prev => !prev);
   };
 
   const handleBreak = () => {
-    const now = new Date().toLocaleTimeString();
-
-    setActivities(prev => [
-      { message: "break started", time: now },
-      ...prev,
-    ]);
+    logEvent("break_start");
   };
 
   /* =====================
@@ -83,26 +114,51 @@ export default function WorkerHomeScreen() {
             <Bell size={18} color="#fff" />
             <Text style={styles.notificationTitle}>latest updates</Text>
           </View>
-
-          {notifications.length === 0 ? (
-            <Text style={styles.emptyText}>no notifications yet</Text>
-          ) : (
-            notifications.slice(0, 2).map((n, i) => (
-              <Text key={i} style={styles.notificationText}>
-                • {n.message}
-              </Text>
-            ))
-          )}
+          <Text style={styles.emptyText}>no notifications yet</Text>
         </View>
 
-        {/* 💰 Monthly Salary */}
-        <View style={styles.salaryCard}>
-          <Text style={styles.label}>monthly salary</Text>
-          <Text style={styles.bigValue}>rm —</Text>
+        {/* 💰 Monthly Salary Summary */}
+        <View style={styles.salarySummary}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.salaryTitle}>Monthly Salary</Text>
+            <View style={styles.salaryPill}>
+              <Text style={styles.salaryPillText}>
+                {salarySummary.month}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.salaryAmount}>
+            RM {salarySummary.totalEarnings.toFixed(2)}
+          </Text>
+
+          <View style={styles.row}>
+            <Text style={styles.salaryStatusIcon}>
+              {salarySummary.status === "paid" ? "✅" : "⏳"}
+            </Text>
+            <Text style={styles.salaryStatusText}>
+              {salarySummary.status === "paid"
+                ? "Verified & Paid"
+                : "Pending Verification"}
+            </Text>
+          </View>
+
+          <View style={styles.salaryDivider} />
 
           <View style={styles.rowBetween}>
-            <Text style={styles.smallText}>status pending</Text>
-            <Text style={styles.badge}>—</Text>
+            <View>
+              <Text style={styles.salaryLabel}>Next Payment</Text>
+              <Text style={styles.salaryValue}>
+                {salarySummary.nextPaymentDate}
+              </Text>
+            </View>
+
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.salaryLabel}>Estimated</Text>
+              <Text style={styles.salaryValue}>
+                RM {salarySummary.estimatedNextAmount.toFixed(2)}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -115,9 +171,7 @@ export default function WorkerHomeScreen() {
 
           <Text style={styles.smallText}>shift loaded</Text>
 
-          <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: "0%" }]} />
-          </View>
+          <View style={styles.progressBarBg} />
 
           <View style={styles.row}>
             <TouchableOpacity
@@ -145,12 +199,12 @@ export default function WorkerHomeScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>recent activity</Text>
 
-          {activities.length === 0 ? (
+          {events.length === 0 ? (
             <Text style={styles.smallText}>no activity yet</Text>
           ) : (
-            activities.slice(0, 4).map((a, i) => (
+            events.slice(0, 4).map((e, i) => (
               <Text key={i} style={styles.activityText}>
-                • {a.message} at {a.time}
+                • {getEventLabel(e.type)} at {e.time}
               </Text>
             ))
           )}
@@ -188,7 +242,7 @@ export default function WorkerHomeScreen() {
           <StatBox icon={<Zap size={16} color="#ea580c" />} label="streak" />
         </View>
 
-        {/* 🏆 Gamification */}
+        {/* 🏆 Level */}
         <View style={styles.card}>
           <View style={styles.row}>
             <Award size={24} color="#ca8a04" />
@@ -197,10 +251,7 @@ export default function WorkerHomeScreen() {
               <Text style={styles.smallText}>xp — / —</Text>
             </View>
           </View>
-
-          <View style={styles.progressBarBg}>
-            <View style={[styles.progressBarFill, { width: "0%" }]} />
-          </View>
+          <View style={styles.progressBarBg} />
         </View>
 
         {/* 🚀 Quick Actions */}
@@ -208,26 +259,10 @@ export default function WorkerHomeScreen() {
           <Text style={styles.cardTitle}>quick actions</Text>
 
           <View style={styles.grid}>
-            <ActionBox
-              icon={<Calendar size={20} />}
-              label="schedule"
-              onPress={() => router.push("/(tabs)/calendar")}
-            />
-            <ActionBox
-              icon={<DollarSign size={20} />}
-              label="earnings"
-              onPress={() => router.push("/(tabs)/earnings")}
-            />
-            <ActionBox
-              icon={<Target size={20} />}
-              label="goals"
-              onPress={() => router.push("/(tabs)/goals")}
-            />
-            <ActionBox
-              icon={<User size={20} />}
-              label="profile"
-              onPress={() => router.push("/(tabs)/profile")}
-            />
+            <ActionBox icon={<Calendar size={20} />} label="schedule" onPress={() => router.push("/(tabs)/calendar")} />
+            <ActionBox icon={<DollarSign size={20} />} label="earnings" onPress={() => router.push("/(tabs)/earnings")} />
+            <ActionBox icon={<Target size={20} />} label="goals" onPress={() => router.push("/(tabs)/goals")} />
+            <ActionBox icon={<User size={20} />} label="profile" onPress={() => router.push("/(tabs)/profile")} />
           </View>
         </View>
       </ScrollView>
@@ -274,6 +309,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+
   notificationCard: {
     backgroundColor: "#4f46e5",
     borderRadius: 14,
@@ -281,24 +317,38 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   notificationTitle: { color: "#fff", fontSize: 14 },
-  notificationText: { color: "#fff", fontSize: 12, marginTop: 4 },
   emptyText: { color: "#e5e7eb", fontSize: 12, marginTop: 8 },
-  salaryCard: {
-    backgroundColor: "#6366f1",
-    borderRadius: 14,
-    padding: 16,
+
+  salarySummary: {
+    backgroundColor: "#7c5cff",
+    borderRadius: 20,
+    padding: 18,
     marginBottom: 12,
   },
-  label: { color: "#e0e7ff", fontSize: 12 },
-  bigValue: { color: "#fff", fontSize: 24, fontWeight: "bold" },
-  badge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  salaryTitle: { color: "#e5e7eb", fontSize: 14 },
+  salaryAmount: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 28,
+    fontWeight: "700",
+    marginVertical: 6,
   },
+  salaryPill: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  salaryPillText: { color: "#fff", fontSize: 12 },
+  salaryStatusIcon: { fontSize: 16, marginRight: 6 },
+  salaryStatusText: { color: "#e5e7eb", fontSize: 13 },
+  salaryDivider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    marginVertical: 12,
+  },
+  salaryLabel: { color: "#e5e7eb", fontSize: 12 },
+  salaryValue: { color: "#fff", fontSize: 16, fontWeight: "600" },
+
   card: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -308,14 +358,15 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: "600", color: "#111827" },
   smallText: { fontSize: 12, color: "#6b7280" },
   activityText: { fontSize: 12, color: "#374151", marginTop: 4 },
+
   progressBarBg: {
     height: 6,
     backgroundColor: "#e5e7eb",
     borderRadius: 6,
     marginVertical: 8,
   },
-  progressBarFill: { height: 6, backgroundColor: "#4f46e5", borderRadius: 6 },
   goalProgress: { height: 6, backgroundColor: "#fb923c", borderRadius: 6 },
+
   primaryButton: {
     flex: 1,
     padding: 10,
@@ -331,6 +382,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   secondaryText: { color: "#374151" },
+
   goalCard: {
     backgroundColor: "#fff7ed",
     borderRadius: 14,
@@ -344,6 +396,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     fontSize: 12,
   },
+
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -358,6 +411,7 @@ const styles = StyleSheet.create({
   },
   statLabel: { fontSize: 12, color: "#6b7280" },
   statValue: { fontSize: 16, fontWeight: "600" },
+
   actionBox: {
     width: "47%",
     backgroundColor: "#eef2ff",
