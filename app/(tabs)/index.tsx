@@ -120,7 +120,7 @@ export default function WorkerHomeScreen() {
 
           <View>
             <Text style={styles.appName}>Spendly</Text>
-            <Text style={styles.greeting}>Hey, John!</Text>
+           
           </View>
         </View>
 
