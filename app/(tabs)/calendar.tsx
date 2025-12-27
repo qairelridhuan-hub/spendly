@@ -1,20 +1,20 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Dimensions,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
 import { router } from "expo-router";
 import {
   Bell,
-  LogOut,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from "lucide-react-native";
+import { useState } from "react";
+import {
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 /* =====================
    LAYOUT CONSTANTS
