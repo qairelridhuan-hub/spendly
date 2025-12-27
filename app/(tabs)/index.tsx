@@ -290,7 +290,7 @@ export default function WorkerHomeScreen() {
           <Text style={styles.cardTitle}>quick actions</Text>
 
           <View style={styles.grid}>
-            <ActionBox icon={<Calendar size={20} />} label="Schedule" onPress={() => router.push("/(tabs)/calendar")} />
+            <ActionBox icon={<Calendar size={20} />} label="Calendar" onPress={() => router.push("/(tabs)/calendar")} />
             <ActionBox icon={<DollarSign size={20} />} label="Earnings" onPress={() => router.push("/(tabs)/earnings")} />
             <ActionBox icon={<Target size={20} />} label="Goals" onPress={() => router.push("/(tabs)/goals")} />
             <ActionBox icon={<User size={20} />} label="Profile" onPress={() => router.push("/(tabs)/profile")} />

@@ -7,7 +7,6 @@ import {
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useCalendar } from "../context/calendar";
 import { useState } from "react";
 import { router } from "expo-router";
 import {
@@ -22,90 +21,50 @@ import {
 ===================== */
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const CONTAINER_PADDING = 32; // 16 left + 16 right
 const GAP = 8;
-const CELL_WIDTH =
-  (SCREEN_WIDTH - CONTAINER_PADDING - GAP * 6) / 7;
+const CELL_WIDTH = (SCREEN_WIDTH - 32 - GAP * 6) / 7;
 
 /* =====================
    SCREEN
 ===================== */
 
 export default function CalendarScreen() {
-  const { shifts, getUpcomingShifts } = useCalendar();
-
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [currentMonth, setCurrentMonth] = useState(11); // Dec
-  const [currentYear, setCurrentYear] = useState(2025);
-
-  const upcoming = getUpcomingShifts();
+  const [month, setMonth] = useState(11); // December
+  const [year, setYear] = useState(2025);
+  const [selectedDay, setSelectedDay] = useState<number | null>(28);
 
   /* =====================
      DATE HELPERS
   ===================== */
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December",
   ];
 
-  const daysInMonth = new Date(
-    currentYear,
-    currentMonth + 1,
-    0
-  ).getDate();
-
-  const startDay = new Date(
-    currentYear,
-    currentMonth,
-    1
-  ).getDay();
-
-  const daysArray = Array.from(
-    { length: daysInMonth },
-    (_, i) => i + 1
-  );
-
-  const formatDate = (day: number) =>
-    `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-  const getShiftForDate = (date: string) =>
-    shifts.find(s => s.date === date);
-
-  const getDotColor = (status?: string) => {
-    switch (status) {
-      case "completed":
-        return "#22c55e";
-      case "absent":
-        return "#ef4444";
-      case "scheduled":
-        return "#3b82f6";
-      case "in_progress":
-        return "#60a5fa";
-      default:
-        return "transparent";
-    }
-  };
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startDay = new Date(year, month, 1).getDay();
+  const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
 
   /* =====================
      MONTH NAVIGATION
   ===================== */
 
-  const goPrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(y => y - 1);
+  const prevMonth = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear(y => y - 1);
     } else {
-      setCurrentMonth(m => m - 1);
+      setMonth(m => m - 1);
     }
   };
 
-  const goNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(y => y + 1);
+  const nextMonth = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear(y => y + 1);
     } else {
-      setCurrentMonth(m => m + 1);
+      setMonth(m => m + 1);
     }
   };
 
@@ -116,6 +75,7 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.container}>
+
         {/* ===== HEADER ===== */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -124,42 +84,42 @@ export default function CalendarScreen() {
             </View>
             <View>
               <Text style={styles.appName}>Spendly</Text>
-              <Text style={styles.subText}>Hey, John!</Text>
+              
             </View>
           </View>
 
           <View style={styles.headerRight}>
-            <Bell size={22} />
-            <TouchableOpacity
-              onPress={() => router.replace("/(auth)/login")}
-            >
-              <LogOut size={22} />
+            <Bell size={22} color="#6b7280" />
+            <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
+              <LogOut size={22} color="#6b7280" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ===== CALENDAR CARD ===== */}
+        {/* =====================
+            CALENDAR CARD
+        ===================== */}
         <View style={styles.card}>
-          {/* Month Header */}
           <View style={styles.monthHeader}>
-            <TouchableOpacity onPress={goPrevMonth}>
-              <ChevronLeft size={24} />
-            </TouchableOpacity>
-
             <Text style={styles.monthTitle}>
-              {monthNames[currentMonth]} {currentYear}
+              {monthNames[month]} {year}
             </Text>
 
-            <TouchableOpacity onPress={goNextMonth}>
-              <ChevronRight size={24} />
-            </TouchableOpacity>
+            <View style={styles.navIcons}>
+              <TouchableOpacity onPress={prevMonth}>
+                <ChevronLeft size={22} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={nextMonth}>
+                <ChevronRight size={22} />
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Week Row */}
+          {/* WEEK ROW */}
           <View style={styles.weekRow}>
-            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+            {["S","M","T","W","T","F","S"].map((d, i) => (
               <Text
-                key={`${d}-${i}`}
+                key={i}
                 style={[styles.weekText, { width: CELL_WIDTH }]}
               >
                 {d}
@@ -167,84 +127,70 @@ export default function CalendarScreen() {
             ))}
           </View>
 
-          {/* Days Grid */}
+          {/* CALENDAR GRID */}
           <View style={styles.grid}>
-            {Array.from({ length: startDay }).map((_, i) => (
-              <View
-                key={`empty-${i}`}
-                style={[styles.emptyBox, { width: CELL_WIDTH }]}
-              />
-            ))}
+            {Array.from({ length: totalCells }).map((_, index) => {
+              const day = index - startDay + 1;
+              const valid = day > 0 && day <= daysInMonth;
 
-            {daysArray.map(day => {
-              const date = formatDate(day);
-              const shift = getShiftForDate(date);
+              if (!valid) {
+                return (
+                  <View key={`empty-${index}`} style={styles.dayCell} />
+                );
+              }
 
               return (
                 <TouchableOpacity
-                  key={date}
+                  key={day}
                   style={[
-                    styles.dayBox,
-                    { width: CELL_WIDTH },
-                    selectedDate === date && styles.selectedDay,
+                    styles.dayCell,
+                    selectedDay === day && styles.selectedDay,
                   ]}
-                  onPress={() => setSelectedDate(date)}
+                  onPress={() => setSelectedDay(day)}
                 >
-                  <Text>{day}</Text>
-                  {shift && (
-                    <View
-                      style={[
-                        styles.dot,
-                        { backgroundColor: getDotColor(shift.status) },
-                      ]}
-                    />
-                  )}
+                  <Text
+                    style={[
+                      styles.dayText,
+                      selectedDay === day && styles.selectedDayText,
+                    ]}
+                  >
+                    {day}
+                  </Text>
+
+                  {/* STATUS DOT PLACEHOLDER */}
+                  <View style={styles.dotPlaceholder} />
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {/* ===== UPCOMING SHIFTS ===== */}
+        {/* =====================
+            UPCOMING SHIFTS CARD
+        ===================== */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Upcoming Shifts</Text>
 
-          {upcoming.length === 0 ? (
-            <Text style={styles.emptyText}>No upcoming shifts</Text>
-          ) : (
-            upcoming.map(s => (
-              <View key={s.date} style={styles.shiftRow}>
-                <View>
-                  <Text style={styles.shiftDate}>{s.date}</Text>
-                  <Text style={styles.shiftTime}>
-                    {s.startTime} - {s.endTime}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.statusBadge,
-                    { backgroundColor: getDotColor(s.status) },
-                  ]}
-                >
-                  <Text style={styles.badgeText}>
-                    {s.status.replace("_", " ")}
-                  </Text>
-                </View>
-              </View>
-            ))
-          )}
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyText}>
+              No upcoming shifts
+            </Text>
+          </View>
         </View>
 
-        {/* ===== STATUS ===== */}
+        {/* =====================
+            STATUS CARD
+        ===================== */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Status</Text>
+
           <View style={styles.legendRow}>
             <Legend color="#3b82f6" label="Scheduled" />
             <Legend color="#22c55e" label="Completed" />
             <Legend color="#ef4444" label="Absent" />
           </View>
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -291,11 +237,16 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: "#fff",
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 16,
   },
-  cardTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
+
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
 
   monthHeader: {
     flexDirection: "row",
@@ -303,27 +254,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  monthTitle: { fontSize: 18, fontWeight: "700" },
+  monthTitle: { fontSize: 20, fontWeight: "700" },
+  navIcons: { flexDirection: "row", gap: 12 },
 
-  weekRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
+  weekRow: { flexDirection: "row", marginBottom: 8 },
+  weekText: {
+    textAlign: "center",
+    fontWeight: "600",
+    color: "#64748b",
   },
 
-  weekText: { textAlign: "center", fontWeight: "600" },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
 
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-
-  emptyBox: { height: 48 },
-
-  dayBox: {
-    height: 48,
-    borderRadius: 12,
+  dayCell: {
+    width: CELL_WIDTH,
+    height: 52,
+    marginRight: GAP,
+    marginBottom: GAP,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     alignItems: "center",
@@ -331,37 +279,48 @@ const styles = StyleSheet.create({
   },
 
   selectedDay: {
-    backgroundColor: "#eef2ff",
     borderColor: "#4f46e5",
+    backgroundColor: "#eef2ff",
   },
 
-  dot: {
+  dayText: { color: "#334155" },
+  selectedDayText: {
+    color: "#4f46e5",
+    fontWeight: "700",
+  },
+
+  dotPlaceholder: {
     width: 6,
     height: 6,
     borderRadius: 999,
     marginTop: 4,
+    backgroundColor: "transparent",
   },
 
-  shiftRow: {
+  emptyBox: {
     backgroundColor: "#f1f5f9",
     borderRadius: 14,
-    padding: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
+    padding: 16,
+    alignItems: "center",
   },
-  shiftDate: { fontWeight: "600" },
-  shiftTime: { color: "#64748b" },
-
-  statusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  badgeText: { color: "#fff", fontSize: 12 },
-
-  legendRow: { flexDirection: "row", gap: 16 },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
 
   emptyText: { color: "#6b7280" },
+
+  legendRow: {
+    flexDirection: "row",
+    gap: 20,
+    marginTop: 4,
+  },
+
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+  },
 });
