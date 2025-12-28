@@ -182,7 +182,7 @@ export default function CalendarScreen() {
             STATUS CARD
         ===================== */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Status</Text>
+          <Text style={styles.cardTitle}>Status</Text> 
 
           <View style={styles.legendRow}>
             <Legend color="#3b82f6" label="Scheduled" />
