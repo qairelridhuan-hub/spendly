@@ -2,7 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -12,6 +12,9 @@ import {
   View,
 } from "react-native";
 import { auth } from "@/lib/firebase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const LAST_EMAIL_KEY = "spendly:lastEmail";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -19,8 +22,28 @@ export default function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [recentEmails, setRecentEmails] = useState<string[]>([]);
+  const [showEmailList, setShowEmailList] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const loadRecentEmails = async () => {
+      try {
+        const storedList = await AsyncStorage.getItem("spendly:recentEmails");
+        const list = storedList ? JSON.parse(storedList) : [];
+        if (Array.isArray(list)) {
+          setRecentEmails(list);
+          if (!email && list[0]) setEmail(list[0]);
+        }
+        const lastEmail = await AsyncStorage.getItem(LAST_EMAIL_KEY);
+        if (lastEmail && !email) setEmail(lastEmail);
+      } catch {
+        // ignore storage errors
+      }
+    };
+    loadRecentEmails();
+  }, [email]);
 
   const validateEmail = () => {
     if (!email.trim()) {
@@ -55,7 +78,22 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      const trimmedEmail = email.trim().toLowerCase();
+      await signInWithEmailAndPassword(auth, trimmedEmail, password);
+      try {
+        await AsyncStorage.setItem(LAST_EMAIL_KEY, trimmedEmail);
+        const nextList = [
+          trimmedEmail,
+          ...recentEmails.filter(item => item !== trimmedEmail),
+        ].slice(0, 5);
+        setRecentEmails(nextList);
+        await AsyncStorage.setItem(
+          "spendly:recentEmails",
+          JSON.stringify(nextList)
+        );
+      } catch {
+        // ignore storage errors
+      }
       router.replace("/(tabs)");
     } catch (err: any) {
       const code = err?.code || "";
@@ -127,8 +165,12 @@ export default function Login() {
               placeholder="Email"
               value={email}
               onChangeText={setEmail}
+              onFocus={() => setShowEmailList(true)}
               autoCapitalize="none"
               keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              importantForAutofill="yes"
               returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus()}
               style={{
@@ -139,6 +181,23 @@ export default function Login() {
                 paddingLeft: 44,
               }}
             />
+            {showEmailList && recentEmails.length > 0 ? (
+              <View style={styles.emailList}>
+                {recentEmails.map(item => (
+                  <TouchableOpacity
+                    key={item}
+                    style={styles.emailRow}
+                    onPress={() => {
+                      setEmail(item);
+                      setShowEmailList(false);
+                      passwordRef.current?.focus();
+                    }}
+                  >
+                    <Text style={styles.emailRowText}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
           </View>
 
           {/* PASSWORD */}
@@ -154,6 +213,9 @@ export default function Login() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              autoComplete="password"
+              textContentType="password"
+              importantForAutofill="yes"
               style={{
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
@@ -240,3 +302,19 @@ export default function Login() {
     </LinearGradient>
   );
 }
+
+const styles = {
+  emailList: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    paddingVertical: 4,
+  },
+  emailRow: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  emailRowText: { color: "#374151", fontSize: 14 },
+};

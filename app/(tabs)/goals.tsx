@@ -420,8 +420,8 @@ export default function GoalsScreen() {
                       </Text>
                     </View>
                     <View>
-                      <Text style={styles.nextTitle}>Due</Text>
-                      <Text style={styles.nextAmount}>{nextContribution}</Text>
+                      <Text style={styles.nextTitle}>Deadline</Text>
+                      <Text style={styles.nextAmount}>{goal.deadline}</Text>
                     </View>
                   </View>
 

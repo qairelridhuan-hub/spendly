@@ -1,5 +1,22 @@
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from "expo-router";
+import { useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function RootLayout() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const persistRoute = async () => {
+      const isTabsRoute = pathname.startsWith("/(tabs)");
+      if (!isTabsRoute) return;
+      try {
+        await AsyncStorage.setItem("spendly:lastRoute", pathname);
+      } catch {
+        // ignore storage errors
+      }
+    };
+    persistRoute();
+  }, [pathname]);
+
   return <Stack screenOptions={{ headerShown: false }} />;
 }

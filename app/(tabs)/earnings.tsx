@@ -9,11 +9,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   BarChart3,
+  Bell,
   Calendar,
   DollarSign,
+  LogOut,
   PieChart,
   TrendingUp,
 } from "lucide-react-native";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 type WeeklyEntry = { week: string; earnings: number };
 type BudgetItem = {
@@ -50,6 +54,38 @@ export default function EarningsScreen() {
       <View style={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.container}>
+          {/* ===== HEADER ===== */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <View style={styles.logo}>
+                <Text style={styles.logoText}>💰</Text>
+              </View>
+              <View>
+                <Text style={styles.appName}>Spendly</Text>
+                <Text style={styles.subText}>Hey, John!</Text>
+              </View>
+            </View>
+
+            <View style={styles.headerRight}>
+              <TouchableOpacity>
+                <Bell size={22} color="#0f172a" />
+                <View style={styles.notifDot} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    await signOut(auth);
+                  } finally {
+                    // keep tab layout consistent with other screens
+                  }
+                }}
+              >
+                <LogOut size={22} color="#0f172a" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* ===== Monthly Summary ===== */}
           <LinearGradient
             colors={["#16a34a", "#22c55e"]}
@@ -234,6 +270,42 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 20,
     paddingBottom: 120,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  logo: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#0f172a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoText: { fontSize: 18 },
+  appName: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
+  subText: { fontSize: 13, color: "#64748b" },
+  headerRight: {
+    flexDirection: "row",
+    gap: 18,
+    alignItems: "center",
+  },
+  notifDot: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ef4444",
   },
   bgBlob: {
     position: "absolute",
