@@ -1,7 +1,7 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { Link, router } from 'expo-router';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { LinearGradient } from "expo-linear-gradient";
+import { Link, router } from "expo-router";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
+import { useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,12 +9,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -22,79 +22,73 @@ export default function Login() {
 
   const validateEmail = () => {
     if (!email.trim()) {
-      setError('Email is required');
+      setError("Email is required");
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
+      setError("Please enter a valid email address");
       return false;
     }
 
     return true;
   };
 
-  const handleLogin = async () => {
-    setError('');
+  const handleLogin = () => {
+    setError("");
 
     if (!validateEmail()) return;
 
     if (!password) {
-      setError('Password is required');
+      setError("Password is required");
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError("Password must be at least 8 characters");
       return;
     }
 
-    // 🔹 SIMULATED LOGIN (UI ONLY)
+    // 🔹 UI ONLY (no Firebase)
     setLoading(true);
 
     setTimeout(() => {
       setLoading(false);
-      router.replace('/(tabs)'); // go to tabs
-    }, 800);
+      router.replace("/(tabs)");
+    }, 1000);
   };
 
   return (
-    <LinearGradient colors={['#EEF2FF', '#E0E7FF']} style={{ flex: 1 }}>
+    <LinearGradient colors={["#EEF2FF", "#E0E7FF"]} style={{ flex: 1 }}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, justifyContent: 'center', padding: 24 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1, justifyContent: "center", padding: 24 }}
       >
-        <View
-          style={{
-            backgroundColor: '#fff',
-            borderRadius: 24,
-            padding: 28,
-          }}
-        >
+        <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 28 }}>
           {/* LOGO */}
           <View
             style={{
               width: 72,
               height: 72,
               borderRadius: 36,
-              backgroundColor: '#4B2BFF',
-              alignItems: 'center',
-              justifyContent: 'center',
-              alignSelf: 'center',
+              backgroundColor: "#4B2BFF",
+              alignItems: "center",
+              justifyContent: "center",
+              alignSelf: "center",
               marginBottom: 16,
             }}
           >
-            <Text style={{ fontSize: 28, color: '#fff' }}>💰</Text>
+            <Text style={{ fontSize: 28, color: "#fff" }}>💰</Text>
           </View>
 
           <Text
             style={{
               fontSize: 26,
-              fontWeight: '700',
-              textAlign: 'center',
+              fontWeight: "700",
+              textAlign: "center",
               marginBottom: 6,
-              color: '#4B2BFF',
+              color: "#4B2BFF",
             }}
           >
             Spendly
@@ -102,8 +96,8 @@ export default function Login() {
 
           <Text
             style={{
-              textAlign: 'center',
-              color: '#6B7280',
+              textAlign: "center",
+              color: "#6B7280",
               marginBottom: 24,
             }}
           >
@@ -111,11 +105,11 @@ export default function Login() {
           </Text>
 
           {/* EMAIL */}
-          <View style={{ position: 'relative', marginBottom: 12 }}>
+          <View style={{ position: "relative", marginBottom: 12 }}>
             <Mail
               size={20}
               color="#9CA3AF"
-              style={{ position: 'absolute', left: 14, top: 16 }}
+              style={{ position: "absolute", left: 14, top: 16 }}
             />
             <TextInput
               placeholder="Email"
@@ -124,15 +118,10 @@ export default function Login() {
               autoCapitalize="none"
               keyboardType="email-address"
               returnKeyType="next"
-              onSubmitEditing={() => {
-                setError('');
-                if (validateEmail()) {
-                  passwordRef.current?.focus();
-                }
-              }}
+              onSubmitEditing={() => passwordRef.current?.focus()}
               style={{
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: "#E5E7EB",
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
@@ -141,23 +130,21 @@ export default function Login() {
           </View>
 
           {/* PASSWORD */}
-          <View style={{ position: 'relative', marginBottom: 12 }}>
+          <View style={{ position: "relative", marginBottom: 12 }}>
             <Lock
               size={20}
               color="#9CA3AF"
-              style={{ position: 'absolute', left: 14, top: 16 }}
+              style={{ position: "absolute", left: 14, top: 16 }}
             />
-
             <TextInput
               ref={passwordRef}
               placeholder="Password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              returnKeyType="done"
               style={{
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: "#E5E7EB",
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
@@ -167,11 +154,7 @@ export default function Login() {
 
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
-              style={{
-                position: 'absolute',
-                right: 14,
-                top: 16,
-              }}
+              style={{ position: "absolute", right: 14, top: 16 }}
             >
               {showPassword ? (
                 <Eye size={20} color="#9CA3AF" />
@@ -183,13 +166,7 @@ export default function Login() {
 
           {/* ERROR */}
           {error ? (
-            <Text
-              style={{
-                color: 'red',
-                textAlign: 'center',
-                marginBottom: 12,
-              }}
-            >
+            <Text style={{ color: "red", textAlign: "center", marginBottom: 12 }}>
               {error}
             </Text>
           ) : null}
@@ -199,7 +176,7 @@ export default function Login() {
             onPress={handleLogin}
             disabled={loading}
             style={{
-              backgroundColor: '#4B2BFF',
+              backgroundColor: "#4B2BFF",
               padding: 16,
               borderRadius: 14,
               marginBottom: 16,
@@ -208,13 +185,13 @@ export default function Login() {
           >
             <Text
               style={{
-                color: '#fff',
-                textAlign: 'center',
+                color: "#fff",
+                textAlign: "center",
                 fontSize: 16,
-                fontWeight: '600',
+                fontWeight: "600",
               }}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </Text>
           </TouchableOpacity>
 
@@ -223,8 +200,8 @@ export default function Login() {
             <TouchableOpacity>
               <Text
                 style={{
-                  textAlign: 'center',
-                  color: '#4B2BFF',
+                  textAlign: "center",
+                  color: "#4B2BFF",
                   marginBottom: 10,
                 }}
               >
@@ -237,9 +214,9 @@ export default function Login() {
             <TouchableOpacity>
               <Text
                 style={{
-                  textAlign: 'center',
-                  color: '#4B2BFF',
-                  fontWeight: '600',
+                  textAlign: "center",
+                  color: "#4B2BFF",
+                  fontWeight: "600",
                 }}
               >
                 Don’t have an account? Register

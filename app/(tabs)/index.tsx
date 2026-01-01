@@ -1,23 +1,23 @@
-import { router } from "expo-router";
-import {
-  Award,
-  Bell,
-  Calendar,
-  Clock,
-  DollarSign,
-  LogOut,
-  Target,
-  User,
-  Zap,
-} from "lucide-react-native";
 import React, { useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
 } from "react-native";
+import {
+  Bell,
+  Clock,
+  DollarSign,
+  Target,
+  Zap,
+  Award,
+  Calendar,
+  User,
+  LogOut,
+} from "lucide-react-native";
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 /* =====================
@@ -120,7 +120,7 @@ export default function WorkerHomeScreen() {
 
           <View>
             <Text style={styles.appName}>Spendly</Text>
-           
+            <Text style={styles.greeting}>Hey, John!</Text>
           </View>
         </View>
 
@@ -290,10 +290,10 @@ export default function WorkerHomeScreen() {
           <Text style={styles.cardTitle}>quick actions</Text>
 
           <View style={styles.grid}>
-            <ActionBox icon={<Calendar size={20} />} label="Calendar" onPress={() => router.push("/(tabs)/calendar")} />
-            <ActionBox icon={<DollarSign size={20} />} label="Earnings" onPress={() => router.push("/(tabs)/earnings")} />
-            <ActionBox icon={<Target size={20} />} label="Goals" onPress={() => router.push("/(tabs)/goals")} />
-            <ActionBox icon={<User size={20} />} label="Profile" onPress={() => router.push("/(tabs)/profile")} />
+            <ActionBox icon={<Calendar size={20} />} label="schedule" onPress={() => router.push("/(tabs)/calendar")} />
+            <ActionBox icon={<DollarSign size={20} />} label="earnings" onPress={() => router.push("/(tabs)/earnings")} />
+            <ActionBox icon={<Target size={20} />} label="goals" onPress={() => router.push("/(tabs)/goals")} />
+            <ActionBox icon={<User size={20} />} label="profile" onPress={() => router.push("/(tabs)/profile")} />
           </View>
         </View>
       </ScrollView>

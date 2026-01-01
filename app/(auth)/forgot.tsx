@@ -1,7 +1,7 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { Mail, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { Mail, X } from "lucide-react-native";
+import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,43 +9,53 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const validateEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
   const handleReset = () => {
-    setError('');
+    setError("");
 
     if (!email) {
-      setError('Email is required');
+      setError("Email is required");
       return;
     }
 
-    // 🔹 SIMULATED RESET (UI ONLY)
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // 🔹 UI ONLY (no Firebase)
     setLoading(true);
 
     setTimeout(() => {
       setLoading(false);
-      alert('Reset link sent (simulated)');
+      alert("Reset link sent (simulation)");
       router.back();
-    }, 800);
+    }, 1000);
   };
 
   return (
     <LinearGradient
-      colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0.45)']}
+      colors={["rgba(0,0,0,0.45)", "rgba(0,0,0,0.45)"]}
       style={{ flex: 1 }}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, justifyContent: 'center', padding: 24 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1, justifyContent: "center", padding: 24 }}
       >
         <View
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: "#fff",
             borderRadius: 24,
             padding: 28,
           }}
@@ -55,13 +65,13 @@ export default function ForgotPassword() {
             onPress={() => router.back()}
             style={{ marginBottom: 12 }}
           >
-            <Text style={{ color: '#4B2BFF' }}>← Back to Login</Text>
+            <Text style={{ color: "#4B2BFF" }}>← Back to Login</Text>
           </TouchableOpacity>
 
           {/* CLOSE */}
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ position: 'absolute', top: 16, right: 16 }}
+            style={{ position: "absolute", top: 16, right: 16 }}
           >
             <X size={22} color="#6B7280" />
           </TouchableOpacity>
@@ -69,7 +79,7 @@ export default function ForgotPassword() {
           <Text
             style={{
               fontSize: 22,
-              fontWeight: '700',
+              fontWeight: "700",
               marginBottom: 8,
             }}
           >
@@ -78,7 +88,7 @@ export default function ForgotPassword() {
 
           <Text
             style={{
-              color: '#6B7280',
+              color: "#6B7280",
               marginBottom: 24,
               lineHeight: 20,
             }}
@@ -88,11 +98,11 @@ export default function ForgotPassword() {
           </Text>
 
           {/* EMAIL */}
-          <View style={{ position: 'relative', marginBottom: 12 }}>
+          <View style={{ position: "relative", marginBottom: 12 }}>
             <Mail
               size={20}
               color="#9CA3AF"
-              style={{ position: 'absolute', left: 14, top: 16 }}
+              style={{ position: "absolute", left: 14, top: 16 }}
             />
             <TextInput
               placeholder="Email Address"
@@ -102,7 +112,7 @@ export default function ForgotPassword() {
               keyboardType="email-address"
               style={{
                 borderWidth: 1,
-                borderColor: '#E5E7EB',
+                borderColor: "#E5E7EB",
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
@@ -114,8 +124,8 @@ export default function ForgotPassword() {
           {error ? (
             <Text
               style={{
-                color: 'red',
-                textAlign: 'center',
+                color: "red",
+                textAlign: "center",
                 marginBottom: 12,
               }}
             >
@@ -128,7 +138,7 @@ export default function ForgotPassword() {
             onPress={handleReset}
             disabled={loading}
             style={{
-              backgroundColor: '#4B2BFF',
+              backgroundColor: "#4B2BFF",
               padding: 16,
               borderRadius: 14,
               opacity: loading ? 0.7 : 1,
@@ -136,13 +146,13 @@ export default function ForgotPassword() {
           >
             <Text
               style={{
-                color: '#fff',
-                textAlign: 'center',
+                color: "#fff",
+                textAlign: "center",
                 fontSize: 16,
-                fontWeight: '600',
+                fontWeight: "600",
               }}
             >
-              {loading ? 'Sending...' : 'Send Reset Link'}
+              {loading ? "Sending..." : "Send Reset Link"}
             </Text>
           </TouchableOpacity>
         </View>
