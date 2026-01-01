@@ -1,18 +1,28 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApp, getApps } from 'firebase/app';
+import {
+  getAuth,
+  initializeAuth,
+  getReactNativePersistence,
+} from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-  apiKey: '...',
-  authDomain: '...',
-  projectId: '...',
-  storageBucket: '...',
-  messagingSenderId: '...',
-  appId: '...',
+  apiKey: 'AIzaSyASk5LevC-uI3_7RmP8ogbnC4ubeoa49s0',
+  authDomain: 'spendly-68ea0.firebaseapp.com',
+  projectId: 'spendly-68ea0',
+  storageBucket: 'spendly-68ea0.firebasestorage.app',
+  messagingSenderId: '761591899210',
+  appId: '1:761591899210:web:30faf58a51ba1c341972b3',
 };
 
-const app = initializeApp(firebaseConfig);
+const hasApps = getApps().length > 0;
+const app = hasApps ? getApp() : initializeApp(firebaseConfig);
 
-// ✅ Expo-safe Auth
-export const auth = getAuth(app);
+// Expo-safe Auth with persistence
+export const auth = hasApps
+  ? getAuth(app)
+  : initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
 export const db = getFirestore(app);

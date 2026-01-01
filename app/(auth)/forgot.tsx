@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { Mail, X } from "lucide-react-native";
 import { useState } from "react";
 import {
@@ -10,10 +11,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { auth } from "@/lib/firebase";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const validateEmail = (email: string) => {
@@ -21,8 +24,9 @@ export default function ForgotPassword() {
     return regex.test(email);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setError("");
+    setSuccess("");
 
     if (!email) {
       setError("Email is required");
@@ -34,14 +38,21 @@ export default function ForgotPassword() {
       return;
     }
 
-    // 🔹 UI ONLY (no Firebase)
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setSuccess("Reset link sent. Check your email.");
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/user-not-found") {
+        setError("No account found for this email");
+      } else {
+        setError("Failed to send reset email. Try again.");
+      }
+    } finally {
       setLoading(false);
-      alert("Reset link sent (simulation)");
-      router.back();
-    }, 1000);
+    }
   };
 
   return (
@@ -130,6 +141,18 @@ export default function ForgotPassword() {
               }}
             >
               {error}
+            </Text>
+          ) : null}
+
+          {success ? (
+            <Text
+              style={{
+                color: "#16a34a",
+                textAlign: "center",
+                marginBottom: 12,
+              }}
+            >
+              {success}
             </Text>
           ) : null}
 

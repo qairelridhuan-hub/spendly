@@ -1,5 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Mail, Lock, User } from "lucide-react-native";
 import { useState } from "react";
 import {
@@ -10,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { auth, db } from "@/lib/firebase";
 
 export default function Register() {
   const [fullName, setFullName] = useState("");
@@ -23,15 +26,15 @@ export default function Register() {
     return regex.test(email);
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setError("");
 
-    if (!fullName || !email || !password) {
+    if (!fullName.trim() || !email.trim() || !password) {
       setError("All fields are required");
       return;
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmail(email.trim())) {
       setError("Invalid email address");
       return;
     }
@@ -41,13 +44,38 @@ export default function Register() {
       return;
     }
 
-    // 🔹 UI ONLY (no Firebase)
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const credential = await createUserWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password
+      );
+
+      await updateProfile(credential.user, {
+        displayName: fullName.trim(),
+      });
+
+      await setDoc(doc(db, "users", credential.user.uid), {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        createdAt: serverTimestamp(),
+      });
+
       router.replace("/(tabs)");
-    }, 1000);
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/email-already-in-use") {
+        setError("Email is already registered");
+      } else if (code === "auth/weak-password") {
+        setError("Password is too weak");
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

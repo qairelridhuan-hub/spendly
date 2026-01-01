@@ -5,6 +5,7 @@ import {
   ChevronRight,
   LogOut,
 } from "lucide-react-native";
+import { signOut } from "firebase/auth";
 import { useState } from "react";
 import {
   Dimensions,
@@ -15,6 +16,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { auth } from "@/lib/firebase";
+import { useCalendar } from "@/lib/context";
 
 /* =====================
    LAYOUT CONSTANTS
@@ -29,9 +33,14 @@ const CELL_WIDTH = (SCREEN_WIDTH - 32 - GAP * 6) / 7;
 ===================== */
 
 export default function CalendarScreen() {
-  const [month, setMonth] = useState(11); // December
-  const [year, setYear] = useState(2025);
-  const [selectedDay, setSelectedDay] = useState<number | null>(28);
+  const today = new Date();
+  const [month, setMonth] = useState(today.getMonth());
+  const [year, setYear] = useState(today.getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number | null>(
+    today.getDate()
+  );
+  const { selectedDate, setSelectedDate, getShiftsForDate, hasShift } =
+    useCalendar();
 
   /* =====================
      DATE HELPERS
@@ -45,6 +54,8 @@ export default function CalendarScreen() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startDay = new Date(year, month, 1).getDay();
   const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
+  const shiftsForSelectedDate = getShiftsForDate(selectedDate);
+  const pad = (value: number) => String(value).padStart(2, "0");
 
   /* =====================
      MONTH NAVIGATION
@@ -73,8 +84,11 @@ export default function CalendarScreen() {
   ===================== */
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.container}>
+    <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
+      <View style={styles.bgBlob} />
+      <View style={styles.bgBlobAlt} />
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <ScrollView contentContainerStyle={styles.container}>
 
         {/* ===== HEADER ===== */}
         <View style={styles.header}>
@@ -89,9 +103,17 @@ export default function CalendarScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <Bell size={22} color="#6b7280" />
-            <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
-              <LogOut size={22} color="#6b7280" />
+            <Bell size={22} color="#0f172a" />
+            <TouchableOpacity
+              onPress={async () => {
+                try {
+                  await signOut(auth);
+                } finally {
+                  router.replace("/(auth)/login");
+                }
+              }}
+            >
+              <LogOut size={22} color="#0f172a" />
             </TouchableOpacity>
           </View>
         </View>
@@ -107,10 +129,10 @@ export default function CalendarScreen() {
 
             <View style={styles.navIcons}>
               <TouchableOpacity onPress={prevMonth}>
-                <ChevronLeft size={22} />
+                <ChevronLeft size={22} color="#0f172a" />
               </TouchableOpacity>
               <TouchableOpacity onPress={nextMonth}>
-                <ChevronRight size={22} />
+                <ChevronRight size={22} color="#0f172a" />
               </TouchableOpacity>
             </View>
           </View>
@@ -146,7 +168,10 @@ export default function CalendarScreen() {
                     styles.dayCell,
                     selectedDay === day && styles.selectedDay,
                   ]}
-                  onPress={() => setSelectedDay(day)}
+                  onPress={() => {
+                    setSelectedDay(day);
+                    setSelectedDate(`${year}-${pad(month + 1)}-${pad(day)}`);
+                  }}
                 >
                   <Text
                     style={[
@@ -158,7 +183,13 @@ export default function CalendarScreen() {
                   </Text>
 
                   {/* STATUS DOT PLACEHOLDER */}
-                  <View style={styles.dotPlaceholder} />
+                  <View
+                    style={[
+                      styles.dotPlaceholder,
+                      hasShift(`${year}-${pad(month + 1)}-${pad(day)}`) &&
+                        styles.dotActive,
+                    ]}
+                  />
                 </TouchableOpacity>
               );
             })}
@@ -171,11 +202,23 @@ export default function CalendarScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Upcoming Shifts</Text>
 
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>
-              No upcoming shifts
-            </Text>
-          </View>
+          {shiftsForSelectedDate.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyText}>No shifts on this day</Text>
+            </View>
+          ) : (
+            shiftsForSelectedDate.map(shift => (
+              <View key={shift.id} style={styles.shiftRow}>
+                <View>
+                  <Text style={styles.shiftTitle}>{shift.role}</Text>
+                  <Text style={styles.shiftMeta}>
+                    {shift.start} - {shift.end}
+                  </Text>
+                </View>
+                <Text style={styles.shiftLocation}>{shift.location}</Text>
+              </View>
+            ))
+          )}
         </View>
 
         {/* =====================
@@ -191,8 +234,9 @@ export default function CalendarScreen() {
           </View>
         </View>
 
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -214,8 +258,27 @@ function Legend({ color, label }: { color: string; label: string }) {
 ===================== */
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f9fafb" },
-  container: { padding: 16 },
+  screen: { flex: 1 },
+  safe: { flex: 1 },
+  container: { padding: 16, paddingBottom: 120 },
+  bgBlob: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 999,
+    backgroundColor: "rgba(14,165,233,0.12)",
+    top: -80,
+    right: -60,
+  },
+  bgBlobAlt: {
+    position: "absolute",
+    width: 280,
+    height: 280,
+    borderRadius: 999,
+    backgroundColor: "rgba(249,115,22,0.12)",
+    bottom: -120,
+    left: -80,
+  },
 
   header: {
     flexDirection: "row",
@@ -227,25 +290,31 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#0f172a",
     alignItems: "center",
     justifyContent: "center",
   },
-  appName: { fontWeight: "700", fontSize: 16 },
-  subText: { color: "#6b7280" },
+  appName: { fontWeight: "700", fontSize: 16, color: "#0f172a" },
+  subText: { color: "#64748b" },
   headerRight: { flexDirection: "row", gap: 16 },
 
   card: {
     backgroundColor: "#fff",
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 16,
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
   },
 
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
+    color: "#0f172a",
   },
 
   monthHeader: {
@@ -254,7 +323,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  monthTitle: { fontSize: 20, fontWeight: "700" },
+  monthTitle: { fontSize: 20, fontWeight: "700", color: "#0f172a" },
   navIcons: { flexDirection: "row", gap: 12 },
 
   weekRow: { flexDirection: "row", marginBottom: 8 },
@@ -273,19 +342,19 @@ const styles = StyleSheet.create({
     marginBottom: GAP,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#e2e8f0",
     alignItems: "center",
     justifyContent: "center",
   },
 
   selectedDay: {
-    borderColor: "#4f46e5",
-    backgroundColor: "#eef2ff",
+    borderColor: "#0ea5e9",
+    backgroundColor: "#e0f2fe",
   },
 
   dayText: { color: "#334155" },
   selectedDayText: {
-    color: "#4f46e5",
+    color: "#0ea5e9",
     fontWeight: "700",
   },
 
@@ -296,6 +365,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     backgroundColor: "transparent",
   },
+  dotActive: { backgroundColor: "#0ea5e9" },
 
   emptyBox: {
     backgroundColor: "#f1f5f9",
@@ -305,6 +375,17 @@ const styles = StyleSheet.create({
   },
 
   emptyText: { color: "#6b7280" },
+
+  shiftRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  shiftTitle: { fontWeight: "700", fontSize: 15, color: "#0f172a" },
+  shiftMeta: { color: "#64748b", marginTop: 2 },
+  shiftLocation: { color: "#0f172a", fontWeight: "600" },
 
   legendRow: {
     flexDirection: "row",

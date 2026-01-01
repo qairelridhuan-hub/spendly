@@ -1,5 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router } from "expo-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import { useRef, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { auth } from "@/lib/firebase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -35,7 +37,7 @@ export default function Login() {
     return true;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
 
     if (!validateEmail()) return;
@@ -50,13 +52,23 @@ export default function Login() {
       return;
     }
 
-    // 🔹 UI ONLY (no Firebase)
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
       router.replace("/(tabs)");
-    }, 1000);
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/invalid-credential" || code === "auth/user-not-found") {
+        setError("Invalid email or password");
+      } else if (code === "auth/too-many-requests") {
+        setError("Too many attempts. Try again later.");
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

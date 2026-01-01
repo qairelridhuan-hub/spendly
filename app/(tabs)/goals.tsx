@@ -8,81 +8,462 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   LogOut,
   Plus,
   Target,
   X,
+  Pencil,
+  Trash2,
 } from "lucide-react-native";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { LinearGradient } from "expo-linear-gradient";
+
+type GoalPriority = "high" | "medium" | "low";
+
+type Goal = {
+  id: string;
+  name: string;
+  targetAmount: number;
+  savedAmount: number;
+  deadline: string;
+  createdAt: string;
+  priority: GoalPriority;
+  notes: string;
+};
 
 /* =====================
    SCREEN
 ===================== */
 
 export default function GoalsScreen() {
-  // ❗ NO DUMMY DATA
-  const [goals, setGoals] = useState<any[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [showAddGoal, setShowAddGoal] = useState(false);
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState<"all" | GoalPriority>("all");
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Modal inputs
   const [goalName, setGoalName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
+  const [savedAmount, setSavedAmount] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [priority, setPriority] = useState<GoalPriority>("medium");
+  const [notes, setNotes] = useState("");
+
+  const activeGoalsLabel = useMemo(() => `${goals.length} active goals`, [goals]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      setUserId(user?.uid ?? null);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setGoals([]);
+      return;
+    }
+
+    const goalsRef = collection(db, "users", userId, "goals");
+    const unsubscribe = onSnapshot(goalsRef, snapshot => {
+      const nextGoals = snapshot.docs.map(docSnap => {
+        const data = docSnap.data() as any;
+        const createdAtValue =
+          typeof data.createdAt?.toDate === "function"
+            ? data.createdAt.toDate().toISOString()
+            : typeof data.createdAt === "string"
+              ? data.createdAt
+              : new Date().toISOString();
+
+        return {
+          id: docSnap.id,
+          name: data.name ?? "",
+          targetAmount: Number(data.targetAmount ?? 0),
+          savedAmount: Number(data.savedAmount ?? 0),
+          deadline: data.deadline ?? "",
+          createdAt: createdAtValue,
+          priority: (data.priority as GoalPriority) ?? "medium",
+          notes: data.notes ?? "",
+        } as Goal;
+      });
+      setGoals(nextGoals);
+    });
+
+    return unsubscribe;
+  }, [userId]);
+
+  const resetForm = () => {
+    setGoalName("");
+    setTargetAmount("");
+    setSavedAmount("");
+    setDeadline("");
+    setPriority("medium");
+    setNotes("");
+    setEditingGoalId(null);
+    setError("");
+  };
 
   const closeModal = () => {
     setShowAddGoal(false);
-    setGoalName("");
-    setTargetAmount("");
-    setDeadline("");
+    resetForm();
   };
 
+  const openCreateModal = () => {
+    resetForm();
+    setShowAddGoal(true);
+  };
+
+  const openEditModal = (goal: Goal) => {
+    setGoalName(goal.name);
+    setTargetAmount(String(goal.targetAmount));
+    setSavedAmount(String(goal.savedAmount));
+    setDeadline(goal.deadline);
+    setPriority(goal.priority);
+    setNotes(goal.notes);
+    setEditingGoalId(goal.id);
+    setShowAddGoal(true);
+  };
+
+  const parseMoney = (value: string) => Number(value.replace(/,/g, ""));
+
+  const handleSaveGoal = async () => {
+    setError("");
+
+    if (!goalName.trim()) {
+      setError("Goal name is required");
+      return;
+    }
+
+    const target = parseMoney(targetAmount);
+    const saved = parseMoney(savedAmount || "0");
+
+    if (!Number.isFinite(target) || target <= 0) {
+      setError("Target amount must be a number greater than 0");
+      return;
+    }
+
+    if (!Number.isFinite(saved) || saved < 0) {
+      setError("Saved amount must be a valid number");
+      return;
+    }
+
+    if (!deadline.trim()) {
+      setError("Deadline is required");
+      return;
+    }
+
+    if (!userId) {
+      setError("Please log in to save goals");
+      return;
+    }
+
+    try {
+      if (editingGoalId) {
+        const goalRef = doc(db, "users", userId, "goals", editingGoalId);
+        await updateDoc(goalRef, {
+          name: goalName.trim(),
+          targetAmount: target,
+          savedAmount: saved,
+          deadline: deadline.trim(),
+          priority,
+          notes: notes.trim(),
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        const goalsRef = collection(db, "users", userId, "goals");
+        await addDoc(goalsRef, {
+          name: goalName.trim(),
+          targetAmount: target,
+          savedAmount: saved,
+          deadline: deadline.trim(),
+          priority,
+          notes: notes.trim(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      closeModal();
+    } catch {
+      setError("Failed to save goal. Please try again.");
+    }
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    if (!userId) return;
+    try {
+      await deleteDoc(doc(db, "users", userId, "goals", goalId));
+    } catch {
+      setError("Failed to delete goal. Please try again.");
+    }
+  };
+
+  const getProgress = (goal: Goal) => {
+    if (goal.targetAmount <= 0) return 0;
+    return Math.min(100, Math.round((goal.savedAmount / goal.targetAmount) * 100));
+  };
+
+  const getWeeklyPace = (goal: Goal) => {
+    const today = new Date();
+    const end = new Date(goal.deadline);
+    const diffMs = end.getTime() - today.getTime();
+    const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    const weeks = Math.max(1, Math.ceil(diffDays / 7));
+    const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+    return remaining / weeks;
+  };
+
+  const getTotalWeeks = (goal: Goal) => {
+    const start = new Date(goal.createdAt);
+    const end = new Date(goal.deadline);
+    const diffMs = Math.max(0, end.getTime() - start.getTime());
+    return Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7)));
+  };
+
+  const getWeeksElapsed = (goal: Goal) => {
+    const start = new Date(goal.createdAt);
+    const today = new Date();
+    const diffMs = Math.max(0, today.getTime() - start.getTime());
+    return Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7)));
+  };
+
+  const getStreakWeeks = (goal: Goal) => {
+    const totalWeeks = getTotalWeeks(goal);
+    const expectedPerWeek = goal.targetAmount / totalWeeks;
+    const expectedByNow = expectedPerWeek * getWeeksElapsed(goal);
+    return goal.savedAmount >= expectedByNow ? getWeeksElapsed(goal) : 0;
+  };
+
+  const getNextContributionDate = () => {
+    const next = new Date();
+    next.setDate(next.getDate() + 7);
+    return next.toISOString().slice(0, 10);
+  };
+
+  const filteredGoals = useMemo(() => {
+    if (filter === "all") return goals;
+    return goals.filter(goal => goal.priority === filter);
+  }, [filter, goals]);
+
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-      {/* ===== HEADER ===== */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>💰</Text>
+    <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
+      <View style={styles.bgBlob} />
+      <View style={styles.bgBlobAlt} />
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        {/* ===== HEADER ===== */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.logo}>
+              <Text style={styles.logoText}>💰</Text>
+            </View>
+
+            <View>
+              <Text style={styles.appName}>Spendly</Text>
+              <Text style={styles.subText}>Hey, John!</Text>
+            </View>
           </View>
 
-          <View>
-            <Text style={styles.appName}>Spendly</Text>
-            <Text style={styles.subText}>Hey, John!</Text>
+          <View style={styles.headerRight}>
+            <TouchableOpacity>
+              <Bell size={22} color="#0f172a" />
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={async () => {
+                try {
+                  await signOut(auth);
+                } finally {
+                  router.replace("/(auth)/login");
+                }
+              }}
+            >
+              <LogOut size={22} color="#0f172a" />
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.headerRight}>
-          <TouchableOpacity>
-            <Bell size={22} color="#6b7280" />
-            <View style={styles.notifDot} />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.replace("/(auth)/login")}>
-            <LogOut size={22} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* ===== CONTENT ===== */}
-      <ScrollView contentContainerStyle={styles.container}>
+        {/* ===== CONTENT ===== */}
+        <ScrollView contentContainerStyle={styles.container}>
         {/* TITLE */}
         <View style={styles.titleRow}>
           <View>
             <Text style={styles.title}>My Goals</Text>
-            <Text style={styles.subtitle}>
-              {goals.length} active goals
-            </Text>
+            <Text style={styles.subtitle}>{activeGoalsLabel}</Text>
           </View>
 
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setShowAddGoal(true)}
+            onPress={openCreateModal}
           >
             <Plus size={26} color="#fff" />
           </TouchableOpacity>
         </View>
+
+        <View style={styles.filterRow}>
+          {(["all", "high", "medium", "low"] as const).map(value => (
+            <TouchableOpacity
+              key={value}
+              style={[
+                styles.filterChip,
+                filter === value && styles.filterChipActive,
+              ]}
+              onPress={() => setFilter(value)}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  filter === value && styles.filterTextActive,
+                ]}
+              >
+                {value === "all"
+                  ? "All"
+                  : value.charAt(0).toUpperCase() + value.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {filteredGoals.length > 0 && (
+          <View style={styles.goalList}>
+            {filteredGoals.map(goal => {
+              const progress = getProgress(goal);
+              const weeklyPace = getWeeklyPace(goal);
+              const streakWeeks = getStreakWeeks(goal);
+              const nextContribution = getNextContributionDate();
+              return (
+                <View key={goal.id} style={styles.goalCard}>
+                  <View style={styles.goalHeader}>
+                    <View>
+                      <Text style={styles.goalName}>{goal.name}</Text>
+                      <Text style={styles.goalMeta}>
+                        RM {goal.savedAmount.toFixed(2)} / RM {goal.targetAmount.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.goalHeaderRight}>
+                      <View style={[styles.priorityChip, styles[`priority${goal.priority}`]]}>
+                        <Text style={styles.priorityText}>
+                          {goal.priority.toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.goalActions}>
+                        <TouchableOpacity
+                          style={styles.iconButton}
+                          onPress={() => openEditModal(goal)}
+                        >
+                          <Pencil size={16} color="#4f46e5" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.iconButton}
+                          onPress={() => handleDeleteGoal(goal.id)}
+                        >
+                          <Trash2 size={16} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.streakRow}>
+                    <Text style={styles.streakText}>
+                      {streakWeeks > 0
+                        ? `${streakWeeks} weeks on track`
+                        : "Behind pace"}
+                    </Text>
+                    <Text style={styles.streakHint}>
+                      Weekly target RM {weeklyPace.toFixed(2)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.progressRow}>
+                    <Text style={styles.progressLabel}>{progress}% saved</Text>
+                    <Text style={styles.progressLabel}>
+                      Deadline: {goal.deadline}
+                    </Text>
+                  </View>
+                  <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: `${progress}%` }]} />
+                  </View>
+
+                  <View style={styles.milestoneRow}>
+                    {[25, 50, 75, 100].map(milestone => (
+                      <View key={milestone} style={styles.milestoneItem}>
+                        <View
+                          style={[
+                            styles.milestoneDot,
+                            progress >= milestone && styles.milestoneDotActive,
+                          ]}
+                        />
+                        <Text style={styles.milestoneText}>{milestone}%</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <View style={styles.nextCard}>
+                    <View>
+                      <Text style={styles.nextTitle}>Next contribution</Text>
+                      <Text style={styles.nextAmount}>
+                        RM {weeklyPace.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View>
+                      <Text style={styles.nextTitle}>Due</Text>
+                      <Text style={styles.nextAmount}>{nextContribution}</Text>
+                    </View>
+                  </View>
+
+                  {goal.notes ? (
+                    <View style={styles.noteBox}>
+                      <Text style={styles.noteLabel}>Why this goal</Text>
+                      <Text style={styles.noteText}>{goal.notes}</Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.miniChart}>
+                    {[0.2, 0.35, 0.55, 0.8].map((ratio, index) => (
+                      <View key={index} style={styles.miniBarWrap}>
+                        <View
+                          style={[
+                            styles.miniBar,
+                            { height: Math.max(8, ratio * 56) },
+                          ]}
+                        />
+                      </View>
+                    ))}
+                  </View>
+
+                  <View style={styles.goalFooter}>
+                    <View>
+                      <Text style={styles.goalFootLabel}>Weekly pace</Text>
+                      <Text style={styles.goalFootValue}>
+                        RM {weeklyPace.toFixed(2)} / week
+                      </Text>
+                    </View>
+                    <View>
+                      <Text style={styles.goalFootLabel}>Remaining</Text>
+                      <Text style={styles.goalFootValue}>
+                        RM {Math.max(0, goal.targetAmount - goal.savedAmount).toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* EMPTY STATE */}
         {goals.length === 0 && (
@@ -95,49 +476,62 @@ export default function GoalsScreen() {
 
             <TouchableOpacity
               style={styles.createButton}
-              onPress={() => setShowAddGoal(true)}
+              onPress={openCreateModal}
             >
               <Text style={styles.createText}>Create Goal</Text>
             </TouchableOpacity>
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
 
-      {/* =====================
-         ADD GOAL MODAL
-      ===================== */}
-      {showAddGoal && (
-        <View style={styles.overlay}>
-          <SafeAreaView style={styles.modal} edges={["bottom"]}>
-            {/* Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Goal</Text>
-              <TouchableOpacity onPress={closeModal}>
-                <X size={22} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
+        {/* =====================
+           ADD GOAL MODAL
+        ===================== */}
+        {showAddGoal && (
+          <View style={styles.overlay}>
+            <SafeAreaView style={styles.modal} edges={["bottom"]}>
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {editingGoalId ? "Edit Goal" : "Create New Goal"}
+                </Text>
+                <TouchableOpacity onPress={closeModal}>
+                  <X size={22} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
 
-            {/* Inputs */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Goal Name</Text>
-              <TextInput
-                value={goalName}
-                onChangeText={setGoalName}
-                placeholder="e.g. Buy new phone"
-                style={styles.input}
-              />
-            </View>
+              {/* Inputs */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Goal Name</Text>
+                <TextInput
+                  value={goalName}
+                  onChangeText={setGoalName}
+                  placeholder="e.g. Buy new phone"
+                  style={styles.input}
+                />
+              </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Target Amount (RM)</Text>
-              <TextInput
-                value={targetAmount}
-                onChangeText={setTargetAmount}
-                placeholder="e.g. 2000"
-                keyboardType="numeric"
-                style={styles.input}
-              />
-            </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Target Amount (RM)</Text>
+                <TextInput
+                  value={targetAmount}
+                  onChangeText={setTargetAmount}
+                  placeholder="e.g. 2000"
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Saved Amount (RM)</Text>
+                <TextInput
+                  value={savedAmount}
+                  onChangeText={setSavedAmount}
+                  placeholder="e.g. 250"
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+              </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Deadline</Text>
@@ -149,29 +543,67 @@ export default function GoalsScreen() {
               />
             </View>
 
-            {/* Buttons */}
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={closeModal}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.createBtn}
-                onPress={() => {
-                  // Logic will be added next
-                  closeModal();
-                }}
-              >
-                <Text style={styles.createBtnText}>Create</Text>
-              </TouchableOpacity>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Priority</Text>
+              <View style={styles.priorityRow}>
+                {(["high", "medium", "low"] as const).map(value => (
+                  <TouchableOpacity
+                    key={value}
+                    style={[
+                      styles.priorityButton,
+                      priority === value && styles.priorityButtonActive,
+                    ]}
+                    onPress={() => setPriority(value)}
+                  >
+                    <Text
+                      style={[
+                        styles.priorityButtonText,
+                        priority === value && styles.priorityButtonTextActive,
+                      ]}
+                    >
+                      {value.charAt(0).toUpperCase() + value.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </SafeAreaView>
-        </View>
-      )}
-    </SafeAreaView>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Goal Notes</Text>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Why this goal matters"
+                style={[styles.input, styles.notesInput]}
+                multiline
+              />
+            </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+              {/* Buttons */}
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={closeModal}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.createBtn}
+                  onPress={handleSaveGoal}
+                >
+                  <Text style={styles.createBtnText}>
+                    {editingGoalId ? "Save" : "Create"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </View>
+        )}
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -180,14 +612,34 @@ export default function GoalsScreen() {
 ===================== */
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#f9fafb",
+  screen: { flex: 1 },
+  safe: { flex: 1 },
+  container: {
+    padding: 16,
+    paddingBottom: 120,
+  },
+  bgBlob: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 999,
+    backgroundColor: "rgba(14,165,233,0.12)",
+    top: -80,
+    right: -60,
+  },
+  bgBlobAlt: {
+    position: "absolute",
+    width: 280,
+    height: 280,
+    borderRadius: 999,
+    backgroundColor: "rgba(249,115,22,0.12)",
+    bottom: -120,
+    left: -80,
   },
 
   /* HEADER */
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
     paddingBottom: 12,
     flexDirection: "row",
@@ -203,13 +655,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#0f172a",
     alignItems: "center",
     justifyContent: "center",
   },
   logoText: { fontSize: 18 },
-  appName: { fontSize: 16, fontWeight: "700" },
-  subText: { fontSize: 13, color: "#6b7280" },
+  appName: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
+  subText: { fontSize: 13, color: "#64748b" },
   headerRight: {
     flexDirection: "row",
     gap: 18,
@@ -226,54 +678,198 @@ const styles = StyleSheet.create({
   },
 
   /* CONTENT */
-  container: {
-    padding: 16,
-    paddingBottom: 40,
-  },
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
   },
-  title: { fontSize: 22, fontWeight: "700" },
-  subtitle: { fontSize: 14, color: "#6b7280" },
+  title: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
+  subtitle: { fontSize: 14, color: "#64748b" },
 
   addButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#0f172a",
     alignItems: "center",
     justifyContent: "center",
   },
 
   emptyCard: {
     backgroundColor: "#fff",
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 24,
     alignItems: "center",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
   },
   emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700" },
   emptyText: {
     marginTop: 6,
     fontSize: 14,
-    color: "#6b7280",
+    color: "#64748b",
     textAlign: "center",
   },
   createButton: {
     marginTop: 16,
-    backgroundColor: "#eef2ff",
+    backgroundColor: "#e2e8f0",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
   },
-  createText: { color: "#4f46e5", fontWeight: "600" },
+  createText: { color: "#0f172a", fontWeight: "600" },
+  filterRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  filterChipActive: {
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
+  },
+  filterText: { fontSize: 12, color: "#64748b", fontWeight: "600" },
+  filterTextActive: { color: "#ffffff" },
+  goalList: { gap: 14 },
+  goalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
+  },
+  goalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  goalHeaderRight: { alignItems: "flex-end", gap: 8 },
+  goalName: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  goalMeta: { color: "#64748b", marginTop: 4 },
+  goalActions: { flexDirection: "row", gap: 8 },
+  iconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f8fafc",
+  },
+  priorityChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  priorityText: { fontSize: 10, fontWeight: "700", color: "#0f172a" },
+  priorityhigh: { backgroundColor: "#fee2e2" },
+  prioritymedium: { backgroundColor: "#fef3c7" },
+  prioritylow: { backgroundColor: "#dcfce7" },
+  streakRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  streakText: { fontSize: 12, fontWeight: "700", color: "#0f172a" },
+  streakHint: { fontSize: 12, color: "#64748b" },
+  progressRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  progressLabel: { color: "#64748b", fontSize: 12 },
+  progressBar: {
+    height: 8,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 8,
+    backgroundColor: "#0ea5e9",
+  },
+  milestoneRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  milestoneItem: { alignItems: "center", gap: 4 },
+  milestoneDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#e2e8f0",
+  },
+  milestoneDotActive: { backgroundColor: "#0ea5e9" },
+  milestoneText: { fontSize: 10, color: "#94a3b8" },
+  nextCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#f8fafc",
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  nextTitle: { fontSize: 11, color: "#64748b" },
+  nextAmount: { fontWeight: "700", color: "#0f172a", marginTop: 2 },
+  noteBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#e2e8f0",
+  },
+  noteLabel: { fontSize: 11, color: "#475569", fontWeight: "700" },
+  noteText: { marginTop: 6, color: "#0f172a", fontSize: 12 },
+  miniChart: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+    alignItems: "flex-end",
+  },
+  miniBarWrap: {
+    flex: 1,
+    height: 60,
+    justifyContent: "flex-end",
+  },
+  miniBar: {
+    backgroundColor: "#0f172a",
+    borderRadius: 8,
+  },
+  goalFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  goalFootLabel: { color: "#64748b", fontSize: 12 },
+  goalFootValue: { fontWeight: "700", marginTop: 2 },
 
   /* MODAL */
   overlay: {
     position: "absolute",
-    inset: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
   },
@@ -300,6 +896,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
+  priorityRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  priorityButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+  },
+  priorityButtonActive: {
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
+  },
+  priorityButtonText: { color: "#64748b", fontWeight: "600" },
+  priorityButtonTextActive: { color: "#ffffff" },
+  notesInput: { minHeight: 80, textAlignVertical: "top" },
+  errorText: { color: "#ef4444", marginBottom: 8, textAlign: "center" },
 
   buttonRow: {
     flexDirection: "row",
