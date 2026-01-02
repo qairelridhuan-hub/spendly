@@ -1,6 +1,7 @@
 import { Stack, usePathname } from "expo-router";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ThemeProvider } from "@/lib/context";
 
 export default function RootLayout() {
   const pathname = usePathname();
@@ -18,5 +19,9 @@ export default function RootLayout() {
     persistRoute();
   }, [pathname]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </ThemeProvider>
+  );
 }
