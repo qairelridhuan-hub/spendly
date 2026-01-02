@@ -16,10 +16,13 @@ import {
   PieChart,
   TrendingUp,
 } from "lucide-react-native";
+import { router } from "expo-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useCalendar } from "@/lib/context";
+import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 
 type WeeklyEntry = { week: string; earnings: number };
 type BudgetItem = {
@@ -28,23 +31,51 @@ type BudgetItem = {
   color: string;
 };
 
-const weeklyData: WeeklyEntry[] = [];
-
-const budgetAllocation: BudgetItem[] = [];
-
 export default function EarningsScreen() {
+  const { shifts } = useCalendar();
   const [displayName, setDisplayName] = useState("User");
-  const totalMonthly = weeklyData.reduce((sum, w) => sum + w.earnings, 0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [scheduleId, setScheduleId] = useState<string | null>(null);
+  const [schedule, setSchedule] = useState<{
+    id: string;
+    name: string;
+    days: string[];
+    startTime: string;
+    endTime: string;
+    hourlyRate: number;
+  } | null>(null);
+  const [workConfig, setWorkConfig] = useState({
+    hourlyRate: 0,
+    overtimeRate: 0,
+  });
+  const [budgetAllocation, setBudgetAllocation] = useState<BudgetItem[]>([]);
+  const [payroll, setPayroll] = useState<{
+    totalHours: number;
+    overtimeHours: number;
+    totalEarnings: number;
+    absenceDeductions: number;
+    status?: string;
+    period?: string;
+  } | null>(null);
+
+  const hourlyRate = schedule?.hourlyRate ?? workConfig.hourlyRate;
+  const weeklyData = useMemo(
+    () => buildWeeklyData(shifts, hourlyRate),
+    [shifts, hourlyRate]
+  );
+  const totalMonthly =
+    payroll?.totalEarnings ?? weeklyData.reduce((sum, w) => sum + w.earnings, 0);
   const maxWeekly = weeklyData.length
     ? Math.max(...weeklyData.map(w => w.earnings))
     : 0;
   const totalBudget = budgetAllocation.reduce((sum, b) => sum + b.amount, 0);
-  const daysWorked = 0;
-  const totalHours = 0;
-  const overtimeHours = 0;
+  const daysWorked = getDaysWorked(shifts);
+  const totalHours = payroll?.totalHours ?? getTotalHours(shifts);
+  const overtimeHours = payroll?.overtimeHours ?? 0;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
+      setUserId(user?.uid ?? null);
       if (!user) {
         setDisplayName("User");
         return;
@@ -52,8 +83,12 @@ export default function EarningsScreen() {
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
       const unsubProfile = onSnapshot(userRef, snap => {
-        const data = snap.data() as { fullName?: string } | undefined;
+        const data = snap.data() as {
+          fullName?: string;
+          scheduleId?: string;
+        } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
+        setScheduleId(data?.scheduleId ?? null);
       });
       return () => unsubProfile();
     });
@@ -61,26 +96,103 @@ export default function EarningsScreen() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!scheduleId) {
+      setSchedule(null);
+      return;
+    }
+    const scheduleRef = doc(db, "workSchedules", scheduleId);
+    const unsub = onSnapshot(scheduleRef, snap => {
+      if (!snap.exists()) {
+        setSchedule(null);
+        return;
+      }
+      const data = snap.data() as any;
+      setSchedule({
+        id: snap.id,
+        name: data.name || "Schedule",
+        days: Array.isArray(data.days) ? data.days : [],
+        startTime: data.startTime || "09:00",
+        endTime: data.endTime || "17:00",
+        hourlyRate: Number(data.hourlyRate ?? 0),
+      });
+    });
+    return unsub;
+  }, [scheduleId]);
+
+  useEffect(() => {
+    const configRef = doc(db, "config", "system");
+    const unsub = onSnapshot(configRef, snap => {
+      const data = snap.data() as any;
+      if (!data) return;
+      setWorkConfig({
+        hourlyRate: Number(data.hourlyRate ?? 0),
+        overtimeRate: Number(data.overtimeRate ?? 0),
+      });
+      if (Array.isArray(data.budgetAllocation)) {
+        setBudgetAllocation(
+          data.budgetAllocation
+            .filter((item: any) => item && item.category && item.amount != null)
+            .map((item: any) => ({
+              category: String(item.category),
+              amount: Number(item.amount ?? 0),
+              color: String(item.color ?? "#0ea5e9"),
+            }))
+        );
+      } else {
+        setBudgetAllocation([]);
+      }
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setPayroll(null);
+      return;
+    }
+    const payrollRef = collection(db, "users", userId, "payroll");
+    const unsub = onSnapshot(payrollRef, snapshot => {
+      const records = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const latest = pickLatestPayroll(records);
+      if (!latest) {
+        setPayroll(null);
+        return;
+      }
+      setPayroll({
+        totalHours: Number(latest.totalHours ?? 0),
+        overtimeHours: Number(latest.overtimeHours ?? 0),
+        totalEarnings: Number(latest.totalEarnings ?? 0),
+        absenceDeductions: Number(latest.absenceDeductions ?? 0),
+        status: String(latest.status ?? "pending"),
+        period: String(latest.period ?? ""),
+      });
+    });
+    return unsub;
+  }, [userId]);
+
   const normalHours = Math.max(0, totalHours - overtimeHours);
-  const normalRate = 0;
-  const overtimeRate = 0;
-  const deduction = 0;
+  const normalRate = hourlyRate;
+  const overtimeRate = workConfig.overtimeRate;
+  const deduction = payroll?.absenceDeductions ?? 0;
   const breakdownTotal =
     normalHours * normalRate + overtimeHours * overtimeRate - deduction;
   const percentChange = 0;
 
   return (
     <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
-      <View style={styles.bgBlob} />
-      <View style={styles.bgBlobAlt} />
+      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.container}>
           {/* ===== HEADER ===== */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <View style={styles.logo}>
+              <TouchableOpacity
+                style={styles.logo}
+                onPress={() => router.push("/(tabs)/profile")}
+              >
                 <Text style={styles.logoText}>💰</Text>
-              </View>
+              </TouchableOpacity>
               <View>
                 <Text style={styles.appName}>Spendly</Text>
                 <Text style={styles.subText}>Hey, {displayName}!</Text>
@@ -88,7 +200,7 @@ export default function EarningsScreen() {
             </View>
 
             <View style={styles.headerRight}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/notifications")}>
                 <Bell size={22} color="#0f172a" />
                 <View style={styles.notifDot} />
               </TouchableOpacity>
@@ -113,14 +225,18 @@ export default function EarningsScreen() {
             style={styles.summaryCard}
           >
             <View style={styles.summaryRow}>
-            <View style={styles.summaryTag}>
-              <DollarSign size={16} color="#ffffff" />
-              <Text style={styles.summaryMonth}>No data</Text>
+              <View style={styles.summaryTag}>
+                <DollarSign size={16} color="#ffffff" />
+                <Text style={styles.summaryMonth}>
+                  {payroll?.period ? formatPeriodLabel(payroll.period) : "No data"}
+                </Text>
+              </View>
+              <View style={styles.verifiedChip}>
+                <Text style={styles.verifiedText}>
+                  {payroll?.status === "paid" ? "Paid" : "Pending"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.verifiedChip}>
-              <Text style={styles.verifiedText}>Pending</Text>
-            </View>
-          </View>
 
             <Text style={styles.summaryAmount}>
               RM {totalMonthly.toFixed(2)}
@@ -128,10 +244,10 @@ export default function EarningsScreen() {
             <Text style={styles.summarySub}>Total Monthly Earnings</Text>
 
             <View style={styles.summaryRow}>
-            <Text style={styles.summaryDelta}>+{percentChange}%</Text>
-            <Text style={styles.summaryHint}>from last month</Text>
-          </View>
-        </LinearGradient>
+              <Text style={styles.summaryDelta}>+{percentChange}%</Text>
+              <Text style={styles.summaryHint}>from last month</Text>
+            </View>
+          </LinearGradient>
 
           {/* ===== Quick Stats ===== */}
           <View style={styles.statsRow}>
@@ -141,7 +257,7 @@ export default function EarningsScreen() {
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Total Hours</Text>
-              <Text style={styles.statValue}>{totalHours}h</Text>
+              <Text style={styles.statValue}>{Math.round(totalHours)}h</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Overtime</Text>
@@ -283,6 +399,92 @@ export default function EarningsScreen() {
     </LinearGradient>
   );
 }
+
+const formatPeriodLabel = (period: string) => {
+  if (!period) return "—";
+  const [year, month] = period.split("-");
+  const monthIndex = Number(month) - 1;
+  if (Number.isNaN(monthIndex)) return period;
+  return new Date(Number(year), monthIndex, 1).toLocaleString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const pickLatestPayroll = (records: any[]) => {
+  if (records.length === 0) return null;
+  const sorted = [...records].sort((a, b) =>
+    String(b.period ?? "").localeCompare(String(a.period ?? ""))
+  );
+  return sorted[0];
+};
+
+const buildWeeklyData = (
+  shifts: { date: string; hours?: number; start?: string; end?: string }[],
+  hourlyRate: number
+): WeeklyEntry[] => {
+  const weeks: { label: string; start: Date; end: Date }[] = [];
+  const today = new Date();
+  const currentWeekStart = startOfWeek(today);
+
+  for (let i = 3; i >= 0; i -= 1) {
+    const start = new Date(currentWeekStart);
+    start.setDate(start.getDate() - i * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    weeks.push({
+      label: `Week ${4 - i}`,
+      start,
+      end,
+    });
+  }
+
+  return weeks.map(week => {
+    const hours = shifts.reduce((sum, shift) => {
+      const date = new Date(`${shift.date}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return sum;
+      if (date < week.start || date > week.end) return sum;
+      const shiftHours = shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "");
+      return sum + shiftHours;
+    }, 0);
+    return {
+      week: week.label,
+      earnings: Math.round(hours * hourlyRate),
+    };
+  });
+};
+
+const getDaysWorked = (shifts: { date: string }[]) => {
+  const uniqueDates = new Set(shifts.map(shift => shift.date));
+  return uniqueDates.size;
+};
+
+const getTotalHours = (
+  shifts: { hours?: number; start?: string; end?: string }[]
+) =>
+  shifts.reduce(
+    (sum, shift) =>
+      sum + (shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "")),
+    0
+  );
+
+const startOfWeek = (date: Date) => {
+  const day = date.getDay();
+  const diff = (day + 6) % 7;
+  const start = new Date(date);
+  start.setDate(date.getDate() - diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
+const diffHours = (start: string, end: string) => {
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  return Math.max(0, (endMinutes - startMinutes) / 60);
+};
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },

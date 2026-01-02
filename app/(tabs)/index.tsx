@@ -17,25 +17,28 @@ import {
   Calendar,
   User,
   LogOut,
+  ChevronRight,
+  X,
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
+import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar, useTheme } from "@/lib/context";
 
 /* =====================
    TYPES
 ===================== */
-
-type WorkEventType = "clock_in" | "clock_out" | "break_start";
-
-type WorkEvent = {
-  type: WorkEventType;
-  time: string;
-};
 
 type SalarySummary = {
   month: string;
@@ -52,38 +55,73 @@ type SalarySummary = {
 export default function WorkerHomeScreen() {
   const { colors } = useTheme();
   const [displayName, setDisplayName] = useState("User");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [goalsCount, setGoalsCount] = useState(0);
+  const [scheduleId, setScheduleId] = useState<string | null>(null);
+  const [schedule, setSchedule] = useState<{
+    id: string;
+    name: string;
+    days: string[];
+    startTime: string;
+    endTime: string;
+    hourlyRate: number;
+  } | null>(null);
+  const [showShiftDetails, setShowShiftDetails] = useState(false);
+  const [activeShift, setActiveShift] = useState<any | null>(null);
+  const [todayAttendance, setTodayAttendance] = useState<{
+    clockIn?: string;
+    clockOut?: string;
+    breakStart?: string;
+    breakEnd?: string;
+    clockInTs?: number;
+    clockOutTs?: number;
+    breakStartTs?: number;
+    breakEndTs?: number;
+    status?: string;
+    hours?: number;
+  } | null>(null);
+  const [workConfig, setWorkConfig] = useState({
+    workingDaysPerWeek: 0,
+    hoursPerDay: 0,
+    hourlyRate: 0,
+    overtimeRate: 0,
+  });
   /* =====================
      STATE
   ===================== */
-  const [isClockedIn, setIsClockedIn] = useState(false);
-  const [events, setEvents] = useState<WorkEvent[]>([]);
-  const { getTodayShift } = useCalendar();
+  const { getTodayShift, shifts } = useCalendar();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(12)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const spinLoop = useRef<Animated.CompositeAnimation | null>(null);
 
   // 🔹 Salary summary (akan sync dari Earnings module)
-  const [salarySummary] = useState<SalarySummary>({
-    month: "Dec 2025",
+  const [salarySummary, setSalarySummary] = useState<SalarySummary>({
+    month: "—",
     totalEarnings: 0,
     status: "pending",
     nextPaymentDate: "-",
     estimatedNextAmount: 0,
   });
 
-  // 🔹 Weekly goal (akan datang dari Calendar)
-  const weeklyGoal = {
-    current: 0,
-    target: 40,
-  };
-
+  const scheduleHoursPerDay = schedule
+    ? diffHours(schedule.startTime, schedule.endTime)
+    : workConfig.hoursPerDay;
+  const weeklyTarget = schedule
+    ? schedule.days.length * scheduleHoursPerDay
+    : workConfig.hoursPerDay * workConfig.workingDaysPerWeek;
+  const weeklyCurrent = getWeeklyHours(shifts);
+  const weeklyEarnings =
+    weeklyCurrent * (schedule?.hourlyRate ?? workConfig.hourlyRate);
+  const weeklyStreak = getWeeklyStreak(shifts);
   const goalPercentage =
-    weeklyGoal.target === 0
-      ? 0
-      : Math.round((weeklyGoal.current / weeklyGoal.target) * 100);
+    weeklyTarget === 0 ? 0 : Math.round((weeklyCurrent / weeklyTarget) * 100);
   const todayShift = getTodayShift();
+  const nextShift = getNextShift(shifts);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
+      setUserId(user?.uid ?? null);
       if (!user) {
         setDisplayName("User");
         return;
@@ -91,8 +129,9 @@ export default function WorkerHomeScreen() {
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
       const unsubProfile = onSnapshot(userRef, snap => {
-        const data = snap.data() as { fullName?: string } | undefined;
+        const data = snap.data() as { fullName?: string; scheduleId?: string } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
+        setScheduleId(data?.scheduleId ?? null);
       });
       return () => unsubProfile();
     });
@@ -100,43 +139,177 @@ export default function WorkerHomeScreen() {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    if (!scheduleId) {
+      setSchedule(null);
+      return;
+    }
+    const scheduleRef = doc(db, "workSchedules", scheduleId);
+    const unsub = onSnapshot(scheduleRef, snap => {
+      if (!snap.exists()) {
+        setSchedule(null);
+        return;
+      }
+      const data = snap.data() as any;
+      setSchedule({
+        id: snap.id,
+        name: data.name || "Schedule",
+        days: Array.isArray(data.days) ? data.days : [],
+        startTime: data.startTime || "09:00",
+        endTime: data.endTime || "17:00",
+        hourlyRate: Number(data.hourlyRate ?? 0),
+      });
+    });
+    return unsub;
+  }, [scheduleId]);
+
   /* =====================
      HELPERS
   ===================== */
-  const logEvent = (type: WorkEventType) => {
-    const time = new Date().toLocaleTimeString();
-    setEvents(prev => [{ type, time }, ...prev]);
-  };
-
-  const getEventLabel = (type: WorkEventType) => {
-    switch (type) {
-      case "clock_in":
-        return "clocked in";
-      case "clock_out":
-        return "clocked out";
-      case "break_start":
-        return "break started";
-    }
-  };
-
   /* =====================
      ACTIONS
   ===================== */
-  const handleClockInOut = () => {
-    logEvent(isClockedIn ? "clock_out" : "clock_in");
-    setIsClockedIn(prev => !prev);
-  };
-
-  const handleBreak = () => {
-    logEvent("break_start");
-  };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
     } finally {
       router.replace("/(auth)/login");
     }
+  };
+
+  const handleClockIn = async () => {
+    if (!userId) return;
+    const todayKey = formatDateKey(new Date());
+    const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    const now = new Date();
+    const nowTs = now.getTime();
+    await setDoc(
+      attendanceRef,
+      {
+        date: todayKey,
+        workerId: userId,
+        clockIn: formatTime(now),
+        clockInTs: nowTs,
+        status: "pending",
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  const handleClockOut = async () => {
+    if (!userId) return;
+    const todayKey = formatDateKey(new Date());
+    const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    const now = new Date();
+    const nowTs = now.getTime();
+    const clockInTime = todayAttendance?.clockIn;
+    const clockOutTime = formatTime(now);
+    const breakMinutes = calcBreakMinutes(
+      todayAttendance?.breakStart,
+      todayAttendance?.breakEnd,
+      todayAttendance?.breakStartTs,
+      todayAttendance?.breakEndTs
+    );
+    const hours =
+      clockInTime
+        ? calcHours(
+            clockInTime,
+            clockOutTime,
+            breakMinutes,
+            todayAttendance?.clockInTs,
+            nowTs
+          )
+        : 0;
+    await setDoc(
+      attendanceRef,
+      {
+        clockOut: clockOutTime,
+        clockOutTs: nowTs,
+        hours,
+        status: "pending",
+        ...(todayAttendance?.breakStart && !todayAttendance?.breakEnd
+          ? {
+              breakEnd: clockOutTime,
+              breakEndTs: nowTs,
+            }
+          : {}),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  const handleBreakToggle = async () => {
+    if (!userId) return;
+    if (!todayAttendance?.clockIn) return;
+    const todayKey = formatDateKey(new Date());
+    const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    const now = new Date();
+    const nowTs = now.getTime();
+    if (!todayAttendance?.breakStart || todayAttendance?.breakEnd) {
+      await setDoc(
+        attendanceRef,
+        {
+          date: todayKey,
+          workerId: userId,
+          breakStart: formatTime(now),
+          breakStartTs: nowTs,
+          breakEnd: null,
+          breakEndTs: null,
+          status: "pending",
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return;
+    }
+    const breakStart = todayAttendance.breakStart;
+    const breakEnd = formatTime(now);
+    const breakMinutes = calcBreakMinutes(
+      breakStart,
+      breakEnd,
+      todayAttendance?.breakStartTs,
+      nowTs
+    );
+    await setDoc(
+      attendanceRef,
+      {
+        date: todayKey,
+        workerId: userId,
+        breakEnd,
+        breakEndTs: nowTs,
+        breakMinutes,
+        status: "pending",
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  const handleResetAttendance = async () => {
+    if (!userId) return;
+    const todayKey = formatDateKey(new Date());
+    const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    await setDoc(
+      attendanceRef,
+      {
+        clockIn: null,
+        clockOut: null,
+        breakStart: null,
+        breakEnd: null,
+        clockInTs: null,
+        clockOutTs: null,
+        breakStartTs: null,
+        breakEndTs: null,
+        breakMinutes: 0,
+        hours: 0,
+        status: "pending",
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
   };
 
   useEffect(() => {
@@ -154,6 +327,122 @@ export default function WorkerHomeScreen() {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
+  useEffect(() => {
+    if (salarySummary.status === "pending") {
+      spinAnim.setValue(0);
+      const loop = Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        })
+      );
+      spinLoop.current = loop;
+      loop.start();
+    } else {
+      spinLoop.current?.stop();
+      spinAnim.setValue(0);
+    }
+    return () => {
+      spinLoop.current?.stop();
+    };
+  }, [salarySummary.status, spinAnim]);
+
+  useEffect(() => {
+    const configRef = doc(db, "config", "system");
+    const unsub = onSnapshot(configRef, snap => {
+      const data = snap.data() as any;
+      if (!data) return;
+      setWorkConfig({
+        workingDaysPerWeek: Number(data.workingDaysPerWeek ?? 0),
+        hoursPerDay: Number(data.hoursPerDay ?? 0),
+        hourlyRate: Number(data.hourlyRate ?? 0),
+        overtimeRate: Number(data.overtimeRate ?? 0),
+      });
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setSalarySummary({
+        month: "—",
+        totalEarnings: 0,
+        status: "pending",
+        nextPaymentDate: "-",
+        estimatedNextAmount: 0,
+      });
+      return;
+    }
+
+    const payrollRef = collection(db, "users", userId, "payroll");
+    const unsub = onSnapshot(payrollRef, snapshot => {
+      const records = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const latest = pickLatestPayroll(records);
+      if (!latest) {
+        setSalarySummary({
+          month: "—",
+          totalEarnings: 0,
+          status: "pending",
+          nextPaymentDate: "-",
+          estimatedNextAmount: 0,
+        });
+        return;
+      }
+      const period = String(latest.period ?? "");
+      const status = latest.status === "paid" ? "paid" : "pending";
+      setSalarySummary({
+        month: formatPeriodLabel(period),
+        totalEarnings: Number(latest.totalEarnings ?? 0),
+        status,
+        nextPaymentDate: period ? getPeriodEndDate(period) : "-",
+        estimatedNextAmount: Number(latest.totalEarnings ?? 0),
+      });
+    });
+    return unsub;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setGoalsCount(0);
+      return;
+    }
+    const goalsRef = collection(db, "users", userId, "goals");
+    const unsub = onSnapshot(goalsRef, snapshot => {
+      setGoalsCount(snapshot.size);
+    });
+    return unsub;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setTodayAttendance(null);
+      return;
+    }
+    const todayKey = formatDateKey(new Date());
+    const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    const unsub = onSnapshot(attendanceRef, snap => {
+      if (!snap.exists()) {
+        setTodayAttendance(null);
+        return;
+      }
+      const data = snap.data() as any;
+      setTodayAttendance({
+        clockIn: data.clockIn,
+        clockOut: data.clockOut,
+        breakStart: data.breakStart,
+        breakEnd: data.breakEnd,
+        clockInTs: data.clockInTs,
+        clockOutTs: data.clockOutTs,
+        breakStartTs: data.breakStartTs,
+        breakEndTs: data.breakEndTs,
+        status: data.status,
+        hours: Number(data.hours ?? 0),
+      });
+    });
+    return unsub;
+  }, [userId]);
+
   /* =====================
      UI
   ===================== */
@@ -162,15 +451,17 @@ export default function WorkerHomeScreen() {
       colors={[colors.backgroundStart, colors.backgroundEnd]}
       style={styles.screen}
     >
-      <View style={styles.bgBlob} />
-      <View style={styles.bgBlobAlt} />
+      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* 🔝 HEADER */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.avatar}>
+            <TouchableOpacity
+              style={styles.avatar}
+              onPress={() => router.push("/(tabs)/profile")}
+            >
               <Text style={styles.avatarText}>💰</Text>
-            </View>
+            </TouchableOpacity>
 
             <View>
               <Text style={styles.appName}>Spendly</Text>
@@ -179,7 +470,7 @@ export default function WorkerHomeScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/notifications")}>
               <Bell size={22} color="#0f172a" />
               <View style={styles.dot} />
             </TouchableOpacity>
@@ -200,18 +491,6 @@ export default function WorkerHomeScreen() {
               transform: [{ translateY: slideAnim }],
             }}
           >
-            {/* 🔔 Notifications */}
-            <LinearGradient
-              colors={["#0f172a", "#1f2937"]}
-              style={styles.notificationCard}
-            >
-              <View style={styles.row}>
-                <Bell size={18} color="#e2e8f0" />
-                <Text style={styles.notificationTitle}>Latest updates</Text>
-              </View>
-              <Text style={styles.emptyText}>No notifications yet</Text>
-            </LinearGradient>
-
             {/* 💰 Monthly Salary Summary */}
             <LinearGradient
               colors={["#0ea5e9", "#22c55e"]}
@@ -233,9 +512,27 @@ export default function WorkerHomeScreen() {
               </Text>
 
               <View style={styles.row}>
-                <Text style={styles.salaryStatusIcon}>
-                  {salarySummary.status === "paid" ? "✅" : "⏳"}
-                </Text>
+                {salarySummary.status === "paid" ? (
+                  <View style={styles.statusDotPaid} />
+                ) : (
+                  <View style={styles.loaderTrack}>
+                    <Animated.View
+                      style={[
+                        styles.loaderIndicator,
+                        {
+                          transform: [
+                            {
+                              translateX: spinAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [-8, 8],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                  </View>
+                )}
                 <Text style={styles.salaryStatusText}>
                   {salarySummary.status === "paid"
                     ? "Verified & Paid"
@@ -269,6 +566,12 @@ export default function WorkerHomeScreen() {
                 <Clock size={20} color="#0ea5e9" />
               </View>
 
+              {schedule ? (
+                <Text style={styles.shiftMeta}>
+                  {schedule.name} • {schedule.startTime} - {schedule.endTime}
+                </Text>
+              ) : null}
+
               {todayShift ? (
                 <>
                   <Text style={styles.shiftTitle}>{todayShift.role}</Text>
@@ -276,52 +579,177 @@ export default function WorkerHomeScreen() {
                     {todayShift.start} - {todayShift.end} • {todayShift.location}
                   </Text>
                   <View style={styles.progressBarBg} />
+                  <TouchableOpacity
+                    style={styles.detailButton}
+                    onPress={() => {
+                      setActiveShift(todayShift);
+                      setShowShiftDetails(true);
+                    }}
+                  >
+                    <Text style={styles.detailButtonText}>View details</Text>
+                    <ChevronRight size={16} color="#0f172a" />
+                  </TouchableOpacity>
+                  <View style={styles.clockRow}>
+                    <View style={styles.clockItem}>
+                      <Text style={styles.clockLabel}>Clock in</Text>
+                      <Text style={styles.clockValue}>
+                        {todayAttendance?.clockIn || "--:--"}
+                      </Text>
+                    </View>
+                    <View style={styles.clockItem}>
+                      <Text style={styles.clockLabel}>Clock out</Text>
+                      <Text style={styles.clockValue}>
+                        {todayAttendance?.clockOut || "--:--"}
+                      </Text>
+                    </View>
+                    <View style={styles.clockItem}>
+                      <Text style={styles.clockLabel}>Break</Text>
+                      <Text style={styles.clockValue}>
+                        {todayAttendance?.breakStart
+                          ? todayAttendance.breakEnd
+                            ? `${todayAttendance.breakStart}-${todayAttendance.breakEnd}`
+                            : `${todayAttendance.breakStart}-...`
+                          : "--:--"}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.clockActions}>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockPrimary]}
+                      onPress={handleClockIn}
+                      disabled={!!todayAttendance?.clockIn}
+                    >
+                      <Text style={styles.clockButtonTextLight}>Clock in</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockPrimary]}
+                      onPress={handleClockOut}
+                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
+                    >
+                      <Text style={styles.clockButtonTextLight}>Clock out</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockGhost]}
+                      onPress={handleBreakToggle}
+                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
+                    >
+                      <Text style={styles.clockButtonText}>
+                        {todayAttendance?.breakStart && !todayAttendance?.breakEnd
+                          ? "End break"
+                          : "Break"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockReset]}
+                      onPress={handleResetAttendance}
+                    >
+                      <Text style={styles.clockButtonText}>Reset</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               ) : (
                 <>
                   <Text style={styles.smallText}>No shift scheduled today</Text>
                   <View style={styles.progressBarBg} />
+                  <TouchableOpacity
+                    style={styles.detailButton}
+                    onPress={() => {
+                      if (schedule) {
+                        setActiveShift({
+                          type: "schedule",
+                          name: schedule.name,
+                          days: schedule.days,
+                          start: schedule.startTime,
+                          end: schedule.endTime,
+                          hourlyRate: schedule.hourlyRate,
+                        });
+                        setShowShiftDetails(true);
+                      }
+                    }}
+                    disabled={!schedule}
+                  >
+                    <Text style={styles.detailButtonText}>View details</Text>
+                    <ChevronRight size={16} color="#0f172a" />
+                    </TouchableOpacity>
+                  <View style={styles.clockRow}>
+                    <View style={styles.clockItem}>
+                      <Text style={styles.clockLabel}>Clock in</Text>
+                      <Text style={styles.clockValue}>
+                        {todayAttendance?.clockIn || "--:--"}
+                      </Text>
+                    </View>
+                    <View style={styles.clockItem}>
+                      <Text style={styles.clockLabel}>Clock out</Text>
+                      <Text style={styles.clockValue}>
+                        {todayAttendance?.clockOut || "--:--"}
+                      </Text>
+                    </View>
+                    <View style={styles.clockItem}>
+                      <Text style={styles.clockLabel}>Break</Text>
+                      <Text style={styles.clockValue}>
+                        {todayAttendance?.breakStart
+                          ? todayAttendance.breakEnd
+                            ? `${todayAttendance.breakStart}-${todayAttendance.breakEnd}`
+                            : `${todayAttendance.breakStart}-...`
+                          : "--:--"}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.clockActions}>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockPrimary]}
+                      onPress={handleClockIn}
+                      disabled={!!todayAttendance?.clockIn}
+                    >
+                      <Text style={styles.clockButtonTextLight}>Clock in</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockPrimary]}
+                      onPress={handleClockOut}
+                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
+                    >
+                      <Text style={styles.clockButtonTextLight}>Clock out</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockGhost]}
+                      onPress={handleBreakToggle}
+                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
+                    >
+                      <Text style={styles.clockButtonText}>
+                        {todayAttendance?.breakStart && !todayAttendance?.breakEnd
+                          ? "End break"
+                          : "Break"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.clockButton, styles.clockReset]}
+                      onPress={handleResetAttendance}
+                    >
+                      <Text style={styles.clockButtonText}>Reset</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               )}
 
-              <View style={styles.row}>
-                <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    { backgroundColor: isClockedIn ? "#ef4444" : "#22c55e" },
-                    !todayShift && styles.disabledButton,
-                  ]}
-                  onPress={handleClockInOut}
-                  disabled={!todayShift}
-                >
-                  <Text style={styles.buttonText}>
-                    {isClockedIn ? "clock out" : "clock in"}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.secondaryButton, !todayShift && styles.disabledSecondary]}
-                  onPress={handleBreak}
-                  disabled={!todayShift}
-                >
-                  <Text style={styles.secondaryText}>break</Text>
-                </TouchableOpacity>
+              <View style={styles.upcomingRow}>
+                {nextShift ? (
+                  <>
+                    <View>
+                      <Text style={styles.upcomingLabel}>Upcoming shift</Text>
+                      <Text style={styles.shiftMeta}>
+                        {formatDateLabel(nextShift.date)} • {nextShift.start} - {nextShift.end}
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View>
+                      <Text style={styles.upcomingLabel}>Upcoming shift</Text>
+                      <Text style={styles.smallText}>No upcoming shift</Text>
+                    </View>
+                  </>
+                )}
               </View>
-            </View>
-
-            {/* 🕒 Recent Activity */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Recent activity</Text>
-
-              {events.length === 0 ? (
-                <Text style={styles.smallText}>No activity yet</Text>
-              ) : (
-                events.slice(0, 4).map((e, i) => (
-                  <Text key={i} style={styles.activityText}>
-                    • {getEventLabel(e.type)} at {e.time}
-                  </Text>
-                ))
-              )}
             </View>
 
             {/* 🎯 Weekly Goal */}
@@ -335,7 +763,7 @@ export default function WorkerHomeScreen() {
               </View>
 
               <Text style={styles.smallText}>
-                {weeklyGoal.current}h / {weeklyGoal.target}h
+                {weeklyCurrent}h / {weeklyTarget}h
               </Text>
 
               <View style={styles.progressBarBg}>
@@ -353,21 +781,25 @@ export default function WorkerHomeScreen() {
               <StatBox
                 icon={<Clock size={16} color="#0ea5e9" />}
                 label="hours"
+                value={`${Math.round(weeklyCurrent)}`}
                 tone="#e0f2fe"
               />
               <StatBox
                 icon={<DollarSign size={16} color="#22c55e" />}
                 label="earnings"
+                value={`RM ${Math.round(weeklyEarnings)}`}
                 tone="#dcfce7"
               />
               <StatBox
                 icon={<Target size={16} color="#f97316" />}
                 label="goals"
+                value={`${goalsCount}`}
                 tone="#ffedd5"
               />
               <StatBox
                 icon={<Zap size={16} color="#f59e0b" />}
                 label="streak"
+                value={`${weeklyStreak}w`}
                 tone="#fef3c7"
               />
             </View>
@@ -418,6 +850,80 @@ export default function WorkerHomeScreen() {
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
+
+      {showShiftDetails && activeShift ? (
+        <View style={styles.overlay}>
+          <View style={styles.detailModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Shift details</Text>
+              <TouchableOpacity onPress={() => setShowShiftDetails(false)}>
+                <X size={18} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            {activeShift.type === "schedule" ? (
+              <>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Schedule</Text>
+                  <Text style={styles.detailValue}>{activeShift.name}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Days</Text>
+                  <Text style={styles.detailValue}>
+                    {Array.isArray(activeShift.days) ? activeShift.days.join(", ") : "-"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time</Text>
+                  <Text style={styles.detailValue}>
+                    {activeShift.start} - {activeShift.end}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Hourly rate</Text>
+                  <Text style={styles.detailValue}>
+                    RM {Number(activeShift.hourlyRate ?? 0).toFixed(2)}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Date</Text>
+                  <Text style={styles.detailValue}>
+                    {formatDateLabel(activeShift.date)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Role</Text>
+                  <Text style={styles.detailValue}>{activeShift.role}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time</Text>
+                  <Text style={styles.detailValue}>
+                    {activeShift.start} - {activeShift.end}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Location</Text>
+                  <Text style={styles.detailValue}>{activeShift.location}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Status</Text>
+                  <Text style={styles.detailValue}>
+                    {activeShift.status || "scheduled"}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Hours</Text>
+                  <Text style={styles.detailValue}>
+                    {activeShift.hours || diffHours(activeShift.start, activeShift.end)}h
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      ) : null}
     </LinearGradient>
   );
 }
@@ -429,20 +935,183 @@ export default function WorkerHomeScreen() {
 function StatBox({
   icon,
   label,
+  value,
   tone,
 }: {
   icon: React.ReactNode;
   label: string;
+  value: string;
   tone: string;
 }) {
   return (
     <View style={[styles.statBox, { backgroundColor: tone }]}>
       {icon}
       <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>—</Text>
+      <Text style={styles.statValue}>{value}</Text>
     </View>
   );
 }
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function formatDateKey(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function formatTime(date: Date) {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function calcBreakMinutes(
+  start?: string,
+  end?: string,
+  startTs?: number | null,
+  endTs?: number | null
+) {
+  if (startTs && endTs) {
+    return Math.max(0, Math.round((endTs - startTs) / 60000));
+  }
+  if (!start || !end) return 0;
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  return Math.max(0, endMinutes - startMinutes);
+}
+
+function calcHours(
+  start: string,
+  end: string,
+  breakMinutes = 0,
+  startTs?: number | null,
+  endTs?: number | null
+) {
+  if (startTs && endTs) {
+    const totalMinutes = Math.max(
+      0,
+      Math.round((endTs - startTs) / 60000) - breakMinutes
+    );
+    return totalMinutes / 60;
+  }
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  const totalMinutes = Math.max(0, endMinutes - startMinutes - breakMinutes);
+  return totalMinutes / 60;
+}
+
+const formatPeriodLabel = (period: string) => {
+  if (!period) return "—";
+  const [year, month] = period.split("-");
+  const monthIndex = Number(month) - 1;
+  if (Number.isNaN(monthIndex)) return period;
+  return new Date(Number(year), monthIndex, 1).toLocaleString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getPeriodEndDate = (period: string) => {
+  const [year, month] = period.split("-");
+  const y = Number(year);
+  const m = Number(month);
+  if (!y || !m) return "-";
+  const end = new Date(y, m, 0);
+  return `${pad(end.getDate())}/${pad(end.getMonth() + 1)}/${end.getFullYear()}`;
+};
+
+const pickLatestPayroll = (records: any[]) => {
+  if (records.length === 0) return null;
+  const sorted = [...records].sort((a, b) =>
+    String(b.period ?? "").localeCompare(String(a.period ?? ""))
+  );
+  return sorted[0];
+};
+
+const getWeeklyHours = (
+  shifts: { date: string; hours?: number; start?: string; end?: string }[]
+) => {
+  const start = startOfWeek(new Date());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+
+  return shifts.reduce((sum, shift) => {
+    const date = new Date(`${shift.date}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return sum;
+    if (date < start || date > end) return sum;
+    const hours = shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "");
+    return sum + hours;
+  }, 0);
+};
+
+const startOfWeek = (date: Date) => {
+  const day = date.getDay();
+  const diff = (day + 6) % 7;
+  const start = new Date(date);
+  start.setDate(date.getDate() - diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
+const diffHours = (start: string, end: string) => {
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  return Math.max(0, (endMinutes - startMinutes) / 60);
+};
+
+const getNextShift = (
+  shifts: { date: string; start: string; end: string }[]
+) => {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const future = shifts
+    .filter(shift => shift.date > todayKey)
+    .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
+  return future[0] || null;
+};
+
+const formatDateLabel = (value: string) => {
+  if (!value) return "-";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getWeeklyStreak = (shifts: { date: string }[]) => {
+  if (shifts.length === 0) return 0;
+  const weekKeys = new Set(
+    shifts.map(shift => {
+      const date = new Date(`${shift.date}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return "";
+      const weekStart = startOfWeek(date);
+      return `${weekStart.getFullYear()}-${pad(weekStart.getMonth() + 1)}-${pad(
+        weekStart.getDate()
+      )}`;
+    })
+  );
+
+  const currentWeek = startOfWeek(new Date());
+  let streak = 0;
+  for (let i = 0; i < 52; i += 1) {
+    const week = new Date(currentWeek);
+    week.setDate(currentWeek.getDate() - i * 7);
+    const key = `${week.getFullYear()}-${pad(week.getMonth() + 1)}-${pad(
+      week.getDate()
+    )}`;
+    if (!weekKeys.has(key)) break;
+    streak += 1;
+  }
+  return streak;
+};
 
 function ActionBox({
   icon,
@@ -537,14 +1206,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
   rowBetween: { flexDirection: "row", justifyContent: "space-between" },
 
-  notificationCard: {
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-  },
-  notificationTitle: { color: "#e2e8f0", fontSize: 14, fontWeight: "600" },
-  emptyText: { color: "#94a3b8", fontSize: 12, marginTop: 8 },
-
   salarySummary: {
     borderRadius: 22,
     padding: 18,
@@ -559,8 +1220,28 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   salaryPillText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
-  salaryStatusIcon: { fontSize: 16, marginRight: 6 },
   salaryStatusText: { color: "#e2e8f0", fontSize: 13 },
+  statusDotPaid: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#22c55e",
+    marginRight: 6,
+  },
+  loaderTrack: {
+    width: 28,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.35)",
+    overflow: "hidden",
+    marginRight: 6,
+  },
+  loaderIndicator: {
+    width: 12,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#ffffff",
+  },
   salaryDivider: {
     height: 1,
     backgroundColor: "rgba(255,255,255,0.3)",
@@ -582,7 +1263,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   smallText: { fontSize: 12, color: "#64748b" },
-  activityText: { fontSize: 12, color: "#334155", marginTop: 4 },
   shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6 },
   shiftMeta: { fontSize: 12, color: "#64748b", marginTop: 4 },
 
@@ -593,25 +1273,85 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   goalProgress: { height: 6, backgroundColor: "#fb923c" },
-
-  primaryButton: {
-    flex: 1,
-    padding: 10,
+  detailButton: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 10,
+    backgroundColor: "#e2e8f0",
+  },
+  detailButtonText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
+  disabledButton: { opacity: 0.5 },
+  clockRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  clockItem: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: "#f1f5f9",
+    marginRight: 8,
+  },
+  clockLabel: { color: "#64748b", fontSize: 10 },
+  clockValue: { color: "#0f172a", fontWeight: "700", marginTop: 4, fontSize: 12 },
+  clockActions: { flexDirection: "row", gap: 8, marginTop: 10 },
+  clockButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     alignItems: "center",
   },
-  buttonText: { color: "#ffffff", fontWeight: "700" },
-  secondaryButton: {
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#cbd5f5",
-    marginLeft: 8,
-    backgroundColor: "#f8fafc",
+  clockPrimary: { backgroundColor: "#0ea5e9" },
+  clockGhost: { backgroundColor: "#e2e8f0" },
+  clockReset: { backgroundColor: "#fee2e2" },
+  clockButtonText: { color: "#0f172a", fontWeight: "700", fontSize: 12 },
+  clockButtonTextLight: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
+  upcomingRow: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  secondaryText: { color: "#0f172a", fontWeight: "600" },
-  disabledButton: { opacity: 0.5 },
-  disabledSecondary: { opacity: 0.5 },
+  upcomingLabel: { color: "#64748b", fontSize: 12, marginBottom: 4 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15, 23, 42, 0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  detailModal: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 16,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  modalTitle: { color: "#0f172a", fontWeight: "700" },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+  },
+  detailLabel: { color: "#64748b", fontSize: 12 },
+  detailValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+
 
   goalCard: {
     backgroundColor: "#fff7ed",

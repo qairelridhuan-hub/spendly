@@ -43,7 +43,7 @@ export default function AdminLogin() {
         setError("Admin access only");
         return;
       }
-      router.replace("/(admin)");
+      router.replace("/admin");
     } catch (err: any) {
       const code = err?.code || "";
       if (code === "auth/invalid-credential") {

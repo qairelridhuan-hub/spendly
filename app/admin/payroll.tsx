@@ -1,29 +1,70 @@
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ClipboardCheck } from "lucide-react-native";
+import { Wallet } from "lucide-react-native";
 import { useTheme } from "@/lib/context";
-import { collectionGroup, onSnapshot, updateDoc, doc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  collectionGroup,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-export default function AdminAttendance() {
+export default function AdminPayroll() {
   const { colors } = useTheme();
-  const [logs, setLogs] = useState<any[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
+    const unsub = onSnapshot(collectionGroup(db, "payroll"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
         refPath: docSnap.ref.path,
         ...docSnap.data(),
       }));
-      setLogs(list);
+      setRecords(list);
     });
     return unsub;
   }, []);
 
-  const updateStatus = async (path: string, status: string) => {
-    await updateDoc(doc(db, path), { status });
+  const updateStatus = async (record: any, status: string) => {
+    await updateDoc(doc(db, record.refPath), { status });
+    if (record.workerId && record.period) {
+      const userPayrollRef = doc(
+        db,
+        "users",
+        record.workerId,
+        "payroll",
+        record.period
+      );
+      await setDoc(
+        userPayrollRef,
+        {
+          workerId: record.workerId,
+          period: record.period,
+          totalHours: Number(record.totalHours ?? 0),
+          overtimeHours: Number(record.overtimeHours ?? 0),
+          totalEarnings: Number(record.totalEarnings ?? 0),
+          absenceDeductions: Number(record.absenceDeductions ?? 0),
+          status,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      await addDoc(collection(db, "notifications"), {
+        type: "payroll",
+        title: status === "paid" ? "Payroll paid" : "Payroll verified",
+        message: `Your payroll for ${record.period} is ${status}.`,
+        status,
+        workerId: record.workerId,
+        targetRole: "worker",
+        createdAt: serverTimestamp(),
+      });
+    }
   };
 
   return (
@@ -33,10 +74,10 @@ export default function AdminAttendance() {
     >
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
         <Text style={{ color: colors.text, fontSize: 24, fontWeight: "700" }}>
-          Attendance
+          Payroll
         </Text>
         <Text style={{ color: colors.textMuted, marginTop: 6 }}>
-          Review and approve clock-in/out logs.
+          Verify and finalize worker payments.
         </Text>
 
         <View
@@ -50,20 +91,20 @@ export default function AdminAttendance() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <ClipboardCheck size={18} color={colors.text} />
+            <Wallet size={18} color={colors.text} />
             <Text style={{ color: colors.text, fontWeight: "700" }}>
-              Attendance Log
+              Payroll Queue
             </Text>
           </View>
-          {logs.length === 0 ? (
+          {records.length === 0 ? (
             <Text style={{ color: colors.textMuted, marginTop: 10 }}>
-              No attendance entries yet.
+              No payroll records to verify.
             </Text>
           ) : (
             <View style={{ marginTop: 12, gap: 10 }}>
-              {logs.map(log => (
+              {records.map(record => (
                 <View
-                  key={log.refPath}
+                  key={record.refPath}
                   style={{
                     padding: 12,
                     borderRadius: 12,
@@ -73,14 +114,25 @@ export default function AdminAttendance() {
                   }}
                 >
                   <Text style={{ color: colors.text, fontWeight: "600" }}>
-                    {log.workerId || "Worker"} • {log.date || "Date"}
+                    {record.workerId || "Worker"} • {record.period || "Period"}
                   </Text>
                   <Text style={{ color: colors.textMuted, marginTop: 4 }}>
-                    {log.clockIn || "--:--"} - {log.clockOut || "--:--"} • {log.hours || 0}h
+                    RM {Number(record.totalEarnings ?? 0).toFixed(2)} • {record.totalHours || 0}h
                   </Text>
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
                     <TouchableOpacity
-                      onPress={() => updateStatus(log.refPath, "approved")}
+                      onPress={() => updateStatus(record, "verified")}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        borderRadius: 999,
+                        backgroundColor: colors.accent,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontSize: 12 }}>Verify</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => updateStatus(record, "paid")}
                       style={{
                         paddingVertical: 6,
                         paddingHorizontal: 10,
@@ -88,18 +140,7 @@ export default function AdminAttendance() {
                         backgroundColor: colors.success,
                       }}
                     >
-                      <Text style={{ color: "#fff", fontSize: 12 }}>Approve</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => updateStatus(log.refPath, "rejected")}
-                      style={{
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        borderRadius: 999,
-                        backgroundColor: colors.danger,
-                      }}
-                    >
-                      <Text style={{ color: "#fff", fontSize: 12 }}>Reject</Text>
+                      <Text style={{ color: "#fff", fontSize: 12 }}>Mark Paid</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

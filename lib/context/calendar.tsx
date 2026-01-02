@@ -1,12 +1,25 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
-export type ShiftStatus = "scheduled" | "completed" | "absent";
+export type ShiftStatus = "scheduled" | "completed" | "absent" | "work" | "off" | "leave";
+export type ShiftType = "normal" | "half-day" | "remote";
 
 export type Shift = {
   id: string;
   date: string; // YYYY-MM-DD
   start: string;
   end: string;
+  hours: number;
+  type: ShiftType;
   role: string;
   location: string;
   status: ShiftStatus;
@@ -28,31 +41,48 @@ const pad = (value: number) => String(value).padStart(2, "0");
 const formatDateKey = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
-const defaultShifts: Shift[] = [
-  {
-    id: "shift-1",
-    date: formatDateKey(new Date()),
-    start: "09:00",
-    end: "13:00",
-    role: "Barista",
-    location: "Sunrise Cafe",
-    status: "scheduled",
-  },
-  {
-    id: "shift-2",
-    date: formatDateKey(new Date(Date.now() + 24 * 60 * 60 * 1000)),
-    start: "16:00",
-    end: "20:00",
-    role: "Cashier",
-    location: "Kiosk 24",
-    status: "scheduled",
-  },
-];
-
 export function CalendarProvider({ children }: { children: React.ReactNode }) {
   const [selectedDate, setSelectedDate] = useState(formatDateKey(new Date()));
+  const [userId, setUserId] = useState<string | null>(null);
+  const [shifts, setShifts] = useState<Shift[]>([]);
 
-  const shifts = useMemo(() => defaultShifts, []);
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, user => {
+      setUserId(user?.uid ?? null);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      setShifts([]);
+      return;
+    }
+
+    const shiftsQuery = query(
+      collection(db, "shifts"),
+      where("workerId", "==", userId)
+    );
+    const unsub = onSnapshot(shiftsQuery, snapshot => {
+      const nextShifts = snapshot.docs.map(docSnap => {
+        const data = docSnap.data() as any;
+        return {
+          id: docSnap.id,
+          date: String(data.date ?? ""),
+          start: String(data.start ?? ""),
+          end: String(data.end ?? ""),
+          hours: Number(data.hours ?? 0),
+          type: (data.type as ShiftType) ?? "normal",
+          role: String(data.role ?? data.type ?? "Shift"),
+          location: String(data.location ?? "Assigned"),
+          status: (data.status as ShiftStatus) ?? "work",
+        } as Shift;
+      });
+      setShifts(nextShifts);
+    });
+
+    return unsub;
+  }, [userId]);
 
   const getShiftsForDate = useCallback(
     (date: string) => shifts.filter(shift => shift.date === date),
@@ -81,7 +111,11 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     [selectedDate, shifts, getShiftsForDate, getTodayShift, hasShift]
   );
 
-  return <CalendarContext.Provider value={value}>{children}</CalendarContext.Provider>;
+  return (
+    <CalendarContext.Provider value={value}>
+      {children}
+    </CalendarContext.Provider>
+  );
 }
 
 export function useCalendar() {

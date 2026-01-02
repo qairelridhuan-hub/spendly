@@ -30,6 +30,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
+import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 
 type GoalPriority = "high" | "medium" | "low";
 
@@ -273,15 +274,17 @@ export default function GoalsScreen() {
 
   return (
     <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
-      <View style={styles.bgBlob} />
-      <View style={styles.bgBlobAlt} />
+      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ===== HEADER ===== */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.logo}>
+            <TouchableOpacity
+              style={styles.logo}
+              onPress={() => router.push("/(tabs)/profile")}
+            >
               <Text style={styles.logoText}>💰</Text>
-            </View>
+            </TouchableOpacity>
 
             <View>
               <Text style={styles.appName}>Spendly</Text>
@@ -290,7 +293,7 @@ export default function GoalsScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/notifications")}>
               <Bell size={22} color="#0f172a" />
               <View style={styles.notifDot} />
             </TouchableOpacity>
