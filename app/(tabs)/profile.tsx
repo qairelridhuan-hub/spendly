@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import {
   Award,
+  FileText,
   Mail,
   Settings,
   Target,
@@ -9,7 +10,14 @@ import {
   Zap,
 } from "lucide-react-native";
 import { onAuthStateChanged, signOut, updateEmail, updateProfile } from "firebase/auth";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
@@ -22,6 +30,8 @@ import {
 } from "react-native";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "@/lib/context";
+import { buildWorkerReportHtml, getPeriodKey } from "@/lib/reports/report";
+import { printReport } from "@/lib/reports/print";
 
 type Stats = {
   totalDays: number;
@@ -88,31 +98,39 @@ export default function ProfileScreen() {
         }));
       });
 
-      const earningsRef = collection(db, "users", user.uid, "earnings");
-      const unsubEarnings = onSnapshot(earningsRef, snapshot => {
-        const earnings = snapshot.docs.map(docSnap => docSnap.data() as any);
-        const totalEarnings = earnings.reduce(
-          (sum, item) => sum + Number(item.amount ?? 0),
-          0
-        );
-        const totalHours = earnings.reduce(
+      const attendanceRef = collection(db, "users", user.uid, "attendance");
+      const unsubAttendance = onSnapshot(attendanceRef, snapshot => {
+        const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+        const totalHours = logs.reduce(
           (sum, item) => sum + Number(item.hours ?? 0),
           0
         );
-        const totalDays = earnings.reduce(
-          (sum, item) => sum + Number(item.days ?? 0),
+        const totalDays = new Set(
+          logs
+            .filter(item => Number(item.hours ?? 0) > 0)
+            .map(item => String(item.date ?? ""))
+        ).size;
+        setStats(prev => ({
+          ...prev,
+          totalHours,
+          totalDays,
+        }));
+      });
+
+      const payrollRef = collection(db, "users", user.uid, "payroll");
+      const unsubPayroll = onSnapshot(payrollRef, snapshot => {
+        const records = snapshot.docs.map(docSnap => docSnap.data() as any);
+        const totalEarnings = records.reduce(
+          (sum, item) => sum + Number(item.totalEarnings ?? 0),
           0
         );
-        const overtimeHours = earnings.reduce(
+        const overtimeHours = records.reduce(
           (sum, item) => sum + Number(item.overtimeHours ?? 0),
           0
         );
-
         setStats(prev => ({
           ...prev,
           totalEarnings,
-          totalHours,
-          totalDays,
           overtimeHours,
         }));
       });
@@ -120,7 +138,8 @@ export default function ProfileScreen() {
       return () => {
         unsubProfile();
         unsubGoals();
-        unsubEarnings();
+        unsubAttendance();
+        unsubPayroll();
       };
     });
 
@@ -186,6 +205,49 @@ export default function ProfileScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!userId) return;
+    const period = getPeriodKey(new Date());
+    const userSnap = await getDoc(doc(db, "users", userId));
+    const userData = userSnap.data() as any;
+    const workerName =
+      userData?.fullName || userData?.displayName || displayName || "Worker";
+    const workerEmail = userData?.email || email || "-";
+
+    const payrollSnap = await getDoc(
+      doc(db, "users", userId, "payroll", period)
+    );
+    const payroll = payrollSnap.exists() ? (payrollSnap.data() as any) : null;
+
+    const attendanceSnap = await getDocs(
+      collection(db, "users", userId, "attendance")
+    );
+    const attendance = attendanceSnap.docs.map(docSnap => docSnap.data() as any);
+
+    const html = buildWorkerReportHtml({
+      worker: { name: workerName, email: workerEmail },
+      period,
+      payroll: payroll
+        ? {
+            period,
+            totalHours: Number(payroll.totalHours ?? 0),
+            overtimeHours: Number(payroll.overtimeHours ?? 0),
+            totalEarnings: Number(payroll.totalEarnings ?? 0),
+            absenceDeductions: Number(payroll.absenceDeductions ?? 0),
+            status: payroll.status,
+          }
+        : null,
+      attendance: attendance.map(item => ({
+        date: String(item.date ?? ""),
+        clockIn: item.clockIn,
+        clockOut: item.clockOut,
+        hours: Number(item.hours ?? 0),
+        status: item.status,
+      })),
+    });
+    await printReport(html);
   };
 
   const badges = useMemo(() => {
@@ -463,6 +525,24 @@ export default function ProfileScreen() {
                 thumbColor="#ffffff"
               />
             </View>
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+              onPress={handleGenerateReport}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <FileText size={18} color={colors.textMuted} />
+                <Text style={{ color: colors.text }}>Generate Report (PDF)</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
 

@@ -107,12 +107,12 @@ export default function WorkerHomeScreen() {
   const scheduleHoursPerDay = schedule
     ? diffHours(schedule.startTime, schedule.endTime)
     : workConfig.hoursPerDay;
+  const hourlyRate = schedule?.hourlyRate ?? workConfig.hourlyRate;
   const weeklyTarget = schedule
     ? schedule.days.length * scheduleHoursPerDay
     : workConfig.hoursPerDay * workConfig.workingDaysPerWeek;
   const weeklyCurrent = getWeeklyHours(shifts);
-  const weeklyEarnings =
-    weeklyCurrent * (schedule?.hourlyRate ?? workConfig.hourlyRate);
+  const weeklyEarnings = weeklyCurrent * hourlyRate;
   const weeklyStreak = getWeeklyStreak(shifts);
   const goalPercentage =
     weeklyTarget === 0 ? 0 : Math.round((weeklyCurrent / weeklyTarget) * 100);
@@ -378,29 +378,39 @@ export default function WorkerHomeScreen() {
     const payrollRef = collection(db, "users", userId, "payroll");
     const unsub = onSnapshot(payrollRef, snapshot => {
       const records = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const currentPeriod = getCurrentPeriodKey(new Date());
+      const currentPayroll = records.find(
+        record => String(record.period ?? "") === currentPeriod
+      );
       const latest = pickLatestPayroll(records);
-      if (!latest) {
+      const payrollRecord = currentPayroll || latest;
+      const fallback = buildMonthlySummary(shifts, hourlyRate, currentPeriod);
+
+      if (!payrollRecord) {
         setSalarySummary({
-          month: "—",
-          totalEarnings: 0,
+          month: formatPeriodLabel(currentPeriod),
+          totalEarnings: fallback.totalEarnings,
           status: "pending",
-          nextPaymentDate: "-",
-          estimatedNextAmount: 0,
+          nextPaymentDate: getPeriodEndDate(currentPeriod),
+          estimatedNextAmount: fallback.totalEarnings,
         });
         return;
       }
-      const period = String(latest.period ?? "");
-      const status = latest.status === "paid" ? "paid" : "pending";
+
+      const period = String(payrollRecord.period ?? currentPeriod);
+      const status = payrollRecord.status === "paid" ? "paid" : "pending";
+      const totalEarnings =
+        Number(payrollRecord.totalEarnings ?? 0) || fallback.totalEarnings;
       setSalarySummary({
         month: formatPeriodLabel(period),
-        totalEarnings: Number(latest.totalEarnings ?? 0),
+        totalEarnings,
         status,
-        nextPaymentDate: period ? getPeriodEndDate(period) : "-",
-        estimatedNextAmount: Number(latest.totalEarnings ?? 0),
+        nextPaymentDate: getPeriodEndDate(period),
+        estimatedNextAmount: totalEarnings,
       });
     });
     return unsub;
-  }, [userId]);
+  }, [userId, shifts, hourlyRate]);
 
   useEffect(() => {
     if (!userId) {
@@ -651,26 +661,6 @@ export default function WorkerHomeScreen() {
                 <>
                   <Text style={styles.smallText}>No shift scheduled today</Text>
                   <View style={styles.progressBarBg} />
-                  <TouchableOpacity
-                    style={styles.detailButton}
-                    onPress={() => {
-                      if (schedule) {
-                        setActiveShift({
-                          type: "schedule",
-                          name: schedule.name,
-                          days: schedule.days,
-                          start: schedule.startTime,
-                          end: schedule.endTime,
-                          hourlyRate: schedule.hourlyRate,
-                        });
-                        setShowShiftDetails(true);
-                      }
-                    }}
-                    disabled={!schedule}
-                  >
-                    <Text style={styles.detailButtonText}>View details</Text>
-                    <ChevronRight size={16} color="#0f172a" />
-                    </TouchableOpacity>
                   <View style={styles.clockRow}>
                     <View style={styles.clockItem}>
                       <Text style={styles.clockLabel}>Clock in</Text>
@@ -740,6 +730,16 @@ export default function WorkerHomeScreen() {
                         {formatDateLabel(nextShift.date)} • {nextShift.start} - {nextShift.end}
                       </Text>
                     </View>
+                    <TouchableOpacity
+                      style={styles.detailButton}
+                      onPress={() => {
+                        setActiveShift(nextShift);
+                        setShowShiftDetails(true);
+                      }}
+                    >
+                      <Text style={styles.detailButtonText}>View details</Text>
+                      <ChevronRight size={16} color="#0f172a" />
+                    </TouchableOpacity>
                   </>
                 ) : (
                   <>
@@ -1001,6 +1001,32 @@ function calcHours(
   const endMinutes = (endH || 0) * 60 + (endM || 0);
   const totalMinutes = Math.max(0, endMinutes - startMinutes - breakMinutes);
   return totalMinutes / 60;
+}
+
+function getCurrentPeriodKey(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+}
+
+function buildMonthlySummary(
+  shifts: { date: string; hours?: number; start?: string; end?: string }[],
+  hourlyRate: number,
+  period: string
+) {
+  const [year, month] = period.split("-").map(Number);
+  if (!year || !month) {
+    return { totalEarnings: 0, totalHours: 0 };
+  }
+  const totalHours = shifts.reduce((sum, shift) => {
+    if (!shift.date) return sum;
+    const shiftDate = new Date(`${shift.date}T00:00:00`);
+    if (Number.isNaN(shiftDate.getTime())) return sum;
+    if (shiftDate.getFullYear() !== year || shiftDate.getMonth() !== month - 1) {
+      return sum;
+    }
+    const hours = shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "");
+    return sum + hours;
+  }, 0);
+  return { totalHours, totalEarnings: totalHours * hourlyRate };
 }
 
 const formatPeriodLabel = (period: string) => {

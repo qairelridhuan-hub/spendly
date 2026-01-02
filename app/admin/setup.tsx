@@ -53,9 +53,13 @@ export default function AdminSetup() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
-  const [workers, setWorkers] = useState<{ id: string; name: string }[]>([]);
+  const [workers, setWorkers] = useState<{ id: string; name: string; scheduleId?: string }[]>([]);
+  const [workerMap, setWorkerMap] = useState<Record<string, { name: string; code?: string }>>({});
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const [assignStatus, setAssignStatus] = useState("");
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [shiftToDelete, setShiftToDelete] = useState<string | null>(null);
+  const [showShiftDelete, setShowShiftDelete] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -96,14 +100,36 @@ export default function AdminSetup() {
         return {
           id: docSnap.id,
           name: data.fullName || data.displayName || data.email || "Worker",
+          scheduleId: data.scheduleId || "",
         };
       });
       setWorkers(list);
+      const map: Record<string, { name: string; code?: string }> = {};
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data() as any;
+        map[docSnap.id] = {
+          name: data.fullName || data.displayName || data.email || "Worker",
+          code: data.workerCode || "",
+        };
+      });
+      setWorkerMap(map);
+    });
+    const shiftsQuery = query(
+      collection(db, "shifts"),
+      orderBy("date", "desc")
+    );
+    const unsubShifts = onSnapshot(shiftsQuery, snapshot => {
+      const list = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      setShifts(list);
     });
 
     return () => {
       unsub();
       unsubWorkers();
+      unsubShifts();
     };
   }, []);
 
@@ -237,6 +263,22 @@ export default function AdminSetup() {
     setShowDeleteConfirm(true);
   };
 
+  const openShiftDelete = (shiftId: string) => {
+    setShiftToDelete(shiftId);
+    setShowShiftDelete(true);
+  };
+
+  const handleDeleteShift = async () => {
+    if (!shiftToDelete) return;
+    try {
+      await deleteDoc(doc(db, "shifts", shiftToDelete));
+      setShowShiftDelete(false);
+      setShiftToDelete(null);
+    } catch {
+      setAssignStatus("Failed to delete shift.");
+    }
+  };
+
   const calculateHours = (start: string, end: string) => {
     const [startHour, startMin] = start.split(":").map(Number);
     const [endHour, endMin] = end.split(":").map(Number);
@@ -252,6 +294,22 @@ export default function AdminSetup() {
     if (!Number.isFinite(hours) || !Number.isFinite(rate)) return "";
     return (hours * rate).toFixed(2);
   }, [formData]);
+
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const resolveShiftStatus = (shift: any) => {
+    const status = String(shift.status || "scheduled");
+    if (status === "absent") return "absent";
+    if (status === "completed") return "completed";
+    if (shift.date && String(shift.date) < todayKey) return "completed";
+    return "scheduled";
+  };
+
+  const resolveShiftStatusTextColor = (status: string) => {
+    if (status === "completed") return adminPalette.success;
+    if (status === "absent") return adminPalette.danger;
+    return adminPalette.accent;
+  };
 
   return (
     <LinearGradient
@@ -410,6 +468,76 @@ export default function AdminSetup() {
         {assignStatus ? (
           <Text style={styles.assignStatus}>{assignStatus}</Text>
         ) : null}
+
+        <View style={styles.shiftSection}>
+          <View style={styles.rowBetween}>
+            <View>
+              <Text style={styles.sectionTitle}>Shifts</Text>
+              <Text style={styles.subtitle}>Past and upcoming shifts</Text>
+            </View>
+          </View>
+          {shifts.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>No shifts yet</Text>
+              <Text style={styles.emptyText}>
+                Generate shifts to see them here.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.shiftList}>
+              {shifts.map(shift => {
+                const resolvedStatus = resolveShiftStatus(shift);
+                const workerInfo = workerMap[String(shift.workerId || "")];
+                const workerLabel = workerInfo
+                  ? `${workerInfo.name}${workerInfo.code ? ` (${workerInfo.code})` : ""}`
+                  : String(shift.workerId || "Worker");
+                return (
+                <View
+                  key={shift.id}
+                  style={[
+                    styles.shiftRow,
+                    resolvedStatus === "completed" && styles.shiftRowCompleted,
+                    resolvedStatus === "absent" && styles.shiftRowAbsent,
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.shiftTitle}>
+                      {shift.date || "-"} • {shift.start || "--:--"} - {shift.end || "--:--"}
+                    </Text>
+                    <Text style={styles.shiftMeta}>
+                      {workerLabel} •{" "}
+                      <Text style={{ color: resolveShiftStatusTextColor(resolvedStatus) }}>
+                        {resolvedStatus}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.shiftStatusPill,
+                      resolvedStatus === "completed" && styles.shiftStatusCompleted,
+                      resolvedStatus === "absent" && styles.shiftStatusAbsent,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.shiftStatusText,
+                        { color: resolveShiftStatusTextColor(resolvedStatus) },
+                      ]}
+                    >
+                      {resolvedStatus}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.iconButton, styles.dangerButton]}
+                    onPress={() => openShiftDelete(shift.id)}
+                  >
+                    <Trash2 size={16} color={adminPalette.danger} />
+                  </TouchableOpacity>
+                </View>
+              )})}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {showAddModal ? (
@@ -709,9 +837,38 @@ export default function AdminSetup() {
           </View>
         </View>
       ) : null}
+
+      {showShiftDelete ? (
+        <View style={styles.overlay}>
+          <View style={[styles.modal, styles.deleteModal]}>
+            <Text style={styles.modalTitle}>Delete Shift</Text>
+            <Text style={styles.deleteText}>
+              Are you sure you want to delete this shift?
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => {
+                  setShowShiftDelete(false);
+                  setShiftToDelete(null);
+                }}
+              >
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryButton, styles.dangerPrimary]}
+                onPress={handleDeleteShift}
+              >
+                <Text style={styles.primaryButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </LinearGradient>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { padding: 24, paddingBottom: 80 },
@@ -912,4 +1069,40 @@ const styles = StyleSheet.create({
   assignButtonText: { color: "#fff", fontSize: 11, fontWeight: "600" },
   assignHint: { color: adminPalette.textMuted, fontSize: 11 },
   assignStatus: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
+  shiftSection: { marginTop: 24 },
+  sectionTitle: { color: adminPalette.text, fontWeight: "700", fontSize: 16 },
+  shiftList: {
+    marginTop: 12,
+    gap: 10,
+  },
+  shiftRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    backgroundColor: adminPalette.surface,
+  },
+  shiftRowCompleted: {
+    borderColor: adminPalette.success,
+    backgroundColor: adminPalette.successSoft,
+  },
+  shiftRowAbsent: {
+    borderColor: adminPalette.danger,
+    backgroundColor: adminPalette.dangerSoft,
+  },
+  shiftTitle: { color: adminPalette.text, fontWeight: "600", fontSize: 12 },
+  shiftMeta: { color: adminPalette.textMuted, fontSize: 11, marginTop: 4 },
+  shiftStatusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: adminPalette.infoSoft,
+    marginRight: 8,
+  },
+  shiftStatusCompleted: { backgroundColor: adminPalette.successSoft },
+  shiftStatusAbsent: { backgroundColor: adminPalette.dangerSoft },
+  shiftStatusText: { color: adminPalette.text, fontSize: 10, fontWeight: "700" },
 });

@@ -56,7 +56,7 @@ export default function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState<number | null>(
     today.getDate()
   );
-  const { selectedDate, setSelectedDate, getShiftsForDate } =
+  const { selectedDate, setSelectedDate, getShiftsForDate, shifts } =
     useCalendar();
 
   /* =====================
@@ -72,8 +72,9 @@ export default function CalendarScreen() {
   const startDay = new Date(year, month, 1).getDay();
   const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
   const shiftsForSelectedDate = getShiftsForDate(selectedDate);
+  const nextShift = getNextShift(shifts);
   const pad = (value: number) => String(value).padStart(2, "0");
-  const primaryShift = shiftsForSelectedDate[0] ?? null;
+  const primaryShift = nextShift ?? shiftsForSelectedDate[0] ?? null;
   const primaryDetailTarget = primaryShift
     ? {
         ...primaryShift,
@@ -584,6 +585,15 @@ const getDateStatus = (
   });
   return status;
 };
+
+function getNextShift(allShifts: any[]) {
+  if (!allShifts.length) return null;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const future = allShifts
+    .filter(shift => shift.date > todayKey)
+    .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
+  return future[0] || null;
+}
 
 const statusLabel = (status: string) => {
   if (status === "completed") return "Completed";

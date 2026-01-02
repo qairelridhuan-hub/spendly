@@ -1,14 +1,20 @@
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Calendar, Download, TrendingUp } from "lucide-react-native";
-import { collectionGroup, onSnapshot } from "firebase/firestore";
+import { Svg, Circle, Line, Polygon, Text as SvgText } from "react-native-svg";
+import { collection, collectionGroup, doc, onSnapshot, query, where } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
 import { adminPalette } from "@/lib/admin/palette";
+import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
+import { printReport } from "@/lib/reports/print";
 
 export default function AdminReports() {
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<Record<string, string>>({});
+  const [config, setConfig] = useState({ hourlyRate: 0, overtimeRate: 0 });
+  const [activeSeries, setActiveSeries] = useState<"hours" | "earnings">("hours");
 
   useEffect(() => {
     const unsubPayroll = onSnapshot(collectionGroup(db, "payroll"), snapshot => {
@@ -19,18 +25,104 @@ export default function AdminReports() {
       const list = snapshot.docs.map(docSnap => docSnap.data());
       setAttendanceLogs(list);
     });
+    const workersQuery = query(
+      collection(db, "users"),
+      where("role", "==", "worker")
+    );
+    const unsubWorkers = onSnapshot(workersQuery, snapshot => {
+      const map: Record<string, string> = {};
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data() as any;
+        map[docSnap.id] =
+          data.fullName || data.displayName || data.email || "Worker";
+      });
+      setWorkers(map);
+    });
+    const configRef = doc(db, "config", "system");
+    const unsubConfig = onSnapshot(configRef, snap => {
+      const data = snap.data() as any;
+      if (!data) return;
+      setConfig({
+        hourlyRate: Number(data.hourlyRate ?? 0),
+        overtimeRate: Number(data.overtimeRate ?? 0),
+      });
+    });
     return () => {
       unsubPayroll();
       unsubAttendance();
+      unsubWorkers();
+      unsubConfig();
     };
   }, []);
 
   const monthlySummary = useMemo(() => aggregatePayroll(payrollRecords), [payrollRecords]);
-  const weeklyHours = useMemo(() => aggregateWeeklyHours(attendanceLogs), [attendanceLogs]);
-  const monthlyEarnings = useMemo(() => monthlySummary.map(row => ({
-    label: row.period,
-    value: row.totalEarnings,
-  })), [monthlySummary]);
+  const currentPeriod = getPeriodKey(new Date());
+  const attendancePeriods = useMemo(
+    () => extractAttendancePeriods(attendanceLogs),
+    [attendanceLogs]
+  );
+  const activePeriod =
+    monthlySummary.find(row => row.period === currentPeriod)?.period ||
+    attendancePeriods[0] ||
+    currentPeriod;
+  const currentSummary =
+    monthlySummary.find(row => row.period === activePeriod) ||
+    buildSummaryFromAttendance(attendanceLogs, activePeriod, config.hourlyRate);
+  const radarAxes = useMemo(() => {
+    const workerCount = Object.keys(workers).length;
+    const maxHours = Math.max(40, currentSummary.totalHours || 0);
+    const maxEarnings = Math.max(1000, currentSummary.totalEarnings || 0);
+    const maxOvertime = Math.max(10, currentSummary.overtimeHours || 0);
+    const maxAbsence = Math.max(5, currentSummary.absenceDeductions || 0);
+    return [
+      { label: "Workers", value: workerCount, max: Math.max(5, workerCount || 1) },
+      { label: "Hours", value: currentSummary.totalHours, max: maxHours },
+      { label: "Earnings", value: currentSummary.totalEarnings, max: maxEarnings },
+      { label: "Overtime", value: currentSummary.overtimeHours, max: maxOvertime },
+      { label: "Absences", value: currentSummary.absenceDeductions, max: maxAbsence },
+    ];
+  }, [workers, currentSummary]);
+  const dailySeries = useMemo(
+    () => buildDailySeries(attendanceLogs, config.hourlyRate),
+    [attendanceLogs, config.hourlyRate]
+  );
+  const dailyTotals = useMemo(() => {
+    return dailySeries.reduce(
+      (acc, item) => {
+        acc.hours += item.hours;
+        acc.earnings += item.earnings;
+        return acc;
+      },
+      { hours: 0, earnings: 0 }
+    );
+  }, [dailySeries]);
+  const workerRows = useMemo(() => {
+    return payrollRecords
+      .filter(record => String(record.period ?? "") === currentPeriod)
+      .map(record => ({
+        workerId: record.workerId || "",
+        name: workers[record.workerId] || record.workerId || "Worker",
+        totalHours: Number(record.totalHours ?? 0),
+        overtimeHours: Number(record.overtimeHours ?? 0),
+        totalEarnings: Number(record.totalEarnings ?? 0),
+        absenceDeductions: Number(record.absenceDeductions ?? 0),
+        status: record.status,
+      }));
+  }, [payrollRecords, currentPeriod, workers]);
+
+  const handleExportReport = async () => {
+    const html = buildAdminReportHtml({
+      period: currentPeriod,
+      summary: {
+        totalHours: currentSummary.totalHours,
+        overtimeHours: currentSummary.overtimeHours,
+        absenceDeductions: currentSummary.absenceDeductions,
+        totalEarnings: currentSummary.totalEarnings,
+      },
+      workers: workerRows,
+    });
+    await printReport(html);
+  };
 
   return (
     <LinearGradient
@@ -45,7 +137,7 @@ export default function AdminReports() {
               Overview of attendance and payroll data
             </Text>
           </View>
-          <TouchableOpacity style={exportButton}>
+          <TouchableOpacity style={exportButton} onPress={handleExportReport}>
             <Download size={18} color="#fff" />
             <Text style={exportText}>Export PDF</Text>
           </TouchableOpacity>
@@ -84,53 +176,6 @@ export default function AdminReports() {
           </View>
         </View>
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 16 }}>
-          <View style={[chartCard, { flex: 1, minWidth: 260 }]}>
-            <Text style={sectionTitle}>Weekly Hours Trend</Text>
-            {weeklyHours.length === 0 ? (
-              <Text style={emptyText}>No weekly data yet.</Text>
-            ) : (
-              <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-end", marginTop: 12 }}>
-                {weeklyHours.map(item => (
-                  <View key={item.label} style={{ flex: 1, alignItems: "center" }}>
-                    <View
-                      style={{
-                        height: Math.max(8, item.value * 5),
-                        width: "80%",
-                        borderRadius: 8,
-                        backgroundColor: adminPalette.accent,
-                      }}
-                    />
-                    <Text style={chartLabel}>{item.label}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-          <View style={[chartCard, { flex: 1, minWidth: 260 }]}>
-            <Text style={sectionTitle}>Monthly Earnings Trend</Text>
-            {monthlyEarnings.length === 0 ? (
-              <Text style={emptyText}>No monthly data yet.</Text>
-            ) : (
-              <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-end", marginTop: 12 }}>
-                {monthlyEarnings.map(item => (
-                  <View key={item.label} style={{ flex: 1, alignItems: "center" }}>
-                    <View
-                      style={{
-                        height: Math.max(8, item.value / 50),
-                        width: "80%",
-                        borderRadius: 8,
-                        backgroundColor: adminPalette.success,
-                      }}
-                    />
-                    <Text style={chartLabel}>{item.label}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        </View>
-
         <View style={[chartCard, { marginTop: 16 }]}>
           <Text style={sectionTitle}>Monthly Summary</Text>
           {monthlySummary.length === 0 ? (
@@ -157,6 +202,90 @@ export default function AdminReports() {
               ))}
             </View>
           )}
+        </View>
+
+        <View style={[chartCard, { marginTop: 16 }]}>
+          <View style={barHeader}>
+            <View>
+              <Text style={sectionTitle}>Daily Activity (Bar)</Text>
+              <Text style={subtitle}>Last 30 days</Text>
+            </View>
+            <View style={barToggle}>
+              {(["hours", "earnings"] as const).map(key => (
+                <TouchableOpacity
+                  key={key}
+                  onPress={() => setActiveSeries(key)}
+                  style={[
+                    barToggleButton,
+                    activeSeries === key && barToggleButtonActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      barToggleText,
+                      activeSeries === key && barToggleTextActive,
+                    ]}
+                  >
+                    {key === "hours" ? "Hours" : "Earnings"}
+                  </Text>
+                  <Text
+                    style={[
+                      barToggleValue,
+                      activeSeries === key && barToggleTextActive,
+                    ]}
+                  >
+                    {key === "hours"
+                      ? `${dailyTotals.hours.toFixed(0)}h`
+                      : `RM ${dailyTotals.earnings.toFixed(0)}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          {dailySeries.length === 0 ? (
+            <Text style={emptyText}>No daily data yet.</Text>
+          ) : (
+            <View style={barChartRow}>
+              {dailySeries.map(item => {
+                const heightPercent =
+                  activeSeries === "hours"
+                    ? item.hoursPercent
+                    : item.earningsPercent;
+                return (
+                  <View key={item.date} style={barItem}>
+                    <View
+                      style={[
+                        barItemFill,
+                        {
+                          height: `${heightPercent}%`,
+                          backgroundColor:
+                            activeSeries === "hours"
+                              ? adminPalette.accent
+                              : adminPalette.success,
+                        },
+                      ]}
+                    />
+                    <Text style={barItemLabel}>{item.shortLabel}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        <View style={[chartCard, { marginTop: 16 }]}>
+          <Text style={sectionTitle}>Performance Radar</Text>
+          <Text style={subtitle}>Overall workload and payroll balance</Text>
+          <RadarChart axes={radarAxes} />
+          <View style={radarLegend}>
+            {radarAxes.map(axis => (
+              <View key={axis.label} style={radarLegendRow}>
+                <View style={radarLegendDot} />
+                <Text style={radarLegendText}>{axis.label}</Text>
+                <Text style={radarLegendValue}>{axis.value.toFixed(1)}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </LinearGradient>
@@ -219,6 +348,52 @@ const chartCard = {
 const sectionTitle = { color: adminPalette.text, fontWeight: "600" as const };
 const emptyText = { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 };
 const chartLabel = { color: adminPalette.textMuted, fontSize: 10, marginTop: 6 };
+const radarLegend = { marginTop: 12, gap: 6 };
+const radarLegendRow = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 8,
+};
+const radarLegendDot = {
+  width: 8,
+  height: 8,
+  borderRadius: 999,
+  backgroundColor: adminPalette.accent,
+};
+const radarLegendText = { flex: 1, color: adminPalette.textMuted, fontSize: 12 };
+const radarLegendValue = { color: adminPalette.text, fontWeight: "600" as const, fontSize: 12 };
+const barHeader = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  justifyContent: "space-between" as const,
+  gap: 12,
+};
+const barToggle = { flexDirection: "row" as const, gap: 8 };
+const barToggleButton = {
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: adminPalette.border,
+  backgroundColor: adminPalette.surfaceAlt,
+};
+const barToggleButtonActive = {
+  borderColor: adminPalette.accent,
+  backgroundColor: adminPalette.infoSoft,
+};
+const barToggleText = { color: adminPalette.textMuted, fontSize: 11 };
+const barToggleTextActive = { color: adminPalette.accent, fontWeight: "600" as const };
+const barToggleValue = { color: adminPalette.text, fontSize: 12, fontWeight: "700" as const };
+const barChartRow = {
+  marginTop: 12,
+  flexDirection: "row" as const,
+  alignItems: "flex-end" as const,
+  gap: 8,
+  height: 140,
+};
+const barItem = { flex: 1, alignItems: "center" as const, justifyContent: "flex-end" as const };
+const barItemFill = { width: "80%", borderRadius: 6, minHeight: 8 };
+const barItemLabel = { color: adminPalette.textMuted, fontSize: 9, marginTop: 6 };
 
 const tableHeader = {
   flexDirection: "row" as const,
@@ -268,18 +443,38 @@ const aggregatePayroll = (records: any[]) => {
   );
 };
 
-const aggregateWeeklyHours = (logs: any[]) => {
-  const start = startOfWeek(new Date());
-  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const totals = dayLabels.map(label => ({ label, value: 0 }));
-  logs.forEach(log => {
-    const date = new Date(`${log.date}T00:00:00`);
-    if (Number.isNaN(date.getTime()) || date < start) return;
-    const dayIndex = (date.getDay() + 6) % 7;
-    totals[dayIndex].value += Number(log.hours ?? 0);
-  });
-  return totals;
+
+const buildSummaryFromAttendance = (
+  logs: any[],
+  period: string,
+  hourlyRate: number
+) => {
+  const totalHours = logs.reduce((sum, log) => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(period)) return sum;
+    return sum + Number(log.hours ?? 0);
+  }, 0);
+  const absences = logs.filter(
+    log => String(log.status ?? "") === "absent" && String(log.date ?? "").startsWith(period)
+  ).length;
+  return {
+    period,
+    totalHours,
+    overtimeHours: 0,
+    absenceDeductions: absences,
+    totalEarnings: totalHours * hourlyRate,
+  };
 };
+
+const extractAttendancePeriods = (logs: any[]) => {
+  const set = new Set<string>();
+  logs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (date.length >= 7) set.add(date.slice(0, 7));
+  });
+  return Array.from(set).sort((a, b) => b.localeCompare(a));
+};
+
 
 const averagePerWorker = (summary: any[]) => {
   if (summary.length === 0) return 0;
@@ -297,3 +492,144 @@ const startOfWeek = (date: Date) => {
   start.setHours(0, 0, 0, 0);
   return start;
 };
+
+const buildDailySeries = (logs: any[], hourlyRate: number) => {
+  const days = 30;
+  const data: {
+    date: string;
+    shortLabel: string;
+    hours: number;
+    earnings: number;
+    hoursPercent: number;
+    earningsPercent: number;
+  }[] = [];
+  const byDate: Record<string, number> = {};
+  logs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (!date) return;
+    byDate[date] = (byDate[date] || 0) + Number(log.hours ?? 0);
+  });
+  const end = new Date();
+  end.setHours(0, 0, 0, 0);
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const date = new Date(end);
+    date.setDate(end.getDate() - i);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate()
+    ).padStart(2, "0")}`;
+    const hours = Number(byDate[key] || 0);
+    data.push({
+      date: key,
+      shortLabel: `${date.getDate()}/${date.getMonth() + 1}`,
+      hours,
+      earnings: hours * hourlyRate,
+      hoursPercent: 0,
+      earningsPercent: 0,
+    });
+  }
+  const maxHours = Math.max(1, ...data.map(item => item.hours));
+  const maxEarnings = Math.max(1, ...data.map(item => item.earnings));
+  return data.map(item => ({
+    ...item,
+    hoursPercent: Math.max(4, (item.hours / maxHours) * 100),
+    earningsPercent: Math.max(4, (item.earnings / maxEarnings) * 100),
+  }));
+};
+
+function RadarChart({
+  axes,
+}: {
+  axes: { label: string; value: number; max: number }[];
+}) {
+  const size = 220;
+  const center = size / 2;
+  const radius = 80;
+  const levels = 4;
+  const angleStep = (Math.PI * 2) / axes.length;
+
+  const points = axes.map((axis, index) => {
+    const value = axis.max === 0 ? 0 : Math.min(1, axis.value / axis.max);
+    const angle = -Math.PI / 2 + angleStep * index;
+    const r = radius * value;
+    return {
+      x: center + r * Math.cos(angle),
+      y: center + r * Math.sin(angle),
+    };
+  });
+
+  const polygonPoints = points.map(point => `${point.x},${point.y}`).join(" ");
+
+  const gridPolygons = Array.from({ length: levels }, (_, level) => {
+    const levelRadius = radius * ((level + 1) / levels);
+    const gridPoints = axes
+      .map((_, index) => {
+        const angle = -Math.PI / 2 + angleStep * index;
+        return `${center + levelRadius * Math.cos(angle)},${center + levelRadius * Math.sin(angle)}`;
+      })
+      .join(" ");
+    return (
+      <Polygon
+        key={`grid-${level}`}
+        points={gridPoints}
+        fill="none"
+        stroke={adminPalette.border}
+        strokeWidth="1"
+      />
+    );
+  });
+
+  return (
+    <View style={{ alignItems: "center", marginTop: 12 }}>
+      <Svg width={size} height={size}>
+        {gridPolygons}
+        {axes.map((_, index) => {
+          const angle = -Math.PI / 2 + angleStep * index;
+          return (
+            <Line
+              key={`axis-${index}`}
+              x1={center}
+              y1={center}
+              x2={center + radius * Math.cos(angle)}
+              y2={center + radius * Math.sin(angle)}
+              stroke={adminPalette.border}
+              strokeWidth="1"
+            />
+          );
+        })}
+        <Polygon
+          points={polygonPoints}
+          fill="rgba(14,165,233,0.15)"
+          stroke={adminPalette.accent}
+          strokeWidth="2"
+        />
+        {points.map((point, index) => (
+          <Circle
+            key={`point-${index}`}
+            cx={point.x}
+            cy={point.y}
+            r="3"
+            fill={adminPalette.accent}
+          />
+        ))}
+        {axes.map((axis, index) => {
+          const angle = -Math.PI / 2 + angleStep * index;
+          const labelRadius = radius + 18;
+          const x = center + labelRadius * Math.cos(angle);
+          const y = center + labelRadius * Math.sin(angle);
+          return (
+            <SvgText
+              key={`label-${axis.label}`}
+              x={x}
+              y={y}
+              fill={adminPalette.textMuted}
+              fontSize="10"
+              textAnchor="middle"
+            >
+              {axis.label}
+            </SvgText>
+          );
+        })}
+      </Svg>
+    </View>
+  );
+}

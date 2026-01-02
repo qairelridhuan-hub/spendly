@@ -29,6 +29,7 @@ type Worker = {
   id: string;
   name: string;
   email: string;
+  workerCode?: string;
   phone?: string;
   position?: string;
   hourlyRate?: number;
@@ -58,6 +59,7 @@ export default function AdminWorkers() {
     uid: "",
     name: "",
     email: "",
+    workerCode: "",
     phone: "",
     position: "",
     hourlyRate: "",
@@ -77,6 +79,7 @@ export default function AdminWorkers() {
           id: docSnap.id,
           name: data.fullName || data.displayName || "Worker",
           email: data.email || "",
+          workerCode: data.workerCode || "",
           phone: data.phone || "",
           position: data.position || "",
           hourlyRate: Number(data.hourlyRate ?? 0),
@@ -121,7 +124,7 @@ export default function AdminWorkers() {
   const filteredWorkers = useMemo(
     () =>
       workers.filter(worker =>
-        [worker.name, worker.email, worker.position]
+        [worker.name, worker.email, worker.position, worker.workerCode]
           .join(" ")
           .toLowerCase()
           .includes(searchQuery.toLowerCase())
@@ -129,12 +132,23 @@ export default function AdminWorkers() {
     [workers, searchQuery]
   );
 
+  const getNextWorkerCode = () => {
+    const codes = workers
+      .map(worker => String(worker.workerCode || ""))
+      .filter(code => code.startsWith("WKR-"))
+      .map(code => Number(code.replace("WKR-", "")))
+      .filter(value => Number.isFinite(value));
+    const max = codes.length ? Math.max(...codes) : 0;
+    return `WKR-${String(max + 1).padStart(3, "0")}`;
+  };
+
   const resetForm = () => {
     setFormError("");
     setFormData({
       uid: "",
       name: "",
       email: "",
+      workerCode: getNextWorkerCode(),
       phone: "",
       position: "",
       hourlyRate: "",
@@ -152,6 +166,7 @@ export default function AdminWorkers() {
     const payload = {
       fullName: formData.name.trim(),
       email: formData.email.trim(),
+      workerCode: formData.workerCode || getNextWorkerCode(),
       phone: formData.phone.trim(),
       position: formData.position.trim(),
       hourlyRate: Number(formData.hourlyRate),
@@ -188,6 +203,7 @@ export default function AdminWorkers() {
       await updateDoc(doc(db, "users", selectedWorker.id), {
         fullName: formData.name.trim(),
         email: formData.email.trim(),
+        workerCode: formData.workerCode,
         phone: formData.phone.trim(),
         position: formData.position.trim(),
         hourlyRate: Number(formData.hourlyRate),
@@ -221,6 +237,7 @@ export default function AdminWorkers() {
       uid: worker.id,
       name: worker.name,
       email: worker.email,
+      workerCode: worker.workerCode || "",
       phone: worker.phone || "",
       position: worker.position || "",
       hourlyRate: String(worker.hourlyRate ?? ""),
@@ -307,7 +324,7 @@ export default function AdminWorkers() {
                         assignWorkerId === worker.id && chipTextActive,
                       ]}
                     >
-                      {worker.name}
+                      {worker.name} {worker.workerCode ? `(${worker.workerCode})` : ""}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -382,7 +399,9 @@ export default function AdminWorkers() {
                     </View>
                     <View>
                       <Text style={workerName}>{worker.name}</Text>
-                      <Text style={workerEmail}>{worker.email}</Text>
+                      <Text style={workerEmail}>
+                        {worker.workerCode ? `${worker.workerCode} • ` : ""}{worker.email}
+                      </Text>
                     </View>
                   </View>
                   <Text style={tableCellMuted}>{worker.position || "-"}</Text>
@@ -485,6 +504,17 @@ export default function AdminWorkers() {
                 auto-link to login until you set the UID.
               </Text>
 
+              <Text style={inputLabel}>Worker Code</Text>
+              <TextInput
+                value={formData.workerCode}
+                onChangeText={value =>
+                  setFormData(prev => ({ ...prev, workerCode: value }))
+                }
+                placeholder="WKR-001"
+                placeholderTextColor={adminPalette.textMuted}
+                style={input}
+              />
+
               <Text style={inputLabel}>Full Name *</Text>
               <TextInput
                 value={formData.name}
@@ -575,6 +605,17 @@ export default function AdminWorkers() {
               </TouchableOpacity>
             </View>
             <View style={modalBody}>
+              <Text style={inputLabel}>Worker Code</Text>
+              <TextInput
+                value={formData.workerCode}
+                onChangeText={value =>
+                  setFormData(prev => ({ ...prev, workerCode: value }))
+                }
+                placeholder="WKR-001"
+                placeholderTextColor={adminPalette.textMuted}
+                style={input}
+              />
+
               <Text style={inputLabel}>Full Name *</Text>
               <TextInput
                 value={formData.name}
