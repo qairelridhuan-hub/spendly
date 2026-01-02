@@ -55,6 +55,7 @@ export default function GoalsScreen() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<"all" | GoalPriority>("all");
   const [userId, setUserId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("User");
 
   // Modal inputs
   const [goalName, setGoalName] = useState("");
@@ -69,6 +70,17 @@ export default function GoalsScreen() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
       setUserId(user?.uid ?? null);
+      if (!user) {
+        setDisplayName("User");
+        return;
+      }
+      if (user.displayName) setDisplayName(user.displayName);
+      const userRef = doc(db, "users", user.uid);
+      const unsubProfile = onSnapshot(userRef, snap => {
+        const data = snap.data() as { fullName?: string } | undefined;
+        if (data?.fullName) setDisplayName(data.fullName);
+      });
+      return () => unsubProfile();
     });
     return unsubscribe;
   }, []);
@@ -273,7 +285,7 @@ export default function GoalsScreen() {
 
             <View>
               <Text style={styles.appName}>Spendly</Text>
-              <Text style={styles.subText}>Hey, John!</Text>
+              <Text style={styles.subText}>Hey, {displayName}!</Text>
             </View>
           </View>
 

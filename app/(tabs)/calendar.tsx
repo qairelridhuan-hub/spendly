@@ -5,8 +5,9 @@ import {
   ChevronRight,
   LogOut,
 } from "lucide-react-native";
-import { signOut } from "firebase/auth";
-import { useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   ScrollView,
@@ -17,8 +18,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { auth } from "@/lib/firebase";
-import { useCalendar } from "@/lib/context";
+import { auth, db } from "@/lib/firebase";
+import { useCalendar, useTheme } from "@/lib/context";
 
 /* =====================
    LAYOUT CONSTANTS
@@ -33,6 +34,7 @@ const CELL_WIDTH = (SCREEN_WIDTH - 32 - GAP * 6) / 7;
 ===================== */
 
 export default function CalendarScreen() {
+  const [displayName, setDisplayName] = useState("User");
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
@@ -56,6 +58,24 @@ export default function CalendarScreen() {
   const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
   const shiftsForSelectedDate = getShiftsForDate(selectedDate);
   const pad = (value: number) => String(value).padStart(2, "0");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      if (!user) {
+        setDisplayName("User");
+        return;
+      }
+      if (user.displayName) setDisplayName(user.displayName);
+      const userRef = doc(db, "users", user.uid);
+      const unsubProfile = onSnapshot(userRef, snap => {
+        const data = snap.data() as { fullName?: string } | undefined;
+        if (data?.fullName) setDisplayName(data.fullName);
+      });
+      return () => unsubProfile();
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   /* =====================
      MONTH NAVIGATION
@@ -98,7 +118,7 @@ export default function CalendarScreen() {
             </View>
             <View>
               <Text style={styles.appName}>Spendly</Text>
-              
+              <Text style={styles.subText}>Hey, {displayName}!</Text>
             </View>
           </View>
 

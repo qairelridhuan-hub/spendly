@@ -16,8 +16,10 @@ import {
   PieChart,
   TrendingUp,
 } from "lucide-react-native";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { useEffect, useState } from "react";
 
 type WeeklyEntry = { week: string; earnings: number };
 type BudgetItem = {
@@ -31,6 +33,7 @@ const weeklyData: WeeklyEntry[] = [];
 const budgetAllocation: BudgetItem[] = [];
 
 export default function EarningsScreen() {
+  const [displayName, setDisplayName] = useState("User");
   const totalMonthly = weeklyData.reduce((sum, w) => sum + w.earnings, 0);
   const maxWeekly = weeklyData.length
     ? Math.max(...weeklyData.map(w => w.earnings))
@@ -39,6 +42,24 @@ export default function EarningsScreen() {
   const daysWorked = 0;
   const totalHours = 0;
   const overtimeHours = 0;
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      if (!user) {
+        setDisplayName("User");
+        return;
+      }
+      if (user.displayName) setDisplayName(user.displayName);
+      const userRef = doc(db, "users", user.uid);
+      const unsubProfile = onSnapshot(userRef, snap => {
+        const data = snap.data() as { fullName?: string } | undefined;
+        if (data?.fullName) setDisplayName(data.fullName);
+      });
+      return () => unsubProfile();
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const normalHours = Math.max(0, totalHours - overtimeHours);
   const normalRate = 0;
@@ -62,7 +83,7 @@ export default function EarningsScreen() {
               </View>
               <View>
                 <Text style={styles.appName}>Spendly</Text>
-                <Text style={styles.subText}>Hey, John!</Text>
+                <Text style={styles.subText}>Hey, {displayName}!</Text>
               </View>
             </View>
 

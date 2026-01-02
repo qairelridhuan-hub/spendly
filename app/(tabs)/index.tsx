@@ -20,10 +20,11 @@ import {
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCalendar } from "@/lib/context";
+import { useCalendar, useTheme } from "@/lib/context";
 
 /* =====================
    TYPES
@@ -49,6 +50,8 @@ type SalarySummary = {
 ===================== */
 
 export default function WorkerHomeScreen() {
+  const { colors } = useTheme();
+  const [displayName, setDisplayName] = useState("User");
   /* =====================
      STATE
   ===================== */
@@ -78,6 +81,24 @@ export default function WorkerHomeScreen() {
       ? 0
       : Math.round((weeklyGoal.current / weeklyGoal.target) * 100);
   const todayShift = getTodayShift();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      if (!user) {
+        setDisplayName("User");
+        return;
+      }
+      if (user.displayName) setDisplayName(user.displayName);
+      const userRef = doc(db, "users", user.uid);
+      const unsubProfile = onSnapshot(userRef, snap => {
+        const data = snap.data() as { fullName?: string } | undefined;
+        if (data?.fullName) setDisplayName(data.fullName);
+      });
+      return () => unsubProfile();
+    });
+
+    return unsubscribe;
+  }, []);
 
   /* =====================
      HELPERS
@@ -137,7 +158,10 @@ export default function WorkerHomeScreen() {
      UI
   ===================== */
   return (
-    <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
+    <LinearGradient
+      colors={[colors.backgroundStart, colors.backgroundEnd]}
+      style={styles.screen}
+    >
       <View style={styles.bgBlob} />
       <View style={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -150,7 +174,7 @@ export default function WorkerHomeScreen() {
 
             <View>
               <Text style={styles.appName}>Spendly</Text>
-              <Text style={styles.greeting}>Hey, John!</Text>
+              <Text style={styles.greeting}>Hey, {displayName}!</Text>
             </View>
           </View>
 

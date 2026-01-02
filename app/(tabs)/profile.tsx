@@ -8,8 +8,8 @@ import {
   User,
   Zap,
 } from "lucide-react-native";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { onAuthStateChanged, signOut, updateEmail, updateProfile } from "firebase/auth";
+import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
@@ -17,6 +17,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  TextInput,
+  Image,
 } from "react-native";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "@/lib/context";
@@ -34,6 +36,14 @@ export default function ProfileScreen() {
   const { mode, toggleTheme, colors } = useTheme();
   const [displayName, setDisplayName] = useState("User");
   const [email, setEmail] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [photoInput, setPhotoInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats>({
     totalDays: 0,
     totalHours: 0,
@@ -48,16 +58,21 @@ export default function ProfileScreen() {
       if (!user) {
         setDisplayName("User");
         setEmail("");
+        setPhotoUrl("");
+        setUserId(null);
         return;
       }
 
+      setUserId(user.uid);
       setEmail(user.email ?? "");
       if (user.displayName) setDisplayName(user.displayName);
+      if (user.photoURL) setPhotoUrl(user.photoURL);
 
       const userRef = doc(db, "users", user.uid);
       const unsubProfile = onSnapshot(userRef, snap => {
-        const data = snap.data() as { fullName?: string } | undefined;
+        const data = snap.data() as { fullName?: string; photoUrl?: string } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
+        if (data?.photoUrl) setPhotoUrl(data.photoUrl);
       });
 
       const goalsRef = collection(db, "users", user.uid, "goals");
@@ -111,6 +126,67 @@ export default function ProfileScreen() {
 
     return unsubscribe;
   }, []);
+
+  const openEdit = () => {
+    setNameInput(displayName);
+    setEmailInput(email);
+    setPhotoInput(photoUrl);
+    setEditError("");
+    setEditOpen(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userId || !auth.currentUser) return;
+    setSaving(true);
+    setEditError("");
+
+    try {
+      const trimmedName = nameInput.trim();
+      const trimmedEmail = emailInput.trim().toLowerCase();
+      const trimmedPhoto = photoInput.trim();
+
+      if (!trimmedName) {
+        setEditError("Name is required");
+        setSaving(false);
+        return;
+      }
+      if (!trimmedEmail) {
+        setEditError("Email is required");
+        setSaving(false);
+        return;
+      }
+
+      if (auth.currentUser.email !== trimmedEmail) {
+        await updateEmail(auth.currentUser, trimmedEmail);
+      }
+
+      await updateProfile(auth.currentUser, {
+        displayName: trimmedName,
+        photoURL: trimmedPhoto || undefined,
+      });
+
+      await updateDoc(doc(db, "users", userId), {
+        fullName: trimmedName,
+        email: trimmedEmail,
+        photoUrl: trimmedPhoto || "",
+        updatedAt: new Date().toISOString(),
+      });
+
+      setDisplayName(trimmedName);
+      setEmail(trimmedEmail);
+      setPhotoUrl(trimmedPhoto);
+      setEditOpen(false);
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/requires-recent-login") {
+        setEditError("Please log in again to change your email.");
+      } else {
+        setEditError("Failed to update profile. Try again.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const badges = useMemo(() => {
     const list: { name: string; icon: string; description: string }[] = [];
@@ -176,9 +252,17 @@ export default function ProfileScreen() {
                 backgroundColor: colors.surface,
                 alignItems: "center",
                 justifyContent: "center",
+                overflow: "hidden",
               }}
             >
-              <Text style={{ fontSize: 32 }}>👤</Text>
+              {photoUrl ? (
+                <Image
+                  source={{ uri: photoUrl }}
+                  style={{ width: 72, height: 72 }}
+                />
+              ) : (
+                <Text style={{ fontSize: 32 }}>👤</Text>
+              )}
             </View>
             <View style={{ flex: 1, justifyContent: "center" }}>
               <Text style={{ color: "#fff", fontSize: 20, fontWeight: "700" }}>
@@ -319,7 +403,7 @@ export default function ProfileScreen() {
           </Text>
 
           <View style={{ gap: 12 }}>
-            <View
+            <TouchableOpacity
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -330,12 +414,13 @@ export default function ProfileScreen() {
                 borderWidth: 1,
                 borderColor: colors.border,
               }}
+              onPress={openEdit}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <User size={18} color={colors.textMuted} />
                 <Text style={{ color: colors.text }}>Edit Profile</Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
             <View
               style={{
@@ -380,6 +465,140 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+
+        {/* Edit Profile */}
+        {editOpen ? (
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 18,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: 16,
+            }}
+          >
+            <Text style={{ color: colors.text, fontWeight: "700", marginBottom: 12 }}>
+              Edit Profile
+            </Text>
+            <View style={{ gap: 12 }}>
+              <View>
+                <Text style={{ color: colors.textMuted, marginBottom: 6 }}>
+                  Username
+                </Text>
+                <TextInput
+                  value={nameInput}
+                  onChangeText={setNameInput}
+                  placeholder="Full name"
+                  placeholderTextColor={colors.textMuted}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 12,
+                    padding: 12,
+                    color: colors.text,
+                    backgroundColor: colors.surfaceAlt,
+                  }}
+                />
+              </View>
+              <View>
+                <Text style={{ color: colors.textMuted, marginBottom: 6 }}>
+                  Email
+                </Text>
+                <TextInput
+                  value={emailInput}
+                  onChangeText={setEmailInput}
+                  placeholder="Email address"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 12,
+                    padding: 12,
+                    color: colors.text,
+                    backgroundColor: colors.surfaceAlt,
+                  }}
+                />
+              </View>
+              <View>
+                <Text style={{ color: colors.textMuted, marginBottom: 6 }}>
+                  Profile Picture URL
+                </Text>
+                <TextInput
+                  value={photoInput}
+                  onChangeText={setPhotoInput}
+                  placeholder="https://..."
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 12,
+                    padding: 12,
+                    color: colors.text,
+                    backgroundColor: colors.surfaceAlt,
+                  }}
+                />
+              </View>
+              {editError ? (
+                <Text style={{ color: colors.danger }}>{editError}</Text>
+              ) : null}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surfaceAlt,
+                    alignItems: "center",
+                  }}
+                  onPress={() => setEditOpen(false)}
+                  disabled={saving}
+                >
+                  <Text style={{ color: colors.textMuted, fontWeight: "600" }}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 12,
+                    backgroundColor: colors.accentStrong,
+                    alignItems: "center",
+                    opacity: saving ? 0.7 : 1,
+                  }}
+                  onPress={handleSaveProfile}
+                  disabled={saving}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    {saving ? "Saving..." : "Save"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={{
+              padding: 14,
+              borderRadius: 14,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: 16,
+            }}
+            onPress={openEdit}
+          >
+            <Text style={{ color: colors.text, textAlign: "center", fontWeight: "600" }}>
+              Edit Profile
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={{
