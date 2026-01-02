@@ -10,17 +10,12 @@ import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 
 export default function AdminReports() {
-  const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
-  const [workers, setWorkers] = useState<Record<string, string>>({});
+  const [workers, setWorkers] = useState<Record<string, { name: string; hourlyRate: number }>>({});
   const [config, setConfig] = useState({ hourlyRate: 0, overtimeRate: 0 });
   const [activeSeries, setActiveSeries] = useState<"hours" | "earnings">("hours");
 
   useEffect(() => {
-    const unsubPayroll = onSnapshot(collectionGroup(db, "payroll"), snapshot => {
-      const list = snapshot.docs.map(docSnap => docSnap.data());
-      setPayrollRecords(list);
-    });
     const unsubAttendance = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data());
       setAttendanceLogs(list);
@@ -30,11 +25,13 @@ export default function AdminReports() {
       where("role", "==", "worker")
     );
     const unsubWorkers = onSnapshot(workersQuery, snapshot => {
-      const map: Record<string, string> = {};
+      const map: Record<string, { name: string; hourlyRate: number }> = {};
       snapshot.forEach(docSnap => {
         const data = docSnap.data() as any;
-        map[docSnap.id] =
-          data.fullName || data.displayName || data.email || "Worker";
+        map[docSnap.id] = {
+          name: data.fullName || data.displayName || data.email || "Worker",
+          hourlyRate: Number(data.hourlyRate ?? 0),
+        };
       });
       setWorkers(map);
     });
@@ -48,14 +45,16 @@ export default function AdminReports() {
       });
     });
     return () => {
-      unsubPayroll();
       unsubAttendance();
       unsubWorkers();
       unsubConfig();
     };
   }, []);
 
-  const monthlySummary = useMemo(() => aggregatePayroll(payrollRecords), [payrollRecords]);
+  const monthlySummary = useMemo(
+    () => aggregateAttendance(attendanceLogs, workers, config.hourlyRate),
+    [attendanceLogs, workers, config.hourlyRate]
+  );
   const currentPeriod = getPeriodKey(new Date());
   const attendancePeriods = useMemo(
     () => extractAttendancePeriods(attendanceLogs),
@@ -67,7 +66,7 @@ export default function AdminReports() {
     currentPeriod;
   const currentSummary =
     monthlySummary.find(row => row.period === activePeriod) ||
-    buildSummaryFromAttendance(attendanceLogs, activePeriod, config.hourlyRate);
+    buildSummaryFromAttendance(attendanceLogs, activePeriod, workers, config.hourlyRate);
   const radarAxes = useMemo(() => {
     const workerCount = Object.keys(workers).length;
     const maxHours = Math.max(40, currentSummary.totalHours || 0);
@@ -83,8 +82,8 @@ export default function AdminReports() {
     ];
   }, [workers, currentSummary]);
   const dailySeries = useMemo(
-    () => buildDailySeries(attendanceLogs, config.hourlyRate),
-    [attendanceLogs, config.hourlyRate]
+    () => buildDailySeries(attendanceLogs, config.hourlyRate, activePeriod),
+    [attendanceLogs, config.hourlyRate, activePeriod]
   );
   const dailyTotals = useMemo(() => {
     return dailySeries.reduce(
@@ -97,18 +96,31 @@ export default function AdminReports() {
     );
   }, [dailySeries]);
   const workerRows = useMemo(() => {
-    return payrollRecords
-      .filter(record => String(record.period ?? "") === currentPeriod)
-      .map(record => ({
-        workerId: record.workerId || "",
-        name: workers[record.workerId] || record.workerId || "Worker",
-        totalHours: Number(record.totalHours ?? 0),
-        overtimeHours: Number(record.overtimeHours ?? 0),
-        totalEarnings: Number(record.totalEarnings ?? 0),
-        absenceDeductions: Number(record.absenceDeductions ?? 0),
-        status: record.status,
-      }));
-  }, [payrollRecords, currentPeriod, workers]);
+    const map: Record<string, any> = {};
+    attendanceLogs.forEach(log => {
+      const date = String(log.date ?? "");
+      if (!date.startsWith(currentPeriod)) return;
+      const workerId = String(log.workerId ?? "");
+      if (!workerId) return;
+      const hours = Number(log.hours ?? 0);
+      const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate);
+      map[workerId] = map[workerId] || {
+        workerId,
+        name: workers[workerId]?.name || workerId || "Worker",
+        totalHours: 0,
+        overtimeHours: 0,
+        totalEarnings: 0,
+        absenceDeductions: 0,
+        status: "pending",
+      };
+      map[workerId].totalHours += hours;
+      map[workerId].totalEarnings += hours * rate;
+      if (String(log.status ?? "") === "absent") {
+        map[workerId].absenceDeductions += 1;
+      }
+    });
+    return Object.values(map);
+  }, [attendanceLogs, currentPeriod, workers, config.hourlyRate]);
 
   const handleExportReport = async () => {
     const html = buildAdminReportHtml({
@@ -419,11 +431,19 @@ const tableRow = {
 const tableCell = { flex: 1, color: adminPalette.text, fontSize: 12 };
 const tableCellMuted = { flex: 1, color: adminPalette.textMuted, fontSize: 12 };
 
-const aggregatePayroll = (records: any[]) => {
+const aggregateAttendance = (
+  logs: any[],
+  workers: Record<string, { name: string; hourlyRate: number }>,
+  defaultRate: number
+) => {
   const map: Record<string, any> = {};
-  records.forEach(record => {
-    const period = String(record.period ?? "");
-    if (!period) return;
+  logs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (date.length < 7) return;
+    const period = date.slice(0, 7);
+    const workerId = String(log.workerId ?? "");
+    const hours = Number(log.hours ?? 0);
+    const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
     map[period] = map[period] || {
       period,
       totalHours: 0,
@@ -432,11 +452,12 @@ const aggregatePayroll = (records: any[]) => {
       totalEarnings: 0,
       workers: new Set<string>(),
     };
-    map[period].totalHours += Number(record.totalHours ?? 0);
-    map[period].overtimeHours += Number(record.overtimeHours ?? 0);
-    map[period].absenceDeductions += Number(record.absenceDeductions ?? 0);
-    map[period].totalEarnings += Number(record.totalEarnings ?? 0);
-    if (record.workerId) map[period].workers.add(String(record.workerId));
+    map[period].totalHours += hours;
+    map[period].totalEarnings += hours * rate;
+    if (String(log.status ?? "") === "absent") {
+      map[period].absenceDeductions += 1;
+    }
+    if (workerId) map[period].workers.add(workerId);
   });
   return Object.values(map).sort((a: any, b: any) =>
     String(b.period).localeCompare(String(a.period))
@@ -447,7 +468,8 @@ const aggregatePayroll = (records: any[]) => {
 const buildSummaryFromAttendance = (
   logs: any[],
   period: string,
-  hourlyRate: number
+  workers: Record<string, { name: string; hourlyRate: number }>,
+  defaultRate: number
 ) => {
   const totalHours = logs.reduce((sum, log) => {
     const date = String(log.date ?? "");
@@ -457,12 +479,19 @@ const buildSummaryFromAttendance = (
   const absences = logs.filter(
     log => String(log.status ?? "") === "absent" && String(log.date ?? "").startsWith(period)
   ).length;
+  const totalEarnings = logs.reduce((sum, log) => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(period)) return sum;
+    const workerId = String(log.workerId ?? "");
+    const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
+    return sum + Number(log.hours ?? 0) * rate;
+  }, 0);
   return {
     period,
     totalHours,
     overtimeHours: 0,
     absenceDeductions: absences,
-    totalEarnings: totalHours * hourlyRate,
+    totalEarnings,
   };
 };
 
@@ -493,7 +522,7 @@ const startOfWeek = (date: Date) => {
   return start;
 };
 
-const buildDailySeries = (logs: any[], hourlyRate: number) => {
+const buildDailySeries = (logs: any[], hourlyRate: number, period: string) => {
   const days = 30;
   const data: {
     date: string;
@@ -506,14 +535,16 @@ const buildDailySeries = (logs: any[], hourlyRate: number) => {
   const byDate: Record<string, number> = {};
   logs.forEach(log => {
     const date = String(log.date ?? "");
-    if (!date) return;
+    if (!date || !date.startsWith(period)) return;
     byDate[date] = (byDate[date] || 0) + Number(log.hours ?? 0);
   });
-  const end = new Date();
-  end.setHours(0, 0, 0, 0);
-  for (let i = days - 1; i >= 0; i -= 1) {
-    const date = new Date(end);
-    date.setDate(end.getDate() - i);
+  const [year, month] = period.split("-").map(Number);
+  const start = new Date(year, (month || 1) - 1, 1);
+  const end = new Date(year, month || 1, 0);
+  for (let i = 0; i < days; i += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    if (date > end) break;
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
       date.getDate()
     ).padStart(2, "0")}`;

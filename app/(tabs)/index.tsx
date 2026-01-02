@@ -58,6 +58,7 @@ export default function WorkerHomeScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [goalsCount, setGoalsCount] = useState(0);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
+  const [userHourlyRate, setUserHourlyRate] = useState(0);
   const [schedule, setSchedule] = useState<{
     id: string;
     name: string;
@@ -80,6 +81,7 @@ export default function WorkerHomeScreen() {
     status?: string;
     hours?: number;
   } | null>(null);
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [workConfig, setWorkConfig] = useState({
     workingDaysPerWeek: 0,
     hoursPerDay: 0,
@@ -107,13 +109,14 @@ export default function WorkerHomeScreen() {
   const scheduleHoursPerDay = schedule
     ? diffHours(schedule.startTime, schedule.endTime)
     : workConfig.hoursPerDay;
-  const hourlyRate = schedule?.hourlyRate ?? workConfig.hourlyRate;
+  const hourlyRate =
+    schedule?.hourlyRate ?? userHourlyRate ?? workConfig.hourlyRate;
   const weeklyTarget = schedule
     ? schedule.days.length * scheduleHoursPerDay
     : workConfig.hoursPerDay * workConfig.workingDaysPerWeek;
-  const weeklyCurrent = getWeeklyHours(shifts);
+  const weeklyCurrent = getWeeklyHours(attendanceLogs);
   const weeklyEarnings = weeklyCurrent * hourlyRate;
-  const weeklyStreak = getWeeklyStreak(shifts);
+  const weeklyStreak = getWeeklyStreak(attendanceLogs);
   const goalPercentage =
     weeklyTarget === 0 ? 0 : Math.round((weeklyCurrent / weeklyTarget) * 100);
   const todayShift = getTodayShift();
@@ -129,9 +132,16 @@ export default function WorkerHomeScreen() {
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
       const unsubProfile = onSnapshot(userRef, snap => {
-        const data = snap.data() as { fullName?: string; scheduleId?: string } | undefined;
+        const data = snap.data() as {
+          fullName?: string;
+          scheduleId?: string;
+          hourlyRate?: number;
+        } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
         setScheduleId(data?.scheduleId ?? null);
+        if (data?.hourlyRate != null) {
+          setUserHourlyRate(Number(data.hourlyRate));
+        }
       });
       return () => unsubProfile();
     });
@@ -365,6 +375,19 @@ export default function WorkerHomeScreen() {
 
   useEffect(() => {
     if (!userId) {
+      setAttendanceLogs([]);
+      return;
+    }
+    const attendanceRef = collection(db, "users", userId, "attendance");
+    const unsub = onSnapshot(attendanceRef, snapshot => {
+      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      setAttendanceLogs(logs);
+    });
+    return unsub;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
       setSalarySummary({
         month: "—",
         totalEarnings: 0,
@@ -375,42 +398,21 @@ export default function WorkerHomeScreen() {
       return;
     }
 
-    const payrollRef = collection(db, "users", userId, "payroll");
-    const unsub = onSnapshot(payrollRef, snapshot => {
-      const records = snapshot.docs.map(docSnap => docSnap.data() as any);
-      const currentPeriod = getCurrentPeriodKey(new Date());
-      const currentPayroll = records.find(
-        record => String(record.period ?? "") === currentPeriod
-      );
-      const latest = pickLatestPayroll(records);
-      const payrollRecord = currentPayroll || latest;
-      const fallback = buildMonthlySummary(shifts, hourlyRate, currentPeriod);
-
-      if (!payrollRecord) {
-        setSalarySummary({
-          month: formatPeriodLabel(currentPeriod),
-          totalEarnings: fallback.totalEarnings,
-          status: "pending",
-          nextPaymentDate: getPeriodEndDate(currentPeriod),
-          estimatedNextAmount: fallback.totalEarnings,
-        });
-        return;
-      }
-
-      const period = String(payrollRecord.period ?? currentPeriod);
-      const status = payrollRecord.status === "paid" ? "paid" : "pending";
-      const totalEarnings =
-        Number(payrollRecord.totalEarnings ?? 0) || fallback.totalEarnings;
-      setSalarySummary({
-        month: formatPeriodLabel(period),
-        totalEarnings,
-        status,
-        nextPaymentDate: getPeriodEndDate(period),
-        estimatedNextAmount: totalEarnings,
-      });
+    const currentPeriod = getCurrentPeriodKey(new Date());
+    const totalHours = attendanceLogs.reduce((sum, log) => {
+      const date = String(log.date ?? "");
+      if (!date.startsWith(currentPeriod)) return sum;
+      return sum + Number(log.hours ?? 0);
+    }, 0);
+    const totalEarnings = totalHours * hourlyRate;
+    setSalarySummary({
+      month: formatPeriodLabel(currentPeriod),
+      totalEarnings,
+      status: "pending",
+      nextPaymentDate: getPeriodEndDate(currentPeriod),
+      estimatedNextAmount: totalEarnings,
     });
-    return unsub;
-  }, [userId, shifts, hourlyRate]);
+  }, [userId, attendanceLogs, hourlyRate]);
 
   useEffect(() => {
     if (!userId) {
@@ -1007,28 +1009,6 @@ function getCurrentPeriodKey(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
 
-function buildMonthlySummary(
-  shifts: { date: string; hours?: number; start?: string; end?: string }[],
-  hourlyRate: number,
-  period: string
-) {
-  const [year, month] = period.split("-").map(Number);
-  if (!year || !month) {
-    return { totalEarnings: 0, totalHours: 0 };
-  }
-  const totalHours = shifts.reduce((sum, shift) => {
-    if (!shift.date) return sum;
-    const shiftDate = new Date(`${shift.date}T00:00:00`);
-    if (Number.isNaN(shiftDate.getTime())) return sum;
-    if (shiftDate.getFullYear() !== year || shiftDate.getMonth() !== month - 1) {
-      return sum;
-    }
-    const hours = shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "");
-    return sum + hours;
-  }, 0);
-  return { totalHours, totalEarnings: totalHours * hourlyRate };
-}
-
 const formatPeriodLabel = (period: string) => {
   if (!period) return "—";
   const [year, month] = period.split("-");
@@ -1047,14 +1027,6 @@ const getPeriodEndDate = (period: string) => {
   if (!y || !m) return "-";
   const end = new Date(y, m, 0);
   return `${pad(end.getDate())}/${pad(end.getMonth() + 1)}/${end.getFullYear()}`;
-};
-
-const pickLatestPayroll = (records: any[]) => {
-  if (records.length === 0) return null;
-  const sorted = [...records].sort((a, b) =>
-    String(b.period ?? "").localeCompare(String(a.period ?? ""))
-  );
-  return sorted[0];
 };
 
 const getWeeklyHours = (
@@ -1112,11 +1084,11 @@ const formatDateLabel = (value: string) => {
   });
 };
 
-const getWeeklyStreak = (shifts: { date: string }[]) => {
-  if (shifts.length === 0) return 0;
+const getWeeklyStreak = (logs: { date?: string }[]) => {
+  if (logs.length === 0) return 0;
   const weekKeys = new Set(
-    shifts.map(shift => {
-      const date = new Date(`${shift.date}T00:00:00`);
+    logs.map(log => {
+      const date = new Date(`${log.date}T00:00:00`);
       if (Number.isNaN(date.getTime())) return "";
       const weekStart = startOfWeek(date);
       return `${weekStart.getFullYear()}-${pad(weekStart.getMonth() + 1)}-${pad(

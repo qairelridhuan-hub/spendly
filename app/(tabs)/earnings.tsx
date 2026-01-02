@@ -21,7 +21,6 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useEffect, useMemo, useState } from "react";
-import { useCalendar } from "@/lib/context";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 
 type WeeklyEntry = { week: string; earnings: number };
@@ -32,10 +31,10 @@ type BudgetItem = {
 };
 
 export default function EarningsScreen() {
-  const { shifts } = useCalendar();
   const [displayName, setDisplayName] = useState("User");
   const [userId, setUserId] = useState<string | null>(null);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
+  const [userHourlyRate, setUserHourlyRate] = useState(0);
   const [schedule, setSchedule] = useState<{
     id: string;
     name: string;
@@ -57,21 +56,26 @@ export default function EarningsScreen() {
     status?: string;
     period?: string;
   } | null>(null);
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
-  const hourlyRate = schedule?.hourlyRate ?? workConfig.hourlyRate;
+  const hourlyRate =
+    schedule?.hourlyRate ?? userHourlyRate ?? workConfig.hourlyRate;
+  const currentPeriod = getPeriodKey(new Date());
   const weeklyData = useMemo(
-    () => buildWeeklyData(shifts, hourlyRate),
-    [shifts, hourlyRate]
+    () => buildWeeklyData(attendanceLogs, hourlyRate),
+    [attendanceLogs, hourlyRate]
   );
-  const totalMonthly =
-    payroll?.totalEarnings ?? weeklyData.reduce((sum, w) => sum + w.earnings, 0);
+  const totalMonthly = useMemo(
+    () => getTotalEarningsForPeriod(attendanceLogs, hourlyRate, currentPeriod),
+    [attendanceLogs, hourlyRate, currentPeriod]
+  );
   const maxWeekly = weeklyData.length
     ? Math.max(...weeklyData.map(w => w.earnings))
     : 0;
   const totalBudget = budgetAllocation.reduce((sum, b) => sum + b.amount, 0);
-  const daysWorked = getDaysWorked(shifts);
-  const totalHours = payroll?.totalHours ?? getTotalHours(shifts);
-  const overtimeHours = payroll?.overtimeHours ?? 0;
+  const daysWorked = getDaysWorkedForPeriod(attendanceLogs, currentPeriod);
+  const totalHours = getTotalHoursForPeriod(attendanceLogs, currentPeriod);
+  const overtimeHours = 0;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -86,9 +90,13 @@ export default function EarningsScreen() {
         const data = snap.data() as {
           fullName?: string;
           scheduleId?: string;
+          hourlyRate?: number;
         } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
         setScheduleId(data?.scheduleId ?? null);
+        if (data?.hourlyRate != null) {
+          setUserHourlyRate(Number(data.hourlyRate));
+        }
       });
       return () => unsubProfile();
     });
@@ -167,6 +175,19 @@ export default function EarningsScreen() {
         status: String(latest.status ?? "pending"),
         period: String(latest.period ?? ""),
       });
+    });
+    return unsub;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setAttendanceLogs([]);
+      return;
+    }
+    const attendanceRef = collection(db, "users", userId, "attendance");
+    const unsub = onSnapshot(attendanceRef, snapshot => {
+      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      setAttendanceLogs(logs);
     });
     return unsub;
   }, [userId]);
@@ -411,6 +432,10 @@ const formatPeriodLabel = (period: string) => {
   });
 };
 
+const pad = (value: number) => String(value).padStart(2, "0");
+const getPeriodKey = (date: Date) =>
+  `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+
 const pickLatestPayroll = (records: any[]) => {
   if (records.length === 0) return null;
   const sorted = [...records].sort((a, b) =>
@@ -420,7 +445,7 @@ const pickLatestPayroll = (records: any[]) => {
 };
 
 const buildWeeklyData = (
-  shifts: { date: string; hours?: number; start?: string; end?: string }[],
+  logs: { date?: string; hours?: number }[],
   hourlyRate: number
 ): WeeklyEntry[] => {
   const weeks: { label: string; start: Date; end: Date }[] = [];
@@ -441,12 +466,11 @@ const buildWeeklyData = (
   }
 
   return weeks.map(week => {
-    const hours = shifts.reduce((sum, shift) => {
-      const date = new Date(`${shift.date}T00:00:00`);
+    const hours = logs.reduce((sum, log) => {
+      const date = new Date(`${log.date}T00:00:00`);
       if (Number.isNaN(date.getTime())) return sum;
       if (date < week.start || date > week.end) return sum;
-      const shiftHours = shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "");
-      return sum + shiftHours;
+      return sum + Number(log.hours ?? 0);
     }, 0);
     return {
       week: week.label,
@@ -455,19 +479,33 @@ const buildWeeklyData = (
   });
 };
 
-const getDaysWorked = (shifts: { date: string }[]) => {
-  const uniqueDates = new Set(shifts.map(shift => shift.date));
+const getDaysWorkedForPeriod = (
+  logs: { date?: string }[],
+  period: string
+) => {
+  const uniqueDates = new Set(
+    logs
+      .map(log => log.date)
+      .filter(date => typeof date === "string" && date.startsWith(period))
+  );
   return uniqueDates.size;
 };
 
-const getTotalHours = (
-  shifts: { hours?: number; start?: string; end?: string }[]
+const getTotalHoursForPeriod = (
+  logs: { date?: string; hours?: number }[],
+  period: string
 ) =>
-  shifts.reduce(
-    (sum, shift) =>
-      sum + (shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "")),
-    0
-  );
+  logs.reduce((sum, log) => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(period)) return sum;
+    return sum + Number(log.hours ?? 0);
+  }, 0);
+
+const getTotalEarningsForPeriod = (
+  logs: { date?: string; hours?: number }[],
+  hourlyRate: number,
+  period: string
+) => getTotalHoursForPeriod(logs, period) * hourlyRate;
 
 const startOfWeek = (date: Date) => {
   const day = date.getDay();
@@ -476,14 +514,6 @@ const startOfWeek = (date: Date) => {
   start.setDate(date.getDate() - diff);
   start.setHours(0, 0, 0, 0);
   return start;
-};
-
-const diffHours = (start: string, end: string) => {
-  const [startH, startM] = start.split(":").map(Number);
-  const [endH, endM] = end.split(":").map(Number);
-  const startMinutes = (startH || 0) * 60 + (startM || 0);
-  const endMinutes = (endH || 0) * 60 + (endM || 0);
-  return Math.max(0, (endMinutes - startMinutes) / 60);
 };
 
 const styles = StyleSheet.create({
