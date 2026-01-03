@@ -19,6 +19,7 @@ import { adminPalette } from "@/lib/admin/palette";
 export default function AdminAttendance() {
   const [logs, setLogs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<Record<string, { name?: string }>>({});
+  const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
 
   useEffect(() => {
     const unsub = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
@@ -67,6 +68,7 @@ export default function AdminAttendance() {
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const weeklyStart = startOfWeek(new Date());
+  const weeklyEnd = endOfWeek(new Date());
   const weeklyStats = useMemo(() => {
     let weeklyHours = 0;
     let pendingCount = 0;
@@ -74,18 +76,24 @@ export default function AdminAttendance() {
     logs.forEach(log => {
       const date = String(log.date ?? "");
       const logDate = new Date(`${date}T00:00:00`);
-      if (!Number.isNaN(logDate.getTime()) && logDate >= weeklyStart) {
+      if (
+        !Number.isNaN(logDate.getTime()) &&
+        logDate >= weeklyStart &&
+        logDate <= weeklyEnd &&
+        log.status === "approved"
+      ) {
         weeklyHours += Number(log.hours ?? 0);
       }
       if (log.status === "pending") pendingCount += 1;
-      if (date === todayKey && log.status !== "absent") {
+      if (date === todayKey && log.status !== "absent" && log.clockIn) {
         todayPresent += 1;
       }
     });
     return { weeklyHours, pendingCount, todayPresent };
-  }, [logs, todayKey, weeklyStart]);
+  }, [logs, todayKey, weeklyStart, weeklyEnd]);
 
   const totalWorkers = useMemo(() => Object.keys(workers).length, [workers]);
+  const sortedLogs = useMemo(() => sortLogsByDate(logs, sortOrder), [logs, sortOrder]);
 
   return (
     <LinearGradient
@@ -138,9 +146,37 @@ export default function AdminAttendance() {
         <View style={tableCard}>
           <View style={tableHeader}>
             <Text style={tableTitle}>Attendance Records</Text>
+            <View style={sortControls}>
+              <TouchableOpacity
+                style={[sortButton, sortOrder === "latest" && sortButtonActive]}
+                onPress={() => setSortOrder("latest")}
+              >
+                <Text
+                  style={[
+                    sortButtonText,
+                    sortOrder === "latest" && sortButtonTextActive,
+                  ]}
+                >
+                  Latest First
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[sortButton, sortOrder === "oldest" && sortButtonActive]}
+                onPress={() => setSortOrder("oldest")}
+              >
+                <Text
+                  style={[
+                    sortButtonText,
+                    sortOrder === "oldest" && sortButtonTextActive,
+                  ]}
+                >
+                  Oldest First
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {logs.length === 0 ? (
+          {sortedLogs.length === 0 ? (
             <View style={{ padding: 20 }}>
               <Text style={emptyText}>No attendance records yet.</Text>
             </View>
@@ -162,7 +198,7 @@ export default function AdminAttendance() {
                   </Text>
                 ))}
               </View>
-              {logs.map(log => {
+              {sortedLogs.map(log => {
                 const statusStyle = getStatusStyle(log.status);
                 const workerName =
                   workers[log.workerId]?.name || log.workerId || "Worker";
@@ -264,6 +300,9 @@ const tableHeader = {
   paddingVertical: 14,
   borderBottomWidth: 1,
   borderBottomColor: adminPalette.border,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  justifyContent: "space-between" as const,
 };
 
 const tableTitle = { color: adminPalette.text, fontWeight: "600" };
@@ -305,6 +344,35 @@ const actionButton = {
 };
 
 const emptyText = { color: adminPalette.textMuted, fontSize: 12 };
+
+const sortControls = { flexDirection: "row", gap: 8 };
+const sortButton = {
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: adminPalette.border,
+  backgroundColor: adminPalette.surfaceAlt,
+};
+const sortButtonActive = {
+  borderColor: adminPalette.accent,
+  backgroundColor: adminPalette.infoSoft,
+};
+const sortButtonText = { color: adminPalette.textMuted, fontSize: 11 };
+const sortButtonTextActive = { color: adminPalette.accent, fontWeight: "700" };
+
+const toLogTimestamp = (log: any) => {
+  const date = String(log.date ?? "");
+  const time = String(log.clockIn ?? log.start ?? "00:00");
+  const timestamp = new Date(`${date}T${time}:00`).getTime();
+  if (!Number.isNaN(timestamp)) return timestamp;
+  return 0;
+};
+
+const sortLogsByDate = (items: any[], order: "latest" | "oldest") => {
+  const sorted = [...items].sort((a, b) => toLogTimestamp(a) - toLogTimestamp(b));
+  return order === "latest" ? sorted.reverse() : sorted;
+};
 
 const getStatusStyle = (status: string) => {
   if (status === "approved") {
@@ -350,6 +418,14 @@ const startOfWeek = (date: Date) => {
   start.setDate(date.getDate() - diff);
   start.setHours(0, 0, 0, 0);
   return start;
+};
+
+const endOfWeek = (date: Date) => {
+  const start = startOfWeek(date);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
 };
 
 const formatTimeValue = (ts?: number, fallback?: string) => {

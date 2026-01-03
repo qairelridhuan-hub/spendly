@@ -24,6 +24,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { adminPalette } from "@/lib/admin/palette";
+import { getPeriodKey } from "@/lib/reports/report";
 
 type Worker = {
   id: string;
@@ -41,9 +42,9 @@ type Worker = {
 export default function AdminWorkers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [totals, setTotals] = useState<Record<string, { hours: number; earnings: number }>>({});
   const [status, setStatus] = useState("");
   const [scheduleMap, setScheduleMap] = useState<Record<string, any>>({});
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [assignWorkerId, setAssignWorkerId] = useState<string | null>(null);
   const [assignScheduleId, setAssignScheduleId] = useState<string | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -100,26 +101,37 @@ export default function AdminWorkers() {
       setScheduleMap(map);
     });
 
-    const payrollQuery = collectionGroup(db, "payroll");
-    const unsubPayroll = onSnapshot(payrollQuery, snapshot => {
-      const map: Record<string, { hours: number; earnings: number }> = {};
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data() as any;
-        const workerId = String(data.workerId ?? "");
-        if (!workerId) return;
-        map[workerId] = map[workerId] || { hours: 0, earnings: 0 };
-        map[workerId].hours += Number(data.totalHours ?? 0);
-        map[workerId].earnings += Number(data.totalEarnings ?? 0);
-      });
-      setTotals(map);
+    const attendanceQuery = collectionGroup(db, "attendance");
+    const unsubAttendance = onSnapshot(attendanceQuery, snapshot => {
+      const list = snapshot.docs.map(docSnap => docSnap.data() as any);
+      setAttendanceLogs(list);
     });
 
     return () => {
       unsubWorkers();
-      unsubPayroll();
       unsubSchedules();
+      unsubAttendance();
     };
   }, []);
+
+  const currentPeriod = getPeriodKey(new Date());
+  const totals = useMemo(() => {
+    const map: Record<string, { hours: number; earnings: number }> = {};
+    attendanceLogs.forEach(log => {
+      if (log.status !== "approved") return;
+      const date = String(log.date ?? "");
+      if (!date.startsWith(currentPeriod)) return;
+      const workerId = String(log.workerId ?? "");
+      if (!workerId) return;
+      const workerRate =
+        workers.find(worker => worker.id === workerId)?.hourlyRate ?? 0;
+      const hours = Number(log.hours ?? 0);
+      map[workerId] = map[workerId] || { hours: 0, earnings: 0 };
+      map[workerId].hours += hours;
+      map[workerId].earnings += hours * Number(workerRate ?? 0);
+    });
+    return map;
+  }, [attendanceLogs, currentPeriod, workers]);
 
   const filteredWorkers = useMemo(
     () =>

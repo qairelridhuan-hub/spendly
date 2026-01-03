@@ -60,22 +60,30 @@ export default function EarningsScreen() {
 
   const hourlyRate =
     schedule?.hourlyRate ?? userHourlyRate ?? workConfig.hourlyRate;
+  const approvedLogs = useMemo(
+    () => attendanceLogs.filter(log => log.status === "approved"),
+    [attendanceLogs]
+  );
   const currentPeriod = getPeriodKey(new Date());
   const weeklyData = useMemo(
-    () => buildWeeklyData(attendanceLogs, hourlyRate),
-    [attendanceLogs, hourlyRate]
+    () => buildWeeklyData(approvedLogs, hourlyRate),
+    [approvedLogs, hourlyRate]
   );
   const totalMonthly = useMemo(
-    () => getTotalEarningsForPeriod(attendanceLogs, hourlyRate, currentPeriod),
-    [attendanceLogs, hourlyRate, currentPeriod]
+    () => getTotalEarningsForPeriod(approvedLogs, hourlyRate, currentPeriod),
+    [approvedLogs, hourlyRate, currentPeriod]
   );
   const maxWeekly = weeklyData.length
     ? Math.max(...weeklyData.map(w => w.earnings))
     : 0;
   const totalBudget = budgetAllocation.reduce((sum, b) => sum + b.amount, 0);
-  const daysWorked = getDaysWorkedForPeriod(attendanceLogs, currentPeriod);
-  const totalHours = getTotalHoursForPeriod(attendanceLogs, currentPeriod);
+  const daysWorked = getDaysWorkedForPeriod(approvedLogs, currentPeriod);
+  const totalHours = getTotalHoursForPeriod(approvedLogs, currentPeriod);
   const overtimeHours = 0;
+  const scheduleHoursPerDay = schedule
+    ? diffHours(schedule.startTime, schedule.endTime)
+    : workConfig.hoursPerDay;
+  const absenceDays = getAbsenceDaysForPeriod(attendanceLogs, currentPeriod);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -195,7 +203,7 @@ export default function EarningsScreen() {
   const normalHours = Math.max(0, totalHours - overtimeHours);
   const normalRate = hourlyRate;
   const overtimeRate = workConfig.overtimeRate;
-  const deduction = payroll?.absenceDeductions ?? 0;
+  const deduction = absenceDays * scheduleHoursPerDay * hourlyRate;
   const breakdownTotal =
     normalHours * normalRate + overtimeHours * overtimeRate - deduction;
   const percentChange = 0;
@@ -384,7 +392,9 @@ export default function EarningsScreen() {
             <View style={styles.breakdownRow}>
               <View>
                 <Text style={styles.breakdownTitle}>Deduction (Absent)</Text>
-                <Text style={styles.breakdownHint}>1 day</Text>
+                <Text style={styles.breakdownHint}>
+                  {absenceDays} day{absenceDays === 1 ? "" : "s"}
+                </Text>
               </View>
               <Text style={styles.breakdownNegative}>-RM {deduction}</Text>
             </View>
@@ -506,6 +516,23 @@ const getTotalEarningsForPeriod = (
   hourlyRate: number,
   period: string
 ) => getTotalHoursForPeriod(logs, period) * hourlyRate;
+
+const getAbsenceDaysForPeriod = (
+  logs: { date?: string; status?: string }[],
+  period: string
+) =>
+  logs.filter(
+    log => String(log.status ?? "") === "absent" && String(log.date ?? "").startsWith(period)
+  ).length;
+
+const diffHours = (start: string, end: string) => {
+  if (!start || !end) return 0;
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  return Math.max(0, (endMinutes - startMinutes) / 60);
+};
 
 const startOfWeek = (date: Date) => {
   const day = date.getDay();

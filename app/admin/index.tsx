@@ -24,15 +24,14 @@ import {
 } from "lucide-react-native";
 import { db } from "@/lib/firebase";
 import { adminPalette } from "@/lib/admin/palette";
+import { getPeriodKey } from "@/lib/reports/report";
 
 export default function AdminDashboard() {
   const [workerCount, setWorkerCount] = useState(0);
-  const [totalHours, setTotalHours] = useState(0);
-  const [totalEarnings, setTotalEarnings] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
   const [workers, setWorkers] = useState<Record<string, any>>({});
-  const [payrollTotals, setPayrollTotals] = useState<Record<string, { hours: number; earnings: number }>>({});
+  const [config, setConfig] = useState({ hourlyRate: 0 });
 
   useEffect(() => {
     const workersQuery = query(
@@ -46,29 +45,6 @@ export default function AdminDashboard() {
       });
       setWorkerCount(snapshot.size);
       setWorkers(map);
-    });
-
-    const payrollQuery = collectionGroup(db, "payroll");
-    const unsubPayroll = onSnapshot(payrollQuery, snapshot => {
-      let earningsSum = 0;
-      let hoursSum = 0;
-      const totals: Record<string, { hours: number; earnings: number }> = {};
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data() as any;
-        const hours = Number(data.totalHours ?? 0);
-        const earnings = Number(data.totalEarnings ?? 0);
-        const workerId = String(data.workerId ?? "");
-        earningsSum += earnings;
-        hoursSum += hours;
-        if (workerId) {
-          totals[workerId] = totals[workerId] || { hours: 0, earnings: 0 };
-          totals[workerId].hours += hours;
-          totals[workerId].earnings += earnings;
-        }
-      });
-      setTotalEarnings(earningsSum);
-      setTotalHours(hoursSum);
-      setPayrollTotals(totals);
     });
 
     const attendanceQuery = collectionGroup(db, "attendance");
@@ -90,11 +66,20 @@ export default function AdminDashboard() {
       setShifts(list);
     });
 
+    const configRef = doc(db, "config", "system");
+    const unsubConfig = onSnapshot(configRef, snap => {
+      const data = snap.data() as any;
+      if (!data) return;
+      setConfig({
+        hourlyRate: Number(data.hourlyRate ?? 0),
+      });
+    });
+
     return () => {
       unsubWorkers();
-      unsubPayroll();
       unsubAttendance();
       unsubShifts();
+      unsubConfig();
     };
   }, []);
 
@@ -106,6 +91,27 @@ export default function AdminDashboard() {
     );
     return monthDays.size;
   }, [shifts]);
+
+  const currentPeriod = getPeriodKey(new Date());
+  const approvedLogs = useMemo(
+    () => attendanceLogs.filter(log => log.status === "approved"),
+    [attendanceLogs]
+  );
+  const { totalHours, totalEarnings } = useMemo(() => {
+    return approvedLogs.reduce(
+      (acc, log) => {
+        const date = String(log.date ?? "");
+        if (!date.startsWith(currentPeriod)) return acc;
+        const workerId = String(log.workerId ?? "");
+        const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
+        const hours = Number(log.hours ?? 0);
+        acc.totalHours += hours;
+        acc.totalEarnings += hours * rate;
+        return acc;
+      },
+      { totalHours: 0, totalEarnings: 0 }
+    );
+  }, [approvedLogs, currentPeriod, workers, config.hourlyRate]);
 
   const cards = useMemo(() => [
       {
@@ -152,12 +158,24 @@ export default function AdminDashboard() {
     workingDays,
   ]);
 
-  const weeklyData = useMemo(() => buildWeeklyHours(shifts), [shifts]);
+  const weeklyData = useMemo(() => buildWeeklyHours(approvedLogs), [approvedLogs]);
   const recentActivity = useMemo(() => buildRecentActivity(attendanceLogs, workers), [attendanceLogs, workers]);
   const upcomingShifts = useMemo(() => buildUpcomingShifts(shifts, workers), [shifts, workers]);
   const pendingActions = useMemo(() => attendanceLogs.filter(log => log.status === "pending").slice(0, 3), [attendanceLogs]);
   const performanceStats = useMemo(() => {
-    const entries = Object.entries(payrollTotals)
+    const map: Record<string, { hours: number; earnings: number }> = {};
+    approvedLogs.forEach(log => {
+      const date = String(log.date ?? "");
+      if (!date.startsWith(currentPeriod)) return;
+      const workerId = String(log.workerId ?? "");
+      if (!workerId) return;
+      const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
+      const hours = Number(log.hours ?? 0);
+      map[workerId] = map[workerId] || { hours: 0, earnings: 0 };
+      map[workerId].hours += hours;
+      map[workerId].earnings += hours * rate;
+    });
+    return Object.entries(map)
       .map(([workerId, totals]) => ({
         workerId,
         name:
@@ -170,8 +188,7 @@ export default function AdminDashboard() {
       }))
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 3);
-    return entries;
-  }, [payrollTotals, workers]);
+  }, [approvedLogs, currentPeriod, workers, config.hourlyRate]);
 
   return (
     <LinearGradient
@@ -522,15 +539,18 @@ const alertCardWarning = {
 const alertTitle = { color: adminPalette.warning, fontWeight: "600" as const };
 const alertSub = { color: adminPalette.warning, fontSize: 12, marginTop: 2 };
 
-const buildWeeklyHours = (shifts: any[]) => {
+const buildWeeklyHours = (logs: any[]) => {
   const start = startOfWeek(new Date());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const totals = days.map(day => ({ day, hours: 0 }));
-  shifts.forEach(shift => {
-    const date = new Date(`${shift.date}T00:00:00`);
-    if (Number.isNaN(date.getTime()) || date < start) return;
+  logs.forEach(log => {
+    const date = new Date(`${log.date}T00:00:00`);
+    if (Number.isNaN(date.getTime()) || date < start || date > end) return;
     const dayIndex = (date.getDay() + 6) % 7;
-    totals[dayIndex].hours += Number(shift.hours ?? diffHours(shift.start, shift.end));
+    totals[dayIndex].hours += Number(log.hours ?? 0);
   });
   return totals;
 };
@@ -600,15 +620,6 @@ const startOfDay = (date: Date) => {
   const start = new Date(date);
   start.setHours(0, 0, 0, 0);
   return start;
-};
-
-const diffHours = (start?: string, end?: string) => {
-  if (!start || !end) return 0;
-  const [startH, startM] = start.split(":").map(Number);
-  const [endH, endM] = end.split(":").map(Number);
-  const startMinutes = (startH || 0) * 60 + (startM || 0);
-  const endMinutes = (endH || 0) * 60 + (endM || 0);
-  return Math.max(0, (endMinutes - startMinutes) / 60);
 };
 
 const isThisMonth = (dateValue: string) => {

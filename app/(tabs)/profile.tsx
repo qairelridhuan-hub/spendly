@@ -27,11 +27,14 @@ import {
   View,
   TextInput,
   Image,
+  StyleSheet,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "@/lib/context";
 import { buildWorkerReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
+import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 
 type Stats = {
   totalDays: number;
@@ -54,6 +57,8 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [userHourlyRate, setUserHourlyRate] = useState(0);
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalDays: 0,
     totalHours: 0,
@@ -80,9 +85,10 @@ export default function ProfileScreen() {
 
       const userRef = doc(db, "users", user.uid);
       const unsubProfile = onSnapshot(userRef, snap => {
-        const data = snap.data() as { fullName?: string; photoUrl?: string } | undefined;
+        const data = snap.data() as { fullName?: string; photoUrl?: string; hourlyRate?: number } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
         if (data?.photoUrl) setPhotoUrl(data.photoUrl);
+        if (data?.hourlyRate != null) setUserHourlyRate(Number(data.hourlyRate));
       });
 
       const goalsRef = collection(db, "users", user.uid, "goals");
@@ -101,50 +107,38 @@ export default function ProfileScreen() {
       const attendanceRef = collection(db, "users", user.uid, "attendance");
       const unsubAttendance = onSnapshot(attendanceRef, snapshot => {
         const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
-        const totalHours = logs.reduce(
-          (sum, item) => sum + Number(item.hours ?? 0),
-          0
-        );
-        const totalDays = new Set(
-          logs
-            .filter(item => Number(item.hours ?? 0) > 0)
-            .map(item => String(item.date ?? ""))
-        ).size;
-        setStats(prev => ({
-          ...prev,
-          totalHours,
-          totalDays,
-        }));
-      });
-
-      const payrollRef = collection(db, "users", user.uid, "payroll");
-      const unsubPayroll = onSnapshot(payrollRef, snapshot => {
-        const records = snapshot.docs.map(docSnap => docSnap.data() as any);
-        const totalEarnings = records.reduce(
-          (sum, item) => sum + Number(item.totalEarnings ?? 0),
-          0
-        );
-        const overtimeHours = records.reduce(
-          (sum, item) => sum + Number(item.overtimeHours ?? 0),
-          0
-        );
-        setStats(prev => ({
-          ...prev,
-          totalEarnings,
-          overtimeHours,
-        }));
+        setAttendanceLogs(logs);
       });
 
       return () => {
         unsubProfile();
         unsubGoals();
         unsubAttendance();
-        unsubPayroll();
       };
     });
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    const approvedLogs = attendanceLogs.filter(log => log.status === "approved");
+    const totalHours = approvedLogs.reduce(
+      (sum, item) => sum + Number(item.hours ?? 0),
+      0
+    );
+    const totalDays = new Set(
+      approvedLogs
+        .filter(item => Number(item.hours ?? 0) > 0)
+        .map(item => String(item.date ?? ""))
+    ).size;
+    setStats(prev => ({
+      ...prev,
+      totalHours,
+      totalDays,
+      totalEarnings: totalHours * userHourlyRate,
+      overtimeHours: 0,
+    }));
+  }, [attendanceLogs, userHourlyRate]);
 
   const openEdit = () => {
     setNameInput(displayName);
@@ -225,6 +219,26 @@ export default function ProfileScreen() {
       collection(db, "users", userId, "attendance")
     );
     const attendance = attendanceSnap.docs.map(docSnap => docSnap.data() as any);
+    const approvedAttendance = attendance.filter(
+      item => String(item.status ?? "") === "approved"
+    );
+    const totalHours = approvedAttendance.reduce(
+      (sum, item) => sum + Number(item.hours ?? 0),
+      0
+    );
+    const absenceDeductions = attendance.filter(
+      item =>
+        String(item.status ?? "") === "absent" &&
+        String(item.date ?? "").startsWith(period)
+    ).length;
+    const derivedPayroll = {
+      period,
+      totalHours,
+      overtimeHours: 0,
+      totalEarnings: totalHours * userHourlyRate,
+      absenceDeductions,
+      status: "pending",
+    };
 
     const html = buildWorkerReportHtml({
       worker: { name: workerName, email: workerEmail },
@@ -238,8 +252,8 @@ export default function ProfileScreen() {
             absenceDeductions: Number(payroll.absenceDeductions ?? 0),
             status: payroll.status,
           }
-        : null,
-      attendance: attendance.map(item => ({
+        : derivedPayroll,
+      attendance: approvedAttendance.map(item => ({
         date: String(item.date ?? ""),
         clockIn: item.clockIn,
         clockOut: item.clockOut,
@@ -295,103 +309,85 @@ export default function ProfileScreen() {
       colors={[colors.backgroundStart, colors.backgroundEnd]}
       style={{ flex: 1 }}
     >
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <ScrollView contentContainerStyle={styles.container}>
         {/* Profile Header */}
-        <LinearGradient
-          colors={[colors.accent, colors.accentStrong]}
-          style={{
-            borderRadius: 20,
-            padding: 18,
-            marginBottom: 16,
-          }}
+        <View
+          style={[
+            styles.profileCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
         >
-          <View style={{ flexDirection: "row", gap: 16, marginBottom: 12 }}>
+          <View style={styles.profileRow}>
             <View
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                backgroundColor: colors.surface,
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-              }}
+              style={[
+                styles.avatarWrap,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
             >
               {photoUrl ? (
-                <Image
-                  source={{ uri: photoUrl }}
-                  style={{ width: 72, height: 72 }}
-                />
+                <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
               ) : (
-                <Text style={{ fontSize: 32 }}>👤</Text>
+                <Text style={styles.avatarFallback}>👤</Text>
               )}
             </View>
-            <View style={{ flex: 1, justifyContent: "center" }}>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "700" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.profileName, { color: colors.text }]}>
                 {displayName}
               </Text>
-              <Text style={{ color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
+              <Text style={[styles.profileEmail, { color: colors.textMuted }]}>
                 {email || "No email"}
               </Text>
             </View>
           </View>
 
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-              <Award size={18} color="#fde68a" />
-              <Text style={{ color: "#fff", fontSize: 12 }}>Level 1</Text>
+          <View style={styles.profileMetaRow}>
+            <View style={[styles.metaChip, { borderColor: colors.border }]}>
+              <Award size={14} color={colors.textMuted} />
+              <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                Level 1
+              </Text>
             </View>
-            <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-              <Zap size={18} color="#fdba74" />
-              <Text style={{ color: "#fff", fontSize: 12 }}>0 XP</Text>
+            <View style={[styles.metaChip, { borderColor: colors.border }]}>
+              <Zap size={14} color={colors.textMuted} />
+              <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                0 XP
+              </Text>
             </View>
-            <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-              <Target size={18} color="#86efac" />
-              <Text style={{ color: "#fff", fontSize: 12 }}>
+            <View style={[styles.metaChip, { borderColor: colors.border }]}>
+              <Target size={14} color={colors.textMuted} />
+              <Text style={[styles.metaText, { color: colors.textMuted }]}>
                 {stats.goalsCount} Goals
               </Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Stats Grid */}
         <View
-          style={{
-            backgroundColor: colors.surface,
-            borderRadius: 18,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginBottom: 16,
-          }}
+          style={[
+            styles.sectionCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
         >
-          <Text style={{ color: colors.text, fontWeight: "700", marginBottom: 12 }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Statistics
           </Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+          <View style={styles.statGrid}>
             {statsList.map(stat => (
               <View
                 key={stat.label}
-                style={{
-                  width: "47%",
-                  backgroundColor: colors.surfaceAlt,
-                  borderRadius: 12,
-                  padding: 12,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  alignItems: "center",
-                }}
+                style={[
+                  styles.statCard,
+                  { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+                ]}
               >
-                <Text style={{ color: colors.text, fontWeight: "700" }}>
+                <Text style={[styles.statValue, { color: colors.text }]}>
                   {stat.value}
                 </Text>
                 <Text
-                  style={{
-                    color: colors.textMuted,
-                    fontSize: 11,
-                    marginTop: 4,
-                    textAlign: "center",
-                  }}
+                  style={[styles.statLabel, { color: colors.textMuted }]}
                 >
                   {stat.label}
                 </Text>
@@ -402,45 +398,31 @@ export default function ProfileScreen() {
 
         {/* Badges */}
         <View
-          style={{
-            backgroundColor: colors.surface,
-            borderRadius: 18,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginBottom: 16,
-          }}
+          style={[
+            styles.sectionCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
         >
-          <Text style={{ color: colors.text, fontWeight: "700", marginBottom: 12 }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Badges Earned
           </Text>
           {badges.length === 0 ? (
             <Text style={{ color: colors.textMuted }}>No badges yet</Text>
           ) : (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+            <View style={styles.badgeGrid}>
               {badges.map(badge => (
                 <View
                   key={badge.name}
-                  style={{
-                    width: "47%",
-                    backgroundColor: colors.surfaceAlt,
-                    borderRadius: 14,
-                    padding: 12,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                  }}
+                  style={[
+                    styles.badgeCard,
+                    { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+                  ]}
                 >
-                  <Text style={{ fontSize: 22 }}>{badge.icon}</Text>
-                  <Text
-                    style={{
-                      color: colors.text,
-                      fontWeight: "700",
-                      marginTop: 6,
-                    }}
-                  >
+                  <Text style={styles.badgeIcon}>{badge.icon}</Text>
+                  <Text style={[styles.badgeName, { color: colors.text }]}>
                     {badge.name}
                   </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                  <Text style={[styles.badgeDesc, { color: colors.textMuted }]}>
                     {badge.description}
                   </Text>
                 </View>
@@ -451,72 +433,56 @@ export default function ProfileScreen() {
 
         {/* Settings */}
         <View
-          style={{
-            backgroundColor: colors.surface,
-            borderRadius: 18,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginBottom: 16,
-          }}
+          style={[
+            styles.sectionCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
         >
-          <Text style={{ color: colors.text, fontWeight: "700", marginBottom: 12 }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Settings
           </Text>
 
-          <View style={{ gap: 12 }}>
+          <View style={styles.settingList}>
             <TouchableOpacity
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: colors.surfaceAlt,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
+              style={[
+                styles.settingRow,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
               onPress={openEdit}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={styles.settingLeft}>
                 <User size={18} color={colors.textMuted} />
-                <Text style={{ color: colors.text }}>Edit Profile</Text>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  Edit Profile
+                </Text>
               </View>
             </TouchableOpacity>
 
             <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: colors.surfaceAlt,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
+              style={[
+                styles.settingRow,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={styles.settingLeft}>
                 <Mail size={18} color={colors.textMuted} />
-                <Text style={{ color: colors.text }}>Notifications</Text>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  Notifications
+                </Text>
               </View>
             </View>
 
             <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: colors.surfaceAlt,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
+              style={[
+                styles.settingRow,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={styles.settingLeft}>
                 <Settings size={18} color={colors.textMuted} />
-                <Text style={{ color: colors.text }}>Preferences</Text>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  Preferences
+                </Text>
               </View>
               <Switch
                 value={mode === "dark"}
@@ -526,21 +492,17 @@ export default function ProfileScreen() {
               />
             </View>
             <TouchableOpacity
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 12,
-                borderRadius: 12,
-                backgroundColor: colors.surfaceAlt,
-                borderWidth: 1,
-                borderColor: colors.border,
-              }}
+              style={[
+                styles.settingRow,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+              ]}
               onPress={handleGenerateReport}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={styles.settingLeft}>
                 <FileText size={18} color={colors.textMuted} />
-                <Text style={{ color: colors.text }}>Generate Report (PDF)</Text>
+                <Text style={[styles.settingText, { color: colors.text }]}>
+                  Generate Report (PDF)
+                </Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -549,19 +511,15 @@ export default function ProfileScreen() {
         {/* Edit Profile */}
         {editOpen ? (
           <View
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: 18,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: colors.border,
-              marginBottom: 16,
-            }}
+            style={[
+              styles.sectionCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
           >
-            <Text style={{ color: colors.text, fontWeight: "700", marginBottom: 12 }}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Edit Profile
             </Text>
-            <View style={{ gap: 12 }}>
+            <View style={styles.formStack}>
               <View>
                 <Text style={{ color: colors.textMuted, marginBottom: 6 }}>
                   Username
@@ -664,14 +622,10 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <TouchableOpacity
-            style={{
-              padding: 14,
-              borderRadius: 14,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-              marginBottom: 16,
-            }}
+            style={[
+              styles.actionButton,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
             onPress={openEdit}
           >
             <Text style={{ color: colors.text, textAlign: "center", fontWeight: "600" }}>
@@ -681,13 +635,10 @@ export default function ProfileScreen() {
         )}
 
         <TouchableOpacity
-          style={{
-            padding: 14,
-            borderRadius: 14,
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
+          style={[
+            styles.actionButton,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
           onPress={async () => {
             try {
               await signOut(auth);
@@ -700,7 +651,116 @@ export default function ProfileScreen() {
             Logout
           </Text>
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    paddingTop: 16,
+    paddingBottom: 120,
+  },
+  safe: { flex: 1 },
+  bgBlob: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 999,
+    backgroundColor: "rgba(14,165,233,0.12)",
+    top: -80,
+    right: -60,
+  },
+  bgBlobAlt: {
+    position: "absolute",
+    width: 280,
+    height: 280,
+    borderRadius: 999,
+    backgroundColor: "rgba(249,115,22,0.12)",
+    bottom: -120,
+    left: -80,
+  },
+  profileCard: {
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  profileRow: {
+    flexDirection: "row",
+    gap: 14,
+    marginBottom: 14,
+    alignItems: "center",
+  },
+  avatarWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 1,
+  },
+  avatarImage: { width: 72, height: 72 },
+  avatarFallback: { fontSize: 32 },
+  profileName: { fontSize: 20, fontWeight: "700" },
+  profileEmail: { marginTop: 4, fontSize: 12 },
+  profileMetaRow: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
+  metaChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  metaText: { fontSize: 11, fontWeight: "600" },
+  sectionCard: {
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  sectionTitle: { fontWeight: "700", marginBottom: 12 },
+  statGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  statCard: {
+    width: "47%",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  statValue: { fontWeight: "700" },
+  statLabel: { fontSize: 11, marginTop: 4, textAlign: "center" },
+  badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  badgeCard: {
+    width: "47%",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+  },
+  badgeIcon: { fontSize: 22 },
+  badgeName: { fontWeight: "700", marginTop: 6 },
+  badgeDesc: { fontSize: 11 },
+  settingList: { gap: 12 },
+  settingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  settingLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  settingText: { fontSize: 13 },
+  formStack: { gap: 12 },
+  actionButton: {
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+});

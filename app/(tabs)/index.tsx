@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -111,12 +111,16 @@ export default function WorkerHomeScreen() {
     : workConfig.hoursPerDay;
   const hourlyRate =
     schedule?.hourlyRate ?? userHourlyRate ?? workConfig.hourlyRate;
+  const approvedLogs = useMemo(
+    () => attendanceLogs.filter(log => log.status === "approved"),
+    [attendanceLogs]
+  );
   const weeklyTarget = schedule
     ? schedule.days.length * scheduleHoursPerDay
     : workConfig.hoursPerDay * workConfig.workingDaysPerWeek;
-  const weeklyCurrent = getWeeklyHours(attendanceLogs);
+  const weeklyCurrent = getWeeklyHours(approvedLogs);
   const weeklyEarnings = weeklyCurrent * hourlyRate;
-  const weeklyStreak = getWeeklyStreak(attendanceLogs);
+  const weeklyStreak = getWeeklyStreak(approvedLogs);
   const goalPercentage =
     weeklyTarget === 0 ? 0 : Math.round((weeklyCurrent / weeklyTarget) * 100);
   const todayShift = getTodayShift();
@@ -399,7 +403,7 @@ export default function WorkerHomeScreen() {
     }
 
     const currentPeriod = getCurrentPeriodKey(new Date());
-    const totalHours = attendanceLogs.reduce((sum, log) => {
+    const totalHours = approvedLogs.reduce((sum, log) => {
       const date = String(log.date ?? "");
       if (!date.startsWith(currentPeriod)) return sum;
       return sum + Number(log.hours ?? 0);
@@ -412,7 +416,7 @@ export default function WorkerHomeScreen() {
       nextPaymentDate: getPeriodEndDate(currentPeriod),
       estimatedNextAmount: totalEarnings,
     });
-  }, [userId, attendanceLogs, hourlyRate]);
+  }, [userId, approvedLogs, hourlyRate]);
 
   useEffect(() => {
     if (!userId) {
@@ -820,31 +824,34 @@ export default function WorkerHomeScreen() {
 
             {/* 🚀 Quick Actions */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Quick actions</Text>
+              <View style={styles.rowBetween}>
+                <Text style={styles.cardTitle}>Quick actions</Text>
+                <Text style={styles.cardHint}>Shortcuts</Text>
+              </View>
 
-              <View style={styles.grid}>
+              <View style={styles.actionGrid}>
                 <ActionBox
-                  icon={<Calendar size={20} color="#0f172a" />}
+                  icon={<Calendar size={18} color="#0f172a" />}
                   label="Calendar"
-                  tone="#e2e8f0"
+                  subtitle="View shifts"
                   onPress={() => router.push("/(tabs)/calendar")}
                 />
                 <ActionBox
-                  icon={<DollarSign size={20} color="#0f172a" />}
+                  icon={<DollarSign size={18} color="#0f172a" />}
                   label="Earnings"
-                  tone="#e2e8f0"
+                  subtitle="Monthly summary"
                   onPress={() => router.push("/(tabs)/earnings")}
                 />
                 <ActionBox
-                  icon={<Target size={20} color="#0f172a" />}
+                  icon={<Target size={18} color="#0f172a" />}
                   label="Goals"
-                  tone="#e2e8f0"
+                  subtitle="Track progress"
                   onPress={() => router.push("/(tabs)/goals")}
                 />
                 <ActionBox
-                  icon={<User size={20} color="#0f172a" />}
+                  icon={<User size={18} color="#0f172a" />}
                   label="Profile"
-                  tone="#e2e8f0"
+                  subtitle="Your details"
                   onPress={() => router.push("/(tabs)/profile")}
                 />
               </View>
@@ -1066,9 +1073,17 @@ const diffHours = (start: string, end: string) => {
 const getNextShift = (
   shifts: { date: string; start: string; end: string }[]
 ) => {
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const todayKey = now.toISOString().slice(0, 10);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const future = shifts
-    .filter(shift => shift.date > todayKey)
+    .filter(shift => {
+      if (shift.date > todayKey) return true;
+      if (shift.date < todayKey) return false;
+      const [startH, startM] = shift.start.split(":").map(Number);
+      const shiftMinutes = (startH || 0) * 60 + (startM || 0);
+      return shiftMinutes > currentMinutes;
+    })
     .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
   return future[0] || null;
 };
@@ -1114,21 +1129,21 @@ const getWeeklyStreak = (logs: { date?: string }[]) => {
 function ActionBox({
   icon,
   label,
-  tone,
+  subtitle,
   onPress,
 }: {
   icon: React.ReactNode;
   label: string;
-  tone: string;
+  subtitle?: string;
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
-      style={[styles.actionBox, { backgroundColor: tone }]}
-      onPress={onPress}
-    >
-      {icon}
-      <Text style={styles.actionText}>{label}</Text>
+    <TouchableOpacity style={styles.actionCard} onPress={onPress}>
+      <View style={styles.actionIconWrap}>{icon}</View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.actionTitle}>{label}</Text>
+        {subtitle ? <Text style={styles.actionSubtitle}>{subtitle}</Text> : null}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -1381,16 +1396,33 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 12, color: "#475569", marginTop: 6 },
   statValue: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
 
-  actionBox: {
-    width: "47%",
-    borderRadius: 14,
-    padding: 12,
+  cardHint: { fontSize: 12, color: "#94a3b8" },
+  actionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 4,
+  },
+  actionCard: {
+    width: "48%",
+    flexDirection: "row",
     alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
   },
-  actionText: {
-    marginTop: 6,
-    fontSize: 14,
-    color: "#0f172a",
-    fontWeight: "600",
+  actionIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#f1f5f9",
+    alignItems: "center",
+    justifyContent: "center",
   },
+  actionTitle: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
+  actionSubtitle: { fontSize: 12, color: "#64748b", marginTop: 2 },
 });

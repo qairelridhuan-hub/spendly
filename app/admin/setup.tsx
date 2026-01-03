@@ -52,6 +52,9 @@ export default function AdminSetup() {
   const [selectedSchedule, setSelectedSchedule] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
+  const [shiftSortOrder, setShiftSortOrder] = useState<"latest" | "oldest">(
+    "latest"
+  );
   const [formError, setFormError] = useState("");
   const [workers, setWorkers] = useState<{ id: string; name: string; scheduleId?: string }[]>([]);
   const [workerMap, setWorkerMap] = useState<Record<string, { name: string; code?: string }>>({});
@@ -311,6 +314,19 @@ export default function AdminSetup() {
     return adminPalette.accent;
   };
 
+  const toShiftTimestamp = (shift: any) => {
+    const date = String(shift.date ?? "");
+    const time = String(shift.start ?? "00:00");
+    const timestamp = new Date(`${date}T${time}:00`).getTime();
+    if (!Number.isNaN(timestamp)) return timestamp;
+    return 0;
+  };
+
+  const sortShifts = (items: any[], order: "latest" | "oldest") => {
+    const sorted = [...items].sort((a, b) => toShiftTimestamp(a) - toShiftTimestamp(b));
+    return order === "latest" ? sorted.reverse() : sorted;
+  };
+
   return (
     <LinearGradient
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
@@ -475,6 +491,40 @@ export default function AdminSetup() {
               <Text style={styles.sectionTitle}>Shifts</Text>
               <Text style={styles.subtitle}>Past and upcoming shifts</Text>
             </View>
+            <View style={styles.sortControls}>
+              <TouchableOpacity
+                style={[
+                  styles.sortButton,
+                  shiftSortOrder === "latest" && styles.sortButtonActive,
+                ]}
+                onPress={() => setShiftSortOrder("latest")}
+              >
+                <Text
+                  style={[
+                    styles.sortButtonText,
+                    shiftSortOrder === "latest" && styles.sortButtonTextActive,
+                  ]}
+                >
+                  Latest First
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.sortButton,
+                  shiftSortOrder === "oldest" && styles.sortButtonActive,
+                ]}
+                onPress={() => setShiftSortOrder("oldest")}
+              >
+                <Text
+                  style={[
+                    styles.sortButtonText,
+                    shiftSortOrder === "oldest" && styles.sortButtonTextActive,
+                  ]}
+                >
+                  Oldest First
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
           {shifts.length === 0 ? (
             <View style={styles.emptyCard}>
@@ -485,7 +535,7 @@ export default function AdminSetup() {
             </View>
           ) : (
             <View style={styles.shiftList}>
-              {shifts.map(shift => {
+              {sortShifts(shifts, shiftSortOrder).map(shift => {
                 const resolvedStatus = resolveShiftStatus(shift);
                 const workerInfo = workerMap[String(shift.workerId || "")];
                 const workerLabel = workerInfo
@@ -942,6 +992,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  sortControls: { flexDirection: "row", gap: 8 },
+  sortButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    backgroundColor: adminPalette.surfaceAlt,
+  },
+  sortButtonActive: {
+    borderColor: adminPalette.accent,
+    backgroundColor: adminPalette.infoSoft,
+  },
+  sortButtonText: { color: adminPalette.textMuted, fontSize: 11 },
+  sortButtonTextActive: { color: adminPalette.accent, fontWeight: "700" },
   label: { color: adminPalette.textMuted, fontSize: 12 },
   value: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
   cardFooter: {

@@ -57,6 +57,12 @@ export default function GoalsScreen() {
   const [filter, setFilter] = useState<"all" | GoalPriority>("all");
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("User");
+  const [hourlyRate, setHourlyRate] = useState(0);
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const approvedLogs = useMemo(
+    () => attendanceLogs.filter(log => log.status === "approved"),
+    [attendanceLogs]
+  );
 
   // Modal inputs
   const [goalName, setGoalName] = useState("");
@@ -78,8 +84,9 @@ export default function GoalsScreen() {
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
       const unsubProfile = onSnapshot(userRef, snap => {
-        const data = snap.data() as { fullName?: string } | undefined;
+        const data = snap.data() as { fullName?: string; hourlyRate?: number } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
+        if (data?.hourlyRate != null) setHourlyRate(Number(data.hourlyRate));
       });
       return () => unsubProfile();
     });
@@ -117,6 +124,19 @@ export default function GoalsScreen() {
       setGoals(nextGoals);
     });
 
+    return unsubscribe;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setAttendanceLogs([]);
+      return;
+    }
+    const attendanceRef = collection(db, "users", userId, "attendance");
+    const unsubscribe = onSnapshot(attendanceRef, snapshot => {
+      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      setAttendanceLogs(logs);
+    });
     return unsubscribe;
   }, [userId]);
 
@@ -267,6 +287,26 @@ export default function GoalsScreen() {
     return next.toISOString().slice(0, 10);
   };
 
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const getPeriodKey = (date: Date) =>
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+
+  const currentPeriod = getPeriodKey(new Date());
+  const monthlyEarnings = useMemo(() => {
+    const totalHours = approvedLogs.reduce((sum, log) => {
+      const date = String(log.date ?? "");
+      if (!date.startsWith(currentPeriod)) return sum;
+      return sum + Number(log.hours ?? 0);
+    }, 0);
+    return totalHours * hourlyRate;
+  }, [approvedLogs, hourlyRate, currentPeriod]);
+
+  const estimateMonthsToGoal = (goal: Goal) => {
+    const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+    if (monthlyEarnings <= 0) return null;
+    return Math.ceil(remaining / monthlyEarnings);
+  };
+
   const filteredGoals = useMemo(() => {
     if (filter === "all") return goals;
     return goals.filter(goal => goal.priority === filter);
@@ -356,10 +396,12 @@ export default function GoalsScreen() {
         {filteredGoals.length > 0 && (
           <View style={styles.goalList}>
             {filteredGoals.map(goal => {
-              const progress = getProgress(goal);
-              const weeklyPace = getWeeklyPace(goal);
-              const streakWeeks = getStreakWeeks(goal);
-              const nextContribution = getNextContributionDate();
+                const progress = getProgress(goal);
+                const weeklyPace = getWeeklyPace(goal);
+                const streakWeeks = getStreakWeeks(goal);
+                const nextContribution = getNextContributionDate();
+                const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+                const monthsToGoal = estimateMonthsToGoal(goal);
               return (
                 <View key={goal.id} style={styles.goalCard}>
                   <View style={styles.goalHeader}>
@@ -470,7 +512,22 @@ export default function GoalsScreen() {
                     <View>
                       <Text style={styles.goalFootLabel}>Remaining</Text>
                       <Text style={styles.goalFootValue}>
-                        RM {Math.max(0, goal.targetAmount - goal.savedAmount).toFixed(2)}
+                        RM {remaining.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.earningsRow}>
+                    <View>
+                      <Text style={styles.goalFootLabel}>Current earnings</Text>
+                      <Text style={styles.goalFootValue}>
+                        RM {monthlyEarnings.toFixed(2)} / month
+                      </Text>
+                    </View>
+                    <View>
+                      <Text style={styles.goalFootLabel}>Time to reach</Text>
+                      <Text style={styles.goalFootValue}>
+                        {monthsToGoal ? `${monthsToGoal} mo` : "—"}
                       </Text>
                     </View>
                   </View>
@@ -877,6 +934,11 @@ const styles = StyleSheet.create({
   },
   goalFootLabel: { color: "#64748b", fontSize: 12 },
   goalFootValue: { fontWeight: "700", marginTop: 2 },
+  earningsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
 
   /* MODAL */
   overlay: {
