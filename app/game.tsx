@@ -595,6 +595,7 @@ export default function GameScreen() {
                 </TouchableOpacity>
               </View>
               <ScrollView contentContainerStyle={styles.modalList} showsVerticalScrollIndicator={false}>
+                <Text style={styles.modalSectionTitle}>Current challenges</Text>
                 {displayChallenges.map(challenge => (
                   <View key={`${challenge.id}-detail`} style={styles.modalItem}>
                     <Text style={styles.modalItemTitle}>{challenge.title}</Text>
@@ -610,6 +611,16 @@ export default function GameScreen() {
                     </Text>
                   </View>
                 ))}
+                <Text style={styles.modalSectionTitle}>More challenges to unlock</Text>
+                {challengeCatalog
+                  .filter(item => !displayChallenges.find(ch => ch.id === item.id))
+                  .map(item => (
+                    <View key={`${item.id}-locked`} style={styles.modalItem}>
+                      <Text style={styles.modalItemTitle}>{item.title}</Text>
+                      <Text style={styles.modalItemSub}>{item.description}</Text>
+                      <Text style={styles.modalItemSub}>Requirement: {item.requirement}</Text>
+                    </View>
+                  ))}
               </ScrollView>
             </View>
           </View>
@@ -843,6 +854,12 @@ const styles = StyleSheet.create({
   },
   modalItemTitle: { fontSize: 13, fontWeight: "700", color: "#e2e8f0" },
   modalItemSub: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
+  modalSectionTitle: {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    color: "#a5b4fc",
+  },
   debugToggleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1329,6 +1346,27 @@ const getLevelProgress = (xp: number) => {
   const progress = Math.min(100, Math.round(((xp - currentFloor) / (nextXp - currentFloor)) * 100));
   return { level, nextXp, progress };
 };
+
+const challengeCatalog = [
+  {
+    id: "monthly-consistency",
+    title: "Log 12 shifts this month",
+    description: "Build consistency across the month.",
+    requirement: "Complete 12 approved shifts",
+  },
+  {
+    id: "saving-burst",
+    title: "Save RM 150 this month",
+    description: "Push savings with a focused month.",
+    requirement: "Increase goal savings by RM 150",
+  },
+  {
+    id: "budget-review",
+    title: "Review budget weekly",
+    description: "Check your budget 4 times this month.",
+    requirement: "Open the budget screen weekly",
+  },
+];
 
 const getUnlocks = (level: number) => {
   const unlocks = [

@@ -44,7 +44,9 @@ export default function WorkerHomeScreen() {
   const { colors } = useTheme();
   const [displayName, setDisplayName] = useState("User");
   const [userId, setUserId] = useState<string | null>(null);
+  const [showGameSplash, setShowGameSplash] = useState(false);
   const gameGlow = useRef(new Animated.Value(0)).current;
+  const gameSpin = useRef(new Animated.Value(0)).current;
   const [goalsCount, setGoalsCount] = useState(0);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const [userHourlyRate, setUserHourlyRate] = useState(0);
@@ -341,6 +343,20 @@ export default function WorkerHomeScreen() {
     animation.start();
     return () => animation.stop();
   }, [gameGlow]);
+
+  useEffect(() => {
+    const spinAnimation = Animated.loop(
+      Animated.timing(gameSpin, {
+        toValue: 1,
+        duration: 900,
+        useNativeDriver: true,
+      })
+    );
+    if (showGameSplash) {
+      spinAnimation.start();
+    }
+    return () => spinAnimation.stop();
+  }, [gameSpin, showGameSplash]);
 
   useEffect(() => {
     if (!scheduleId) {
@@ -778,7 +794,15 @@ export default function WorkerHomeScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => router.push("/game")}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowGameSplash(true);
+                setTimeout(() => {
+                  setShowGameSplash(false);
+                  router.push("/game");
+                }, 700);
+              }}
+            >
               <Animated.View style={styles.gameIconWrap}>
                 <Animated.View
                   style={[
@@ -1145,6 +1169,28 @@ export default function WorkerHomeScreen() {
             </View>
           </Animated.View>
         </ScrollView>
+
+        {showGameSplash ? (
+          <View style={styles.gameSplashOverlay}>
+            <View style={styles.gameSplashCard}>
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      rotate: gameSpin.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["0deg", "360deg"],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <Gamepad2 size={36} color="#22c55e" />
+              </Animated.View>
+              <Text style={styles.gameSplashText}>Loading Arcade...</Text>
+            </View>
+          </View>
+        ) : null}
       </SafeAreaView>
 
       {showShiftDetails && activeShift ? (
@@ -1809,6 +1855,27 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: "#22c55e",
   },
+  gameSplashOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(2, 6, 23, 0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gameSplashCard: {
+    width: 180,
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.4)",
+  },
+  gameSplashText: { color: "#e2e8f0", fontWeight: "700", fontSize: 12 },
   dot: {
     position: "absolute",
     top: -2,
