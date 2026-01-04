@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   Animated,
   Alert,
@@ -35,6 +36,17 @@ import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar, useTheme } from "@/lib/context";
+
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+const FINANCE_SYSTEM_PROMPT =
+  "You are a helpful finance assistant for budgeting, savings, debt payoff, and income planning. " +
+  "Answer clearly and ask for missing context. Do not provide financial, legal, or tax advice.";
+const CHAT_HISTORY_LIMIT = 6;
 
 /* =====================
    SCREEN
@@ -98,6 +110,17 @@ export default function WorkerHomeScreen() {
   const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [pastSalaryPeriod, setPastSalaryPeriod] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      id: "assistant-welcome",
+      role: "assistant",
+      content:
+        "Ask me about budgeting, savings goals, debt payoff, or salary planning.",
+    },
+  ]);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [chatSending, setChatSending] = useState(false);
 
   const scheduleHoursPerDay = schedule
     ? diffHours(schedule.startTime, schedule.endTime)
@@ -202,6 +225,10 @@ export default function WorkerHomeScreen() {
       return sum + hours;
     }, 0);
   }, [overtimeLogs, selectedPeriod, cutoffDate]);
+  const chatMessagesToShow = useMemo(
+    () => chatMessages.slice(-CHAT_HISTORY_LIMIT),
+    [chatMessages]
+  );
   const projectedHours = allMonthShifts.reduce(
     (sum, shift) => sum + getShiftHours(shift),
     0
@@ -619,6 +646,89 @@ export default function WorkerHomeScreen() {
       },
       { merge: true }
     );
+  };
+
+  const handleSendChat = async () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || chatSending) return;
+    const jamAiChatUrl = process.env.EXPO_PUBLIC_JAMAI_CHAT_URL ?? "";
+    if (!jamAiChatUrl) {
+      setChatError("Missing EXPO_PUBLIC_JAMAI_CHAT_URL.");
+      return;
+    }
+
+    const historyPayload = chatMessagesToShow.map(({ role, content }) => ({
+      role,
+      content,
+    }));
+    const outgoing: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: trimmed,
+    };
+    setChatMessages(prev => [...prev, outgoing]);
+    setChatInput("");
+    setChatSending(true);
+    setChatError(null);
+
+    try {
+      const response = await fetch(jamAiChatUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: trimmed,
+          history: historyPayload,
+          context: {
+            system: FINANCE_SYSTEM_PROMPT,
+          },
+        }),
+      });
+      const rawText = await response.text();
+      let data: any = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        data = null;
+      }
+      if (!response.ok) {
+        const fallback =
+          typeof data?.error === "string" && data.error
+            ? data.error
+            : `Assistant error (${response.status}).`;
+        throw new Error(fallback);
+      }
+      if (!data) {
+        throw new Error("Assistant returned an invalid response.");
+      }
+      const answer =
+        typeof data?.answer === "string" && data.answer.trim()
+          ? data.answer
+          : "Sorry, I couldn't find an answer for that.";
+      setChatMessages(prev => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: answer,
+        },
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to reach JamAI.";
+      setChatError(message);
+      setChatMessages(prev => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: "Sorry, I couldn't reach the assistant. Please try again.",
+        },
+      ]);
+    } finally {
+      setChatSending(false);
+    }
   };
 
   useEffect(() => {
@@ -1166,6 +1276,79 @@ export default function WorkerHomeScreen() {
                   onPress={() => router.push("/(tabs)/profile")}
                 />
               </View>
+            </View>
+
+            {/* 🤖 Finance Chat */}
+            <View style={styles.card}>
+              <View style={styles.rowBetween}>
+                <View>
+                  <Text style={styles.cardTitle}>Finance chat</Text>
+                  <Text style={styles.cardHint}>
+                    Ask about budgets, savings, debt, or income.
+                  </Text>
+                </View>
+                <View style={styles.chatBadge}>
+                  <Text style={styles.chatBadgeText}>AI</Text>
+                </View>
+              </View>
+
+              <View style={styles.chatThread}>
+                {chatMessagesToShow.map(message => (
+                  <View
+                    key={message.id}
+                    style={[
+                      styles.chatBubble,
+                      message.role === "user"
+                        ? styles.chatBubbleUser
+                        : styles.chatBubbleAssistant,
+                    ]}
+                  >
+                    <Text
+                      style={
+                        message.role === "user"
+                          ? styles.chatBubbleUserText
+                          : styles.chatBubbleAssistantText
+                      }
+                    >
+                      {message.content}
+                    </Text>
+                  </View>
+                ))}
+                {chatSending ? (
+                  <View style={[styles.chatBubble, styles.chatBubbleAssistant]}>
+                    <Text style={styles.chatBubbleAssistantText}>Thinking...</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {chatError ? <Text style={styles.chatError}>{chatError}</Text> : null}
+
+              <View style={styles.chatInputRow}>
+                <TextInput
+                  placeholder="Ask a financial question"
+                  placeholderTextColor="#94a3b8"
+                  style={styles.chatInput}
+                  value={chatInput}
+                  onChangeText={setChatInput}
+                  multiline
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.chatSendButton,
+                    chatSending ? styles.chatSendDisabled : null,
+                  ]}
+                  onPress={handleSendChat}
+                  disabled={chatSending}
+                >
+                  <Text style={styles.chatSendText}>
+                    {chatSending ? "..." : "Send"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.chatDisclaimer}>
+                For info only. Not financial, legal, or tax advice.
+              </Text>
             </View>
           </Animated.View>
         </ScrollView>
@@ -2109,6 +2292,62 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
 
   cardHint: { fontSize: 12, color: "#94a3b8" },
+  chatBadge: {
+    backgroundColor: "#0f172a",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  chatBadgeText: { color: "#ffffff", fontSize: 11, fontWeight: "700" },
+  chatThread: {
+    marginTop: 12,
+    gap: 8,
+  },
+  chatBubble: {
+    maxWidth: "85%",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  chatBubbleUser: {
+    alignSelf: "flex-end",
+    backgroundColor: "#0ea5e9",
+  },
+  chatBubbleAssistant: {
+    alignSelf: "flex-start",
+    backgroundColor: "#f1f5f9",
+  },
+  chatBubbleUserText: { color: "#ffffff", fontSize: 12 },
+  chatBubbleAssistantText: { color: "#0f172a", fontSize: 12 },
+  chatInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    marginTop: 10,
+  },
+  chatInput: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 90,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    fontSize: 12,
+    color: "#0f172a",
+    backgroundColor: "#f8fafc",
+  },
+  chatSendButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#0f172a",
+  },
+  chatSendDisabled: { opacity: 0.6 },
+  chatSendText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
+  chatError: { marginTop: 6, color: "#ef4444", fontSize: 11 },
+  chatDisclaimer: { marginTop: 8, fontSize: 10, color: "#94a3b8" },
   actionGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

@@ -1,0 +1,11 @@
+{
+  "name": "spendly-functions",
+  "private": true,
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^4.6.0"
+  }
+}
