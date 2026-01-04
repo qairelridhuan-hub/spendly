@@ -19,6 +19,8 @@ import { adminPalette } from "@/lib/admin/palette";
 export default function AdminAttendance() {
   const [logs, setLogs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<Record<string, { name?: string }>>({});
+  const [breakLogs, setBreakLogs] = useState<any[]>([]);
+  const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
 
   useEffect(() => {
@@ -31,6 +33,29 @@ export default function AdminAttendance() {
       setLogs(list);
     });
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsubBreaks = onSnapshot(collectionGroup(db, "breaks"), snapshot => {
+      const list = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        workerId: getOwnerId(docSnap),
+        ...docSnap.data(),
+      }));
+      setBreakLogs(list);
+    });
+    const unsubOvertime = onSnapshot(collectionGroup(db, "overtime"), snapshot => {
+      const list = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        workerId: getOwnerId(docSnap),
+        ...docSnap.data(),
+      }));
+      setOvertimeLogs(list);
+    });
+    return () => {
+      unsubBreaks();
+      unsubOvertime();
+    };
   }, []);
 
   useEffect(() => {
@@ -89,11 +114,24 @@ export default function AdminAttendance() {
         todayPresent += 1;
       }
     });
+    overtimeLogs.forEach(entry => {
+      const date = String(entry.date ?? "");
+      const logDate = new Date(`${date}T00:00:00`);
+      if (
+        !Number.isNaN(logDate.getTime()) &&
+        logDate >= weeklyStart &&
+        logDate <= weeklyEnd
+      ) {
+        weeklyHours += getOvertimeHours(entry);
+      }
+    });
     return { weeklyHours, pendingCount, todayPresent };
-  }, [logs, todayKey, weeklyStart, weeklyEnd]);
+  }, [logs, todayKey, weeklyStart, weeklyEnd, overtimeLogs]);
 
   const totalWorkers = useMemo(() => Object.keys(workers).length, [workers]);
   const sortedLogs = useMemo(() => sortLogsByDate(logs, sortOrder), [logs, sortOrder]);
+  const breakMap = useMemo(() => buildBreakMap(breakLogs), [breakLogs]);
+  const overtimeMap = useMemo(() => buildOvertimeMap(overtimeLogs), [overtimeLogs]);
 
   return (
     <LinearGradient
@@ -190,6 +228,7 @@ export default function AdminAttendance() {
                   "Clock Out",
                   "Break",
                   "Hours",
+                  "Overtime",
                   "Status",
                   "Actions",
                 ].map(label => (
@@ -202,6 +241,8 @@ export default function AdminAttendance() {
                 const statusStyle = getStatusStyle(log.status);
                 const workerName =
                   workers[log.workerId]?.name || log.workerId || "Worker";
+                const overtimeHours = overtimeMap[`${log.workerId}:${log.date}`] ?? 0;
+                const breakEntry = breakMap[`${log.workerId}:${log.date}`];
                 return (
                   <View key={log.refPath} style={tableRow}>
                     <Text style={tableCell}>{workerName}</Text>
@@ -222,9 +263,14 @@ export default function AdminAttendance() {
                         ? log.breakEnd
                           ? `${log.breakStart}-${log.breakEnd}`
                           : `${log.breakStart}-...`
+                        : breakEntry
+                        ? `${breakEntry.startTime || "-"}-${breakEntry.endTime || "-"}`
                         : "-"}
                     </Text>
                     <Text style={tableCell}>{log.hours || 0}h</Text>
+                    <Text style={tableCellMuted}>
+                      {overtimeHours ? `${overtimeHours}h` : "-"}
+                    </Text>
                     <View style={tableCellStatus}>
                       <Text style={[statusStyle.badge, statusStyle.text]}>
                         {String(log.status || "pending")}
@@ -439,4 +485,53 @@ const formatTimeValue = (ts?: number, fallback?: string) => {
     }
   }
   return fallback || "-";
+};
+
+const getOwnerId = (docSnap: any) => {
+  return docSnap.ref?.parent?.parent?.id || docSnap.data()?.workerId || "";
+};
+
+const buildBreakMap = (entries: any[]) => {
+  const map: Record<string, { startTime?: string; endTime?: string }> = {};
+  entries.forEach(entry => {
+    const workerId = String(entry.workerId ?? "");
+    const date = String(entry.date ?? "");
+    if (!workerId || !date) return;
+    map[`${workerId}:${date}`] = {
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+    };
+  });
+  return map;
+};
+
+const buildOvertimeMap = (entries: any[]) => {
+  const map: Record<string, number> = {};
+  entries.forEach(entry => {
+    const workerId = String(entry.workerId ?? "");
+    const date = String(entry.date ?? "");
+    if (!workerId || !date) return;
+    const hours = getOvertimeHours(entry);
+    if (!hours) return;
+    map[`${workerId}:${date}`] = (map[`${workerId}:${date}`] ?? 0) + hours;
+  });
+  return map;
+};
+
+const getOvertimeHours = (entry: any) => {
+  const hours = Number(entry.hours ?? 0);
+  if (hours) return hours;
+  if (entry.startTime && entry.endTime) {
+    const startMinutes = parseTimeToMinutes(entry.startTime);
+    const endMinutes = parseTimeToMinutes(entry.endTime);
+    if (startMinutes === null || endMinutes === null) return 0;
+    return Math.max(0, (endMinutes - startMinutes) / 60);
+  }
+  return 0;
+};
+
+const parseTimeToMinutes = (time: string) => {
+  const [h, m] = time.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
 };

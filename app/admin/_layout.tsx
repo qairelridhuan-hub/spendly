@@ -1,6 +1,6 @@
 import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -32,6 +32,19 @@ export default function AdminLayout() {
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
+  const confirmLogout = () => {
+    Alert.alert("Logout?", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await signOut(auth);
+          router.replace("/admin/login");
+        },
+      },
+    ]);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
@@ -227,10 +240,7 @@ export default function AdminLayout() {
               </View>
             </View>
             <TouchableOpacity
-              onPress={async () => {
-                await signOut(auth);
-                router.replace("/admin/login");
-              }}
+              onPress={confirmLogout}
               style={{
                 flexDirection: "row",
                 alignItems: "center",

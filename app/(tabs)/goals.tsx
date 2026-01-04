@@ -5,6 +5,9 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  Alert,
+  Modal,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -31,6 +34,8 @@ import {
 import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
+import { useCalendar } from "@/lib/context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 type GoalPriority = "high" | "medium" | "low";
 
@@ -43,6 +48,31 @@ type Goal = {
   createdAt: string;
   priority: GoalPriority;
   notes: string;
+  progressHistory: { weekStart: string; savedAmount: number }[];
+};
+
+const formatDate = (value: Date) => {
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+};
+
+const getWeekStartKey = (date: Date) => {
+  const day = date.getDay();
+  const diff = (day + 6) % 7;
+  const start = new Date(date);
+  start.setDate(date.getDate() - diff);
+  start.setHours(0, 0, 0, 0);
+  return formatDate(start);
+};
+
+const getShiftHours = (shift: { hours?: number; start?: string; end?: string }) => {
+  if (typeof shift.hours === "number") return shift.hours;
+  if (!shift.start || !shift.end) return 0;
+  const [startH, startM] = shift.start.split(":").map(Number);
+  const [endH, endM] = shift.end.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  return Math.max(0, (endMinutes - startMinutes) / 60);
 };
 
 /* =====================
@@ -55,10 +85,14 @@ export default function GoalsScreen() {
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<"all" | GoalPriority>("all");
+  const [timeFilter, setTimeFilter] = useState<"current" | "past" | "all">("current");
+  const [statusFilter, setStatusFilter] = useState<"all" | "ongoing" | "completed">("all");
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("User");
   const [hourlyRate, setHourlyRate] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const { shifts } = useCalendar();
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
@@ -71,6 +105,25 @@ export default function GoalsScreen() {
   const [deadline, setDeadline] = useState("");
   const [priority, setPriority] = useState<GoalPriority>("medium");
   const [notes, setNotes] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [draftDate, setDraftDate] = useState<Date>(new Date());
+
+  const confirmLogout = () => {
+    Alert.alert("Logout?", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut(auth);
+          } finally {
+            router.replace("/(auth)/login");
+          }
+        },
+      },
+    ]);
+  };
 
   const activeGoalsLabel = useMemo(() => `${goals.length} active goals`, [goals]);
 
@@ -119,6 +172,14 @@ export default function GoalsScreen() {
           createdAt: createdAtValue,
           priority: (data.priority as GoalPriority) ?? "medium",
           notes: data.notes ?? "",
+          progressHistory: Array.isArray(data.progressHistory)
+            ? data.progressHistory
+                .filter((item: any) => item && item.weekStart)
+                .map((item: any) => ({
+                  weekStart: String(item.weekStart),
+                  savedAmount: Number(item.savedAmount ?? 0),
+                }))
+            : [],
         } as Goal;
       });
       setGoals(nextGoals);
@@ -139,6 +200,39 @@ export default function GoalsScreen() {
     });
     return unsubscribe;
   }, [userId]);
+
+  useEffect(() => {
+    if (!userId || goals.length === 0) return;
+    const currentWeek = getWeekStartKey(new Date());
+    const updates: Promise<void>[] = [];
+    goals.forEach(goal => {
+      const history = Array.isArray(goal.progressHistory)
+        ? [...goal.progressHistory]
+        : [];
+      const last = history[history.length - 1];
+      if (!last || last.weekStart !== currentWeek) {
+        history.push({ weekStart: currentWeek, savedAmount: goal.savedAmount });
+      } else if (last.savedAmount !== goal.savedAmount) {
+        history[history.length - 1] = {
+          weekStart: currentWeek,
+          savedAmount: goal.savedAmount,
+        };
+      } else {
+        return;
+      }
+      updates.push(
+        updateDoc(doc(db, "users", userId, "goals", goal.id), {
+          progressHistory: history,
+          updatedAt: serverTimestamp(),
+        }) as Promise<void>
+      );
+    });
+    if (updates.length) {
+      Promise.all(updates).catch(() => {
+        // ignore history update errors
+      });
+    }
+  }, [goals, userId]);
 
   const resetForm = () => {
     setGoalName("");
@@ -173,6 +267,30 @@ export default function GoalsScreen() {
   };
 
   const parseMoney = (value: string) => Number(value.replace(/,/g, ""));
+  const isValidDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const sanitizeAmount = (value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length <= 1) return cleaned;
+    return `${parts[0]}.${parts.slice(1).join("")}`;
+  };
+  const validateAmountInput = (raw: string, cleaned: string) => {
+    if (!raw) {
+      setError("");
+      return true;
+    }
+    if (raw !== cleaned) {
+      setError("Please enter price amount only");
+      return false;
+    }
+    setError("");
+    return true;
+  };
+  const toDateFromString = (value: string) => {
+    if (!isValidDate(value)) return null;
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
 
   const handleSaveGoal = async () => {
     setError("");
@@ -199,50 +317,108 @@ export default function GoalsScreen() {
       setError("Deadline is required");
       return;
     }
+    if (!isValidDate(deadline.trim())) {
+      setError("Deadline must be in YYYY-MM-DD format");
+      return;
+    }
 
     if (!userId) {
       setError("Please log in to save goals");
       return;
     }
 
-    try {
-      if (editingGoalId) {
-        const goalRef = doc(db, "users", userId, "goals", editingGoalId);
-        await updateDoc(goalRef, {
-          name: goalName.trim(),
-          targetAmount: target,
-          savedAmount: saved,
-          deadline: deadline.trim(),
-          priority,
-          notes: notes.trim(),
-          updatedAt: serverTimestamp(),
-        });
-      } else {
-        const goalsRef = collection(db, "users", userId, "goals");
-        await addDoc(goalsRef, {
-          name: goalName.trim(),
-          targetAmount: target,
-          savedAmount: saved,
-          deadline: deadline.trim(),
-          priority,
-          notes: notes.trim(),
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
-      closeModal();
-    } catch {
-      setError("Failed to save goal. Please try again.");
-    }
+    Alert.alert(
+      "Save goal?",
+      "Are you sure you want to save this goal?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Save",
+          onPress: async () => {
+            try {
+              const currentWeek = getWeekStartKey(new Date());
+              if (editingGoalId) {
+                const existing = goals.find(goal => goal.id === editingGoalId);
+                const history = Array.isArray(existing?.progressHistory)
+                  ? [...(existing?.progressHistory ?? [])]
+                  : [];
+                const last = history[history.length - 1];
+                if (!last || last.weekStart !== currentWeek) {
+                  history.push({ weekStart: currentWeek, savedAmount: saved });
+                } else {
+                  history[history.length - 1] = {
+                    weekStart: currentWeek,
+                    savedAmount: saved,
+                  };
+                }
+                const goalRef = doc(db, "users", userId, "goals", editingGoalId);
+                await updateDoc(goalRef, {
+                  name: goalName.trim(),
+                  targetAmount: target,
+                  savedAmount: saved,
+                  deadline: deadline.trim(),
+                  priority,
+                  notes: notes.trim(),
+                  progressHistory: history,
+                  updatedAt: serverTimestamp(),
+                });
+              } else {
+                const goalsRef = collection(db, "users", userId, "goals");
+                await addDoc(goalsRef, {
+                  name: goalName.trim(),
+                  targetAmount: target,
+                  savedAmount: saved,
+                  deadline: deadline.trim(),
+                  priority,
+                  notes: notes.trim(),
+                  progressHistory: [
+                    { weekStart: currentWeek, savedAmount: saved },
+                  ],
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                });
+              }
+              closeModal();
+            } catch {
+              setError("Failed to save goal. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteGoal = async (goalId: string) => {
     if (!userId) return;
-    try {
-      await deleteDoc(doc(db, "users", userId, "goals", goalId));
-    } catch {
-      setError("Failed to delete goal. Please try again.");
-    }
+    Alert.alert(
+      "Delete goal?",
+      "Are you sure you want to delete this goal?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, "users", userId, "goals", goalId));
+            } catch {
+              setError("Failed to delete goal. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const openDatePicker = () => {
+    const parsed = toDateFromString(deadline);
+    setDraftDate(parsed ?? new Date());
+    setShowDatePicker(true);
+  };
+
+  const confirmDate = () => {
+    setDeadline(formatDate(draftDate));
+    setShowDatePicker(false);
   };
 
   const getProgress = (goal: Goal) => {
@@ -257,6 +433,7 @@ export default function GoalsScreen() {
     const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
     const weeks = Math.max(1, Math.ceil(diffDays / 7));
     const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+    if (remaining <= 0) return 0;
     return remaining / weeks;
   };
 
@@ -281,10 +458,19 @@ export default function GoalsScreen() {
     return goal.savedAmount >= expectedByNow ? getWeeksElapsed(goal) : 0;
   };
 
-  const getNextContributionDate = () => {
+  const getNextContributionDate = (goal: Goal) => {
+    if (goal.targetAmount <= goal.savedAmount) return "—";
+    const today = new Date();
     const next = new Date();
     next.setDate(next.getDate() + 7);
-    return next.toISOString().slice(0, 10);
+    const deadlineDate = toDateFromString(goal.deadline);
+    if (deadlineDate && deadlineDate < next && deadlineDate > today) {
+      return formatDate(deadlineDate);
+    }
+    if (deadlineDate && deadlineDate <= today) {
+      return formatDate(today);
+    }
+    return formatDate(next);
   };
 
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -292,14 +478,29 @@ export default function GoalsScreen() {
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 
   const currentPeriod = getPeriodKey(new Date());
+  const assignedHoursSoFar = useMemo(() => {
+    const cutoffDate = new Date();
+    return shifts
+      .filter(shift => {
+        if (!shift.date?.startsWith(currentPeriod)) return false;
+        if (["absent", "off", "leave"].includes(shift.status)) return false;
+        const shiftDate = new Date(`${shift.date}T00:00:00`);
+        if (Number.isNaN(shiftDate.getTime())) return false;
+        return shiftDate <= cutoffDate;
+      })
+      .reduce((sum, shift) => sum + getShiftHours(shift), 0);
+  }, [shifts, currentPeriod]);
   const monthlyEarnings = useMemo(() => {
+    if (assignedHoursSoFar > 0) {
+      return assignedHoursSoFar * hourlyRate;
+    }
     const totalHours = approvedLogs.reduce((sum, log) => {
       const date = String(log.date ?? "");
       if (!date.startsWith(currentPeriod)) return sum;
       return sum + Number(log.hours ?? 0);
     }, 0);
     return totalHours * hourlyRate;
-  }, [approvedLogs, hourlyRate, currentPeriod]);
+  }, [assignedHoursSoFar, approvedLogs, hourlyRate, currentPeriod]);
 
   const estimateMonthsToGoal = (goal: Goal) => {
     const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
@@ -308,9 +509,20 @@ export default function GoalsScreen() {
   };
 
   const filteredGoals = useMemo(() => {
-    if (filter === "all") return goals;
-    return goals.filter(goal => goal.priority === filter);
-  }, [filter, goals]);
+    const todayKey = formatDate(new Date());
+    return goals
+      .filter(goal => {
+      const isCompleted = goal.savedAmount >= goal.targetAmount;
+      const isPast = goal.deadline && goal.deadline < todayKey;
+      if (filter !== "all" && goal.priority !== filter) return false;
+      if (timeFilter === "current" && isPast) return false;
+      if (timeFilter === "past" && !isPast) return false;
+      if (statusFilter === "completed" && !isCompleted) return false;
+      if (statusFilter === "ongoing" && isCompleted) return false;
+      return true;
+      })
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  }, [filter, goals, timeFilter, statusFilter]);
 
   return (
     <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
@@ -333,20 +545,12 @@ export default function GoalsScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => router.push("/(tabs)/notifications")}>
-              <Bell size={22} color="#0f172a" />
-              <View style={styles.notifDot} />
-            </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/notifications")}>
+            <Bell size={22} color="#0f172a" />
+            <View style={styles.notifDot} />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={async () => {
-                try {
-                  await signOut(auth);
-                } finally {
-                  router.replace("/(auth)/login");
-                }
-              }}
-            >
+            <TouchableOpacity onPress={confirmLogout}>
               <LogOut size={22} color="#0f172a" />
             </TouchableOpacity>
           </View>
@@ -391,7 +595,73 @@ export default function GoalsScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+          <TouchableOpacity
+            style={[
+              styles.filterMenuButton,
+              showFilterMenu && styles.filterMenuButtonActive,
+            ]}
+            onPress={() => setShowFilterMenu(prev => !prev)}
+          >
+            <Text
+              style={[
+                styles.filterMenuText,
+                showFilterMenu && styles.filterMenuTextActive,
+              ]}
+            >
+              Goal details
+            </Text>
+          </TouchableOpacity>
         </View>
+        {showFilterMenu ? (
+          <View style={styles.filterMenu}>
+            <Text style={styles.filterMenuTitle}>Show</Text>
+            <View style={styles.filterMenuRow}>
+              {(["current", "past", "all"] as const).map(value => (
+                <TouchableOpacity
+                  key={value}
+                  style={[
+                    styles.filterMenuChip,
+                    timeFilter === value && styles.filterMenuChipActive,
+                  ]}
+                  onPress={() => setTimeFilter(value)}
+                >
+                  <Text
+                    style={[
+                      styles.filterMenuChipText,
+                      timeFilter === value && styles.filterMenuChipTextActive,
+                    ]}
+                  >
+                    {value === "all" ? "All" : value.charAt(0).toUpperCase() + value.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.filterMenuTitle}>Status</Text>
+            <View style={styles.filterMenuRow}>
+              {(["all", "ongoing", "completed"] as const).map(value => (
+                <TouchableOpacity
+                  key={value}
+                  style={[
+                    styles.filterMenuChip,
+                    statusFilter === value && styles.filterMenuChipActive,
+                  ]}
+                  onPress={() => setStatusFilter(value)}
+                >
+                  <Text
+                    style={[
+                      styles.filterMenuChipText,
+                      statusFilter === value && styles.filterMenuChipTextActive,
+                    ]}
+                  >
+                    {value === "all"
+                      ? "All"
+                      : value.charAt(0).toUpperCase() + value.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         {filteredGoals.length > 0 && (
           <View style={styles.goalList}>
@@ -399,7 +669,7 @@ export default function GoalsScreen() {
                 const progress = getProgress(goal);
                 const weeklyPace = getWeeklyPace(goal);
                 const streakWeeks = getStreakWeeks(goal);
-                const nextContribution = getNextContributionDate();
+                const nextContribution = getNextContributionDate(goal);
                 const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
                 const monthsToGoal = estimateMonthsToGoal(goal);
               return (
@@ -477,8 +747,8 @@ export default function GoalsScreen() {
                       </Text>
                     </View>
                     <View>
-                      <Text style={styles.nextTitle}>Deadline</Text>
-                      <Text style={styles.nextAmount}>{goal.deadline}</Text>
+                      <Text style={styles.nextTitle}>Due date</Text>
+                      <Text style={styles.nextAmount}>{nextContribution}</Text>
                     </View>
                   </View>
 
@@ -489,18 +759,6 @@ export default function GoalsScreen() {
                     </View>
                   ) : null}
 
-                  <View style={styles.miniChart}>
-                    {[0.2, 0.35, 0.55, 0.8].map((ratio, index) => (
-                      <View key={index} style={styles.miniBarWrap}>
-                        <View
-                          style={[
-                            styles.miniBar,
-                            { height: Math.max(8, ratio * 56) },
-                          ]}
-                        />
-                      </View>
-                    ))}
-                  </View>
 
                   <View style={styles.goalFooter}>
                     <View>
@@ -587,10 +845,19 @@ export default function GoalsScreen() {
                 <Text style={styles.label}>Target Amount (RM)</Text>
                 <TextInput
                   value={targetAmount}
-                  onChangeText={setTargetAmount}
+                  onChangeText={value => {
+                    const cleaned = sanitizeAmount(value);
+                    if (validateAmountInput(value, cleaned)) {
+                      setTargetAmount(cleaned);
+                    }
+                  }}
                   placeholder="e.g. 2000"
                   keyboardType="numeric"
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    !goalName.trim() && styles.inputDisabled,
+                  ]}
+                  editable={!!goalName.trim()}
                 />
               </View>
 
@@ -598,21 +865,54 @@ export default function GoalsScreen() {
                 <Text style={styles.label}>Saved Amount (RM)</Text>
                 <TextInput
                   value={savedAmount}
-                  onChangeText={setSavedAmount}
+                  onChangeText={value => {
+                    const cleaned = sanitizeAmount(value);
+                    if (validateAmountInput(value, cleaned)) {
+                      setSavedAmount(cleaned);
+                    }
+                  }}
                   placeholder="e.g. 250"
                   keyboardType="numeric"
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    (!goalName.trim() ||
+                      !Number.isFinite(parseMoney(targetAmount)) ||
+                      parseMoney(targetAmount) <= 0) &&
+                      styles.inputDisabled,
+                  ]}
+                  editable={
+                    !!goalName.trim() &&
+                    Number.isFinite(parseMoney(targetAmount)) &&
+                    parseMoney(targetAmount) > 0
+                  }
                 />
               </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Deadline</Text>
-              <TextInput
-                value={deadline}
-                onChangeText={setDeadline}
-                placeholder="YYYY-MM-DD"
-                style={styles.input}
-              />
+              <TouchableOpacity
+                style={[
+                  styles.dateButton,
+                  (!goalName.trim() ||
+                    !Number.isFinite(parseMoney(targetAmount)) ||
+                    parseMoney(targetAmount) <= 0 ||
+                    !Number.isFinite(parseMoney(savedAmount || "0")) ||
+                    parseMoney(savedAmount || "0") < 0) &&
+                    styles.inputDisabled,
+                ]}
+                onPress={openDatePicker}
+                disabled={
+                  !goalName.trim() ||
+                  !Number.isFinite(parseMoney(targetAmount)) ||
+                  parseMoney(targetAmount) <= 0 ||
+                  !Number.isFinite(parseMoney(savedAmount || "0")) ||
+                  parseMoney(savedAmount || "0") < 0
+                }
+              >
+                <Text style={styles.dateButtonText}>
+                  {deadline ? `Deadline: ${deadline}` : "Choose deadline"}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
@@ -648,6 +948,7 @@ export default function GoalsScreen() {
                 placeholder="Why this goal matters"
                 style={[styles.input, styles.notesInput]}
                 multiline
+                editable={!!deadline}
               />
             </View>
 
@@ -674,6 +975,40 @@ export default function GoalsScreen() {
             </SafeAreaView>
           </View>
         )}
+        <Modal
+          visible={showDatePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.dateModal}>
+              <Text style={styles.modalTitle}>Select deadline</Text>
+              <DateTimePicker
+                value={draftDate}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={(_, date) => {
+                  if (date) setDraftDate(date);
+                }}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.cancelBtn, styles.modalButton]}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.createBtn, styles.modalButton]}
+                  onPress={confirmDate}
+                >
+                  <Text style={styles.createBtnText}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -799,6 +1134,45 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
   },
+  filterMenuButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#fff",
+  },
+  filterMenuButtonActive: {
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
+  },
+  filterMenuText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
+  filterMenuTextActive: { color: "#ffffff" },
+  filterMenu: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#fff",
+    gap: 10,
+  },
+  filterMenuTitle: { color: "#6b7280", fontSize: 12, fontWeight: "600" },
+  filterMenuRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filterMenuChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  filterMenuChipActive: {
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
+  },
+  filterMenuChipText: { color: "#64748b", fontSize: 12, fontWeight: "600" },
+  filterMenuChipTextActive: { color: "#ffffff" },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -973,6 +1347,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
+  inputDisabled: {
+    opacity: 0.6,
+  },
+  dateButton: {
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  dateButtonText: {
+    color: "#0f172a",
+  },
   priorityRow: {
     flexDirection: "row",
     gap: 8,
@@ -993,6 +1380,30 @@ const styles = StyleSheet.create({
   priorityButtonText: { color: "#64748b", fontWeight: "600" },
   priorityButtonTextActive: { color: "#ffffff" },
   notesInput: { minHeight: 80, textAlignVertical: "top" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15,23,42,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  dateModal: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 16,
+  },
+  modalButton: {
+    flex: 1,
+    alignItems: "center",
+  },
   errorText: { color: "#ef4444", marginBottom: 8, textAlign: "center" },
 
   buttonRow: {

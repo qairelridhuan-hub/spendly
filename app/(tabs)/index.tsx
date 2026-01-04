@@ -6,16 +6,16 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  Alert,
 } from "react-native";
 import {
   Bell,
   Clock,
   DollarSign,
   Target,
-  Zap,
-  Award,
   Calendar,
   User,
+  Gamepad2,
   LogOut,
   ChevronRight,
   X,
@@ -37,18 +37,6 @@ import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar, useTheme } from "@/lib/context";
 
 /* =====================
-   TYPES
-===================== */
-
-type SalarySummary = {
-  month: string;
-  totalEarnings: number;
-  status: "pending" | "paid";
-  nextPaymentDate: string;
-  estimatedNextAmount: number;
-};
-
-/* =====================
    SCREEN
 ===================== */
 
@@ -56,6 +44,7 @@ export default function WorkerHomeScreen() {
   const { colors } = useTheme();
   const [displayName, setDisplayName] = useState("User");
   const [userId, setUserId] = useState<string | null>(null);
+  const gameGlow = useRef(new Animated.Value(0)).current;
   const [goalsCount, setGoalsCount] = useState(0);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const [userHourlyRate, setUserHourlyRate] = useState(0);
@@ -82,6 +71,8 @@ export default function WorkerHomeScreen() {
     hours?: number;
   } | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const [breakLogs, setBreakLogs] = useState<any[]>([]);
+  const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [workConfig, setWorkConfig] = useState({
     workingDaysPerWeek: 0,
     hoursPerDay: 0,
@@ -97,14 +88,14 @@ export default function WorkerHomeScreen() {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const spinLoop = useRef<Animated.CompositeAnimation | null>(null);
 
-  // 🔹 Salary summary (akan sync dari Earnings module)
-  const [salarySummary, setSalarySummary] = useState<SalarySummary>({
-    month: "—",
-    totalEarnings: 0,
-    status: "pending",
-    nextPaymentDate: "-",
-    estimatedNextAmount: 0,
-  });
+  const [selectedPeriod, setSelectedPeriod] = useState(
+    getCurrentPeriodKey(new Date())
+  );
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showPastSalary, setShowPastSalary] = useState(false);
+  const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
+  const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
+  const [pastSalaryPeriod, setPastSalaryPeriod] = useState<string | null>(null);
 
   const scheduleHoursPerDay = schedule
     ? diffHours(schedule.startTime, schedule.endTime)
@@ -115,16 +106,195 @@ export default function WorkerHomeScreen() {
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
   );
-  const weeklyTarget = schedule
-    ? schedule.days.length * scheduleHoursPerDay
-    : workConfig.hoursPerDay * workConfig.workingDaysPerWeek;
-  const weeklyCurrent = getWeeklyHours(approvedLogs);
-  const weeklyEarnings = weeklyCurrent * hourlyRate;
-  const weeklyStreak = getWeeklyStreak(approvedLogs);
-  const goalPercentage =
-    weeklyTarget === 0 ? 0 : Math.round((weeklyCurrent / weeklyTarget) * 100);
+  const weeklyRegularHours = getWeeklyHoursFromLogs(approvedLogs);
+  const weeklyOvertimeHours = getWeeklyOvertimeHours(overtimeLogs);
+  const weeklyCurrent = weeklyRegularHours + weeklyOvertimeHours;
+  const weeklyEarnings =
+    weeklyRegularHours * hourlyRate +
+    weeklyOvertimeHours * workConfig.overtimeRate;
   const todayShift = getTodayShift();
   const nextShift = getNextShift(shifts);
+  const currentPeriod = getCurrentPeriodKey(new Date());
+  const periodBounds = getPeriodBounds(selectedPeriod);
+  const cutoffDate =
+    selectedPeriod === currentPeriod ? new Date() : periodBounds.end;
+
+  const approvedHoursSoFar = useMemo(
+    () =>
+      approvedLogs.reduce((sum, log) => {
+        const date = String(log.date ?? "");
+        if (!date.startsWith(selectedPeriod)) return sum;
+        const logDate = new Date(`${date}T00:00:00`);
+        if (Number.isNaN(logDate.getTime()) || logDate > cutoffDate) return sum;
+        return sum + getLogHours(log);
+      }, 0),
+    [approvedLogs, selectedPeriod, cutoffDate]
+  );
+
+  const assignedShiftsSoFar = useMemo(
+    () =>
+      shifts.filter(shift => {
+        if (!shift.date.startsWith(selectedPeriod)) return false;
+        if (["absent", "off", "leave"].includes(shift.status)) return false;
+        const shiftDate = new Date(`${shift.date}T00:00:00`);
+        if (Number.isNaN(shiftDate.getTime())) return false;
+        return shiftDate <= cutoffDate;
+      }),
+    [shifts, selectedPeriod, cutoffDate]
+  );
+
+  const allMonthShifts = useMemo(
+    () =>
+      shifts.filter(shift => {
+        if (!shift.date.startsWith(selectedPeriod)) return false;
+        return !["absent", "off", "leave"].includes(shift.status);
+      }),
+    [shifts, selectedPeriod]
+  );
+
+  const assignedHours = assignedShiftsSoFar.reduce(
+    (sum, shift) => sum + getShiftHours(shift),
+    0
+  );
+  const isPastPeriod = selectedPeriod < currentPeriod;
+  const baseHours =
+    !isPastPeriod && assignedHours > 0 ? assignedHours : approvedHoursSoFar;
+  const breakMinutesSoFar = useMemo(() => {
+    const sourceDateLimit = cutoffDate.getTime();
+    if (breakLogs.length) {
+      return breakLogs.reduce((sum, entry) => {
+        const date = String(entry.date ?? "");
+        if (!date.startsWith(selectedPeriod)) return sum;
+        const entryDate = new Date(`${date}T00:00:00`);
+        if (Number.isNaN(entryDate.getTime()) || entryDate.getTime() > sourceDateLimit) {
+          return sum;
+        }
+        return sum + calcMinutesDiff(entry.startTime, entry.endTime);
+      }, 0);
+    }
+    return attendanceLogs.reduce((sum, log) => {
+      const date = String(log.date ?? "");
+      if (!date.startsWith(selectedPeriod)) return sum;
+      const logDate = new Date(`${date}T00:00:00`);
+      if (Number.isNaN(logDate.getTime()) || logDate.getTime() > sourceDateLimit) {
+        return sum;
+      }
+      const minutes =
+        Number(log.breakMinutes ?? 0) ||
+        calcBreakMinutes(log.breakStart, log.breakEnd, log.breakStartTs, log.breakEndTs);
+      return sum + minutes;
+    }, 0);
+  }, [breakLogs, attendanceLogs, selectedPeriod, cutoffDate]);
+  const overtimeHoursSoFar = useMemo(() => {
+    const sourceDateLimit = cutoffDate.getTime();
+    return overtimeLogs.reduce((sum, entry) => {
+      const date = String(entry.date ?? "");
+      if (!date.startsWith(selectedPeriod)) return sum;
+      const entryDate = new Date(`${date}T00:00:00`);
+      if (Number.isNaN(entryDate.getTime()) || entryDate.getTime() > sourceDateLimit) {
+        return sum;
+      }
+      const hours =
+        Number(entry.hours ?? 0) ||
+        calcHours(entry.startTime ?? "", entry.endTime ?? "", 0);
+      return sum + hours;
+    }, 0);
+  }, [overtimeLogs, selectedPeriod, cutoffDate]);
+  const projectedHours = allMonthShifts.reduce(
+    (sum, shift) => sum + getShiftHours(shift),
+    0
+  );
+  const collectedEarnings =
+    baseHours * hourlyRate + overtimeHoursSoFar * workConfig.overtimeRate;
+  const projectedEarnings = projectedHours * hourlyRate;
+  const pendingCount = attendanceLogs.filter(log => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(selectedPeriod)) return false;
+    const logDate = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(logDate.getTime()) || logDate > cutoffDate) return false;
+    return String(log.status ?? "") === "pending";
+  }).length;
+  const hasPending = pendingCount > 0;
+  const approvedShiftCount = approvedLogs.filter(log =>
+    String(log.date ?? "").startsWith(selectedPeriod)
+  ).length;
+  const assignedShiftCount = assignedShiftsSoFar.length;
+  const earningsBreakdownRows = useMemo(() => {
+    if (!isPastPeriod && assignedShiftsSoFar.length) {
+      return assignedShiftsSoFar.map(shift => ({
+        date: shift.date,
+        hours: getShiftHours(shift),
+        amount: getShiftHours(shift) * hourlyRate,
+        source: "Assigned",
+      }));
+    }
+    return approvedLogs
+      .filter(log => {
+        const date = String(log.date ?? "");
+        if (!date.startsWith(selectedPeriod)) return false;
+        const logDate = new Date(`${date}T00:00:00`);
+        if (Number.isNaN(logDate.getTime()) || logDate > cutoffDate) return false;
+        return true;
+      })
+      .map(log => ({
+        date: String(log.date ?? ""),
+        hours: getLogHours(log),
+        amount: getLogHours(log) * hourlyRate,
+        source: "Completed",
+      }));
+  }, [
+    assignedShiftsSoFar,
+    approvedLogs,
+    selectedPeriod,
+    cutoffDate,
+    hourlyRate,
+    isPastPeriod,
+  ]);
+  const amountLabel =
+    assignedHours > 0 ? "Estimated So Far" : "Collected (Completed Shifts)";
+  const amountHint =
+    assignedHours > 0
+      ? "Based on assigned shifts so far"
+      : "Based on completed shifts so far";
+  const titleText =
+    selectedPeriod === currentPeriod
+      ? "Earnings So Far (This Month)"
+      : "Collected So Far";
+  const rightLabel =
+    selectedPeriod === currentPeriod ? "Projected End-of-Month" : "Finalized Total";
+  const rightValue =
+    selectedPeriod === currentPeriod ? projectedEarnings : collectedEarnings;
+
+  const selectablePeriods = useMemo(
+    () => buildSelectablePeriods(shifts, attendanceLogs, payrollRecords),
+    [shifts, attendanceLogs, payrollRecords]
+  );
+
+  const pastSalaryOptions = useMemo(() => {
+    const periods = payrollRecords
+      .map(record => String(record.period ?? ""))
+      .filter(Boolean);
+    return Array.from(new Set(periods)).sort((a, b) => b.localeCompare(a));
+  }, [payrollRecords]);
+
+  const selectedPastPeriod = pastSalaryPeriod || pastSalaryOptions[0] || currentPeriod;
+  const selectedPastPayroll =
+    payrollRecords.find(record => record.period === selectedPastPeriod) || null;
+  const pastShiftCount = approvedLogs.filter(log =>
+    String(log.date ?? "").startsWith(selectedPastPeriod)
+  ).length;
+  const pastHours = approvedLogs.reduce((sum, log) => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(selectedPastPeriod)) return sum;
+    return sum + getLogHours(log);
+  }, 0);
+
+  useEffect(() => {
+    if (!selectablePeriods.length) return;
+    if (!selectablePeriods.includes(selectedPeriod)) {
+      setSelectedPeriod(selectablePeriods[0]);
+    }
+  }, [selectablePeriods, selectedPeriod]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -152,6 +322,25 @@ export default function WorkerHomeScreen() {
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gameGlow, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(gameGlow, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [gameGlow]);
 
   useEffect(() => {
     if (!scheduleId) {
@@ -184,11 +373,20 @@ export default function WorkerHomeScreen() {
      ACTIONS
   ===================== */
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } finally {
-      router.replace("/(auth)/login");
-    }
+    Alert.alert("Logout?", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut(auth);
+          } finally {
+            router.replace("/(auth)/login");
+          }
+        },
+      },
+    ]);
   };
 
   const handleClockIn = async () => {
@@ -216,6 +414,8 @@ export default function WorkerHomeScreen() {
     if (!userId) return;
     const todayKey = formatDateKey(new Date());
     const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    const breakRef = doc(db, "users", userId, "breaks", todayKey);
+    const overtimeRef = doc(db, "users", userId, "overtime", todayKey);
     const now = new Date();
     const nowTs = now.getTime();
     const clockInTime = todayAttendance?.clockIn;
@@ -253,6 +453,37 @@ export default function WorkerHomeScreen() {
       },
       { merge: true }
     );
+
+    if (todayAttendance?.breakStart && !todayAttendance?.breakEnd) {
+      await setDoc(
+        breakRef,
+        {
+          date: todayKey,
+          workerId: userId,
+          endTime: clockOutTime,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+
+    const scheduledEnd = todayShift?.end ?? schedule?.endTime;
+    if (scheduledEnd) {
+      const overtimeHours = calcHours(scheduledEnd, clockOutTime, 0);
+      await setDoc(
+        overtimeRef,
+        {
+          date: todayKey,
+          workerId: userId,
+          startTime: overtimeHours > 0 ? scheduledEnd : null,
+          endTime: overtimeHours > 0 ? clockOutTime : null,
+          hours: overtimeHours,
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
   };
 
   const handleBreakToggle = async () => {
@@ -260,6 +491,7 @@ export default function WorkerHomeScreen() {
     if (!todayAttendance?.clockIn) return;
     const todayKey = formatDateKey(new Date());
     const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    const breakRef = doc(db, "users", userId, "breaks", todayKey);
     const now = new Date();
     const nowTs = now.getTime();
     if (!todayAttendance?.breakStart || todayAttendance?.breakEnd) {
@@ -274,6 +506,18 @@ export default function WorkerHomeScreen() {
           breakEndTs: null,
           status: "pending",
           updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+      await setDoc(
+        breakRef,
+        {
+          date: todayKey,
+          workerId: userId,
+          startTime: formatTime(now),
+          endTime: null,
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
         },
         { merge: true }
       );
@@ -300,12 +544,24 @@ export default function WorkerHomeScreen() {
       },
       { merge: true }
     );
+    await setDoc(
+      breakRef,
+      {
+        date: todayKey,
+        workerId: userId,
+        endTime: breakEnd,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
   };
 
   const handleResetAttendance = async () => {
     if (!userId) return;
     const todayKey = formatDateKey(new Date());
     const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
+    const breakRef = doc(db, "users", userId, "breaks", todayKey);
+    const overtimeRef = doc(db, "users", userId, "overtime", todayKey);
     await setDoc(
       attendanceRef,
       {
@@ -320,6 +576,29 @@ export default function WorkerHomeScreen() {
         breakMinutes: 0,
         hours: 0,
         status: "pending",
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    await setDoc(
+      breakRef,
+      {
+        date: todayKey,
+        workerId: userId,
+        startTime: null,
+        endTime: null,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    await setDoc(
+      overtimeRef,
+      {
+        date: todayKey,
+        workerId: userId,
+        startTime: null,
+        endTime: null,
+        hours: 0,
         updatedAt: serverTimestamp(),
       },
       { merge: true }
@@ -342,25 +621,25 @@ export default function WorkerHomeScreen() {
   }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
-    if (salarySummary.status === "pending") {
-      spinAnim.setValue(0);
-      const loop = Animated.loop(
-        Animated.timing(spinAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        })
-      );
-      spinLoop.current = loop;
-      loop.start();
-    } else {
+    if (!hasPending) {
       spinLoop.current?.stop();
       spinAnim.setValue(0);
+      return () => undefined;
     }
+    spinAnim.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      })
+    );
+    spinLoop.current = loop;
+    loop.start();
     return () => {
       spinLoop.current?.stop();
     };
-  }, [salarySummary.status, spinAnim]);
+  }, [hasPending, spinAnim]);
 
   useEffect(() => {
     const configRef = doc(db, "config", "system");
@@ -392,31 +671,44 @@ export default function WorkerHomeScreen() {
 
   useEffect(() => {
     if (!userId) {
-      setSalarySummary({
-        month: "—",
-        totalEarnings: 0,
-        status: "pending",
-        nextPaymentDate: "-",
-        estimatedNextAmount: 0,
-      });
+      setBreakLogs([]);
       return;
     }
-
-    const currentPeriod = getCurrentPeriodKey(new Date());
-    const totalHours = approvedLogs.reduce((sum, log) => {
-      const date = String(log.date ?? "");
-      if (!date.startsWith(currentPeriod)) return sum;
-      return sum + Number(log.hours ?? 0);
-    }, 0);
-    const totalEarnings = totalHours * hourlyRate;
-    setSalarySummary({
-      month: formatPeriodLabel(currentPeriod),
-      totalEarnings,
-      status: "pending",
-      nextPaymentDate: getPeriodEndDate(currentPeriod),
-      estimatedNextAmount: totalEarnings,
+    const breaksRef = collection(db, "users", userId, "breaks");
+    const unsub = onSnapshot(breaksRef, snapshot => {
+      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      setBreakLogs(logs);
     });
-  }, [userId, approvedLogs, hourlyRate]);
+    return unsub;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setOvertimeLogs([]);
+      return;
+    }
+    const overtimeRef = collection(db, "users", userId, "overtime");
+    const unsub = onSnapshot(overtimeRef, snapshot => {
+      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      setOvertimeLogs(logs);
+    });
+    return unsub;
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setSelectedPeriod(getCurrentPeriodKey(new Date()));
+      setPastSalaryPeriod(null);
+      setPayrollRecords([]);
+      return;
+    }
+    const payrollRef = collection(db, "users", userId, "payroll");
+    const unsub = onSnapshot(payrollRef, snapshot => {
+      const list = snapshot.docs.map(docSnap => docSnap.data() as any);
+      setPayrollRecords(list);
+    });
+    return unsub;
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -486,7 +778,31 @@ export default function WorkerHomeScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => router.push("/(tabs)/notifications")}>
+            <TouchableOpacity onPress={() => router.push("/game")}>
+              <Animated.View style={styles.gameIconWrap}>
+                <Animated.View
+                  style={[
+                    styles.gameIconGlow,
+                    {
+                      opacity: gameGlow.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.15, 0.45],
+                      }),
+                      transform: [
+                        {
+                          scale: gameGlow.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.9, 1.15],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                />
+                <Gamepad2 size={22} color="#0f172a" />
+              </Animated.View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/notifications")}>
               <Bell size={22} color="#0f172a" />
               <View style={styles.dot} />
             </TouchableOpacity>
@@ -507,7 +823,7 @@ export default function WorkerHomeScreen() {
               transform: [{ translateY: slideAnim }],
             }}
           >
-            {/* 💰 Monthly Salary Summary */}
+            {/* 💰 Earnings Summary */}
             <LinearGradient
               colors={["#0ea5e9", "#22c55e"]}
               start={{ x: 0, y: 0 }}
@@ -515,22 +831,25 @@ export default function WorkerHomeScreen() {
               style={styles.salarySummary}
             >
               <View style={styles.rowBetween}>
-                <Text style={styles.salaryTitle}>Monthly Salary</Text>
-                <View style={styles.salaryPill}>
+                <Text style={styles.salaryTitle}>{titleText}</Text>
+                <TouchableOpacity
+                  style={styles.salaryPill}
+                  onPress={() => setShowMonthPicker(true)}
+                >
                   <Text style={styles.salaryPillText}>
-                    {salarySummary.month}
+                    {formatPeriodLabel(selectedPeriod)}
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
               <Text style={styles.salaryAmount}>
-                RM {salarySummary.totalEarnings.toFixed(2)}
+                RM {collectedEarnings.toFixed(2)}
               </Text>
+              <Text style={styles.salarySubtitle}>{amountLabel}</Text>
+              <Text style={styles.salaryHint}>{amountHint}</Text>
 
               <View style={styles.row}>
-                {salarySummary.status === "paid" ? (
-                  <View style={styles.statusDotPaid} />
-                ) : (
+                {hasPending ? (
                   <View style={styles.loaderTrack}>
                     <Animated.View
                       style={[
@@ -548,11 +867,13 @@ export default function WorkerHomeScreen() {
                       ]}
                     />
                   </View>
+                ) : (
+                  <View style={styles.statusDotPaid} />
                 )}
                 <Text style={styles.salaryStatusText}>
-                  {salarySummary.status === "paid"
-                    ? "Verified & Paid"
-                    : "Pending Verification"}
+                  {hasPending
+                    ? `Awaiting approval for ${pendingCount} shift${pendingCount === 1 ? "" : "s"}`
+                    : "All shifts approved so far"}
                 </Text>
               </View>
 
@@ -560,17 +881,25 @@ export default function WorkerHomeScreen() {
 
               <View style={styles.rowBetween}>
                 <View>
-                  <Text style={styles.salaryLabel}>Next Payment</Text>
+                  <Text style={styles.salaryLabel}>{rightLabel}</Text>
                   <Text style={styles.salaryValue}>
-                    {salarySummary.nextPaymentDate}
+                    RM {rightValue.toFixed(2)}
                   </Text>
                 </View>
 
                 <View style={{ alignItems: "flex-end" }}>
-                  <Text style={styles.salaryLabel}>Estimated</Text>
-                  <Text style={styles.salaryValue}>
-                    RM {salarySummary.estimatedNextAmount.toFixed(2)}
-                  </Text>
+                  <TouchableOpacity
+                    style={styles.salaryActionButton}
+                    onPress={() => setShowPastSalary(true)}
+                  >
+                    <Text style={styles.salaryActionText}>Past Salary</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.salaryActionButton, styles.salaryActionSecondary]}
+                    onPress={() => setShowEarningsBreakdown(true)}
+                  >
+                    <Text style={styles.salaryActionText}>View details</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </LinearGradient>
@@ -758,30 +1087,6 @@ export default function WorkerHomeScreen() {
               </View>
             </View>
 
-            {/* 🎯 Weekly Goal */}
-            <View style={styles.goalCard}>
-              <View style={styles.rowBetween}>
-                <View style={styles.row}>
-                  <Target size={20} color="#f97316" />
-                  <Text style={styles.cardTitle}>Weekly goal</Text>
-                </View>
-                <Text style={styles.goalBadge}>{goalPercentage}%</Text>
-              </View>
-
-              <Text style={styles.smallText}>
-                {weeklyCurrent}h / {weeklyTarget}h
-              </Text>
-
-              <View style={styles.progressBarBg}>
-                <View
-                  style={[
-                    styles.goalProgress,
-                    { width: `${goalPercentage}%` },
-                  ]}
-                />
-              </View>
-            </View>
-
             {/* ⚡ Quick Stats */}
             <View style={styles.grid}>
               <StatBox
@@ -802,24 +1107,6 @@ export default function WorkerHomeScreen() {
                 value={`${goalsCount}`}
                 tone="#ffedd5"
               />
-              <StatBox
-                icon={<Zap size={16} color="#f59e0b" />}
-                label="streak"
-                value={`${weeklyStreak}w`}
-                tone="#fef3c7"
-              />
-            </View>
-
-            {/* 🏆 Level */}
-            <View style={styles.card}>
-              <View style={styles.row}>
-                <Award size={24} color="#eab308" />
-                <View>
-                  <Text style={styles.cardTitle}>Level —</Text>
-                  <Text style={styles.smallText}>XP — / —</Text>
-                </View>
-              </View>
-              <View style={styles.progressBarBg} />
             </View>
 
             {/* 🚀 Quick Actions */}
@@ -933,6 +1220,216 @@ export default function WorkerHomeScreen() {
           </View>
         </View>
       ) : null}
+
+      {showMonthPicker ? (
+        <View style={styles.overlay}>
+          <View style={styles.detailModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Month</Text>
+              <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
+                <X size={18} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.monthList}>
+              {selectablePeriods.map(period => (
+                <TouchableOpacity
+                  key={period}
+                  style={[
+                    styles.monthButton,
+                    period === selectedPeriod && styles.monthButtonActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedPeriod(period);
+                    setShowMonthPicker(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.monthButtonText,
+                      period === selectedPeriod && styles.monthButtonTextActive,
+                    ]}
+                  >
+                    {formatPeriodLabel(period)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {showPastSalary ? (
+        <View style={styles.overlay}>
+          <View style={styles.detailModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Past Salary</Text>
+              <TouchableOpacity onPress={() => setShowPastSalary(false)}>
+                <X size={18} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            {pastSalaryOptions.length === 0 ? (
+              <Text style={styles.emptyText}>No finalized salaries yet.</Text>
+            ) : (
+              <>
+                <View style={styles.monthList}>
+                  {pastSalaryOptions.map(period => (
+                    <TouchableOpacity
+                      key={period}
+                      style={[
+                        styles.monthButton,
+                        period === selectedPastPeriod && styles.monthButtonActive,
+                      ]}
+                      onPress={() => setPastSalaryPeriod(period)}
+                    >
+                      <Text
+                        style={[
+                          styles.monthButtonText,
+                          period === selectedPastPeriod && styles.monthButtonTextActive,
+                        ]}
+                      >
+                        {formatPeriodLabel(period)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {selectedPastPayroll ? (
+                  <View style={styles.pastSalaryCard}>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Total Salary Paid</Text>
+                      <Text style={styles.detailValue}>
+                        RM {Number(selectedPastPayroll.totalEarnings ?? 0).toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Payment Date</Text>
+                      <Text style={styles.detailValue}>
+                        {selectedPastPayroll.updatedAt
+                          ? new Date(selectedPastPayroll.updatedAt).toLocaleDateString("en-GB")
+                          : "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Total Shifts</Text>
+                      <Text style={styles.detailValue}>{pastShiftCount}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Total Hours</Text>
+                      <Text style={styles.detailValue}>
+                        {pastHours.toFixed(1)}h
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.emptyText}>
+                    No payroll data for this month.
+                  </Text>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+      ) : null}
+
+      {showEarningsBreakdown ? (
+        <View style={styles.overlay}>
+          <View style={styles.detailModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Earnings Details</Text>
+              <TouchableOpacity onPress={() => setShowEarningsBreakdown(false)}>
+                <X size={18} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Month</Text>
+              <Text style={styles.detailValue}>
+                {formatPeriodLabel(selectedPeriod)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Collected so far</Text>
+              <Text style={styles.detailValue}>
+                RM {collectedEarnings.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Approved hours</Text>
+              <Text style={styles.detailValue}>{approvedHoursSoFar.toFixed(1)}h</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Assigned hours</Text>
+              <Text style={styles.detailValue}>{assignedHours.toFixed(1)}h</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Overtime hours</Text>
+              <Text style={styles.detailValue}>{overtimeHoursSoFar.toFixed(1)}h</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Break minutes</Text>
+              <Text style={styles.detailValue}>{Math.round(breakMinutesSoFar)} min</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Hourly rate</Text>
+              <Text style={styles.detailValue}>RM {hourlyRate.toFixed(2)}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Calculation</Text>
+              <Text style={styles.detailValue}>
+                {baseHours.toFixed(1)}h × RM {hourlyRate.toFixed(2)}
+                {overtimeHoursSoFar > 0
+                  ? ` + ${overtimeHoursSoFar.toFixed(1)}h × RM ${workConfig.overtimeRate.toFixed(2)}`
+                  : ""}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Collected total</Text>
+              <Text style={styles.detailValue}>
+                RM {collectedEarnings.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Projected end-of-month</Text>
+              <Text style={styles.detailValue}>
+                RM {projectedEarnings.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Shifts approved</Text>
+              <Text style={styles.detailValue}>{approvedShiftCount}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Shifts assigned</Text>
+              <Text style={styles.detailValue}>{assignedShiftCount}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Pending approval</Text>
+              <Text style={styles.detailValue}>{pendingCount}</Text>
+            </View>
+            <View style={styles.breakdownBlock}>
+              <Text style={styles.breakdownTitle}>Shift breakdown</Text>
+              {earningsBreakdownRows.length === 0 ? (
+                <Text style={styles.emptyText}>No shifts in this month.</Text>
+              ) : (
+                earningsBreakdownRows.map((row, index) => (
+                  <View
+                    key={`${row.date}-${row.source}-${index}`}
+                    style={styles.breakdownRow}
+                  >
+                    <View>
+                      <Text style={styles.breakdownDate}>{row.date}</Text>
+                      <Text style={styles.breakdownSub}>
+                        {row.source} • {row.hours.toFixed(1)}h
+                      </Text>
+                    </View>
+                    <Text style={styles.breakdownAmount}>
+                      RM {row.amount.toFixed(2)}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        </View>
+      ) : null}
     </LinearGradient>
   );
 }
@@ -979,9 +1476,18 @@ function calcBreakMinutes(
   startTs?: number | null,
   endTs?: number | null
 ) {
+  if (!start || !end) return 0;
   if (startTs && endTs) {
     return Math.max(0, Math.round((endTs - startTs) / 60000));
   }
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const startMinutes = (startH || 0) * 60 + (startM || 0);
+  const endMinutes = (endH || 0) * 60 + (endM || 0);
+  return Math.max(0, endMinutes - startMinutes);
+}
+
+function calcMinutesDiff(start?: string, end?: string) {
   if (!start || !end) return 0;
   const [startH, startM] = start.split(":").map(Number);
   const [endH, endM] = end.split(":").map(Number);
@@ -1027,13 +1533,81 @@ const formatPeriodLabel = (period: string) => {
   });
 };
 
-const getPeriodEndDate = (period: string) => {
+const getPeriodBounds = (period: string) => {
   const [year, month] = period.split("-");
   const y = Number(year);
   const m = Number(month);
-  if (!y || !m) return "-";
-  const end = new Date(y, m, 0);
-  return `${pad(end.getDate())}/${pad(end.getMonth() + 1)}/${end.getFullYear()}`;
+  if (!y || !m) {
+    const today = new Date();
+    return {
+      start: new Date(today.getFullYear(), today.getMonth(), 1),
+      end: new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999),
+    };
+  }
+  return {
+    start: new Date(y, m - 1, 1, 0, 0, 0, 0),
+    end: new Date(y, m, 0, 23, 59, 59, 999),
+  };
+};
+
+const getShiftHours = (shift: { hours?: number; start?: string; end?: string }) =>
+  shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "");
+
+const getLogHours = (log: {
+  hours?: number;
+  clockIn?: string;
+  clockOut?: string;
+  breakMinutes?: number;
+  breakStart?: string;
+  breakEnd?: string;
+  clockInTs?: number;
+  clockOutTs?: number;
+  breakStartTs?: number;
+  breakEndTs?: number;
+}) => {
+  const stored = Number(log.hours ?? 0);
+  if (stored > 0) return stored;
+  const breakMinutes =
+    Number(log.breakMinutes ?? 0) ||
+    calcBreakMinutes(log.breakStart, log.breakEnd, log.breakStartTs, log.breakEndTs);
+  if (log.clockIn && log.clockOut) {
+    return calcHours(log.clockIn, log.clockOut, breakMinutes, log.clockInTs, log.clockOutTs);
+  }
+  return 0;
+};
+
+const buildSelectablePeriods = (
+  shifts: { date: string }[],
+  logs: { date?: string }[],
+  payroll: { period?: string }[]
+) => {
+  const periods = new Set<string>();
+  const current = getCurrentPeriodKey(new Date());
+  periods.add(current);
+  shifts.forEach(shift => {
+    if (shift.date?.length >= 7) periods.add(shift.date.slice(0, 7));
+  });
+  logs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (date.length >= 7) periods.add(date.slice(0, 7));
+  });
+  payroll.forEach(record => {
+    const period = String(record.period ?? "");
+    if (period) periods.add(period);
+  });
+  const recent = lastNPeriods(6);
+  recent.forEach(period => periods.add(period));
+  return Array.from(periods).sort((a, b) => b.localeCompare(a));
+};
+
+const lastNPeriods = (count: number) => {
+  const list: string[] = [];
+  const base = new Date();
+  for (let i = 0; i < count; i += 1) {
+    const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    list.push(getCurrentPeriodKey(d));
+  }
+  return list;
 };
 
 const getWeeklyHours = (
@@ -1049,6 +1623,49 @@ const getWeeklyHours = (
     if (Number.isNaN(date.getTime())) return sum;
     if (date < start || date > end) return sum;
     const hours = shift.hours ?? diffHours(shift.start ?? "", shift.end ?? "");
+    return sum + hours;
+  }, 0);
+};
+
+const getWeeklyHoursFromLogs = (
+  logs: {
+    date?: string;
+    hours?: number;
+    clockIn?: string;
+    clockOut?: string;
+    breakMinutes?: number;
+    breakStart?: string;
+    breakEnd?: string;
+    clockInTs?: number;
+    clockOutTs?: number;
+    breakStartTs?: number;
+    breakEndTs?: number;
+  }[]
+) => {
+  const start = startOfWeek(new Date());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return logs.reduce((sum, log) => {
+    const date = new Date(`${log.date}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return sum;
+    if (date < start || date > end) return sum;
+    return sum + getLogHours(log);
+  }, 0);
+};
+
+const getWeeklyOvertimeHours = (entries: any[]) => {
+  const start = startOfWeek(new Date());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return entries.reduce((sum, entry) => {
+    const date = new Date(`${entry.date}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return sum;
+    if (date < start || date > end) return sum;
+    const hours =
+      Number(entry.hours ?? 0) ||
+      calcHours(entry.startTime ?? "", entry.endTime ?? "", 0);
     return sum + hours;
   }, 0);
 };
@@ -1097,33 +1714,6 @@ const formatDateLabel = (value: string) => {
     day: "numeric",
     year: "numeric",
   });
-};
-
-const getWeeklyStreak = (logs: { date?: string }[]) => {
-  if (logs.length === 0) return 0;
-  const weekKeys = new Set(
-    logs.map(log => {
-      const date = new Date(`${log.date}T00:00:00`);
-      if (Number.isNaN(date.getTime())) return "";
-      const weekStart = startOfWeek(date);
-      return `${weekStart.getFullYear()}-${pad(weekStart.getMonth() + 1)}-${pad(
-        weekStart.getDate()
-      )}`;
-    })
-  );
-
-  const currentWeek = startOfWeek(new Date());
-  let streak = 0;
-  for (let i = 0; i < 52; i += 1) {
-    const week = new Date(currentWeek);
-    week.setDate(currentWeek.getDate() - i * 7);
-    const key = `${week.getFullYear()}-${pad(week.getMonth() + 1)}-${pad(
-      week.getDate()
-    )}`;
-    if (!weekKeys.has(key)) break;
-    streak += 1;
-  }
-  return streak;
 };
 
 function ActionBox({
@@ -1205,7 +1795,20 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 18 },
   appName: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   greeting: { fontSize: 13, color: "#475569" },
-  headerRight: { flexDirection: "row", gap: 16 },
+  headerRight: { flexDirection: "row", gap: 16, alignItems: "center" },
+  gameIconWrap: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gameIconGlow: {
+    position: "absolute",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#22c55e",
+  },
   dot: {
     position: "absolute",
     top: -2,
@@ -1226,6 +1829,8 @@ const styles = StyleSheet.create({
   },
   salaryTitle: { color: "#e2e8f0", fontSize: 14 },
   salaryAmount: { color: "#ffffff", fontSize: 30, fontWeight: "700" },
+  salarySubtitle: { color: "#e2e8f0", fontSize: 12, marginTop: 4 },
+  salaryHint: { color: "#cbd5f5", fontSize: 11, marginTop: 2 },
   salaryPill: {
     backgroundColor: "rgba(255,255,255,0.25)",
     paddingHorizontal: 12,
@@ -1262,6 +1867,14 @@ const styles = StyleSheet.create({
   },
   salaryLabel: { color: "#e2e8f0", fontSize: 12 },
   salaryValue: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
+  salaryActionButton: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  salaryActionSecondary: { marginTop: 8 },
+  salaryActionText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
 
   card: {
     backgroundColor: "#ffffff",
@@ -1276,6 +1889,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   smallText: { fontSize: 12, color: "#64748b" },
+  emptyText: { fontSize: 12, color: "#64748b", textAlign: "center" },
   shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6 },
   shiftMeta: { fontSize: 12, color: "#64748b", marginTop: 4 },
 
@@ -1285,7 +1899,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginVertical: 8,
   },
-  goalProgress: { height: 6, backgroundColor: "#fb923c" },
   detailButton: {
     marginTop: 8,
     alignSelf: "flex-start",
@@ -1364,23 +1977,55 @@ const styles = StyleSheet.create({
   },
   detailLabel: { color: "#64748b", fontSize: 12 },
   detailValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
-
-
-  goalCard: {
-    backgroundColor: "#fff7ed",
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
+  monthList: {
+    marginTop: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
-  goalBadge: {
-    backgroundColor: "#fed7aa",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  monthButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  monthButtonActive: {
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
+  },
+  monthButtonText: { color: "#64748b", fontSize: 12 },
+  monthButtonTextActive: { color: "#ffffff", fontWeight: "700" },
+  pastSalaryCard: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  breakdownBlock: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    paddingTop: 12,
+  },
+  breakdownTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#9a3412",
+    color: "#0f172a",
+    marginBottom: 6,
   },
+  breakdownRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  breakdownDate: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  breakdownSub: { color: "#64748b", fontSize: 11, marginTop: 2 },
+  breakdownAmount: { color: "#0f172a", fontSize: 12, fontWeight: "700" },
+
 
   grid: {
     flexDirection: "row",

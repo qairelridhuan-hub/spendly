@@ -16,6 +16,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -56,8 +57,28 @@ export default function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState<number | null>(
     today.getDate()
   );
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [activeTooltipDate, setActiveTooltipDate] = useState<string | null>(null);
   const { selectedDate, setSelectedDate, getShiftsForDate, shifts } =
     useCalendar();
+
+  const confirmLogout = () => {
+    Alert.alert("Logout?", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut(auth);
+          } finally {
+            router.replace("/(auth)/login");
+          }
+        },
+      },
+    ]);
+  };
 
   /* =====================
      DATE HELPERS
@@ -67,6 +88,7 @@ export default function CalendarScreen() {
     "January","February","March","April","May","June",
     "July","August","September","October","November","December",
   ];
+  const yearOptions = Array.from({ length: 7 }, (_, i) => year - 3 + i);
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startDay = new Date(year, month, 1).getDay();
@@ -74,6 +96,9 @@ export default function CalendarScreen() {
   const shiftsForSelectedDate = getShiftsForDate(selectedDate);
   const nextShift = getNextShift(shifts);
   const pad = (value: number) => String(value).padStart(2, "0");
+  const todayKey = `${today.getFullYear()}-${padValue(today.getMonth() + 1)}-${padValue(
+    today.getDate()
+  )}`;
   const primaryShift = nextShift ?? shiftsForSelectedDate[0] ?? null;
   const primaryDetailTarget = primaryShift
     ? {
@@ -190,6 +215,14 @@ export default function CalendarScreen() {
       setMonth(m => m + 1);
     }
   };
+  const selectMonth = (value: number) => {
+    setMonth(value);
+    setShowMonthPicker(false);
+  };
+  const selectYear = (value: number) => {
+    setYear(value);
+    setShowYearPicker(false);
+  };
 
   /* =====================
      UI
@@ -217,18 +250,10 @@ export default function CalendarScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => router.push("/(tabs)/notifications")}>
+            <TouchableOpacity onPress={() => router.push("/notifications")}>
               <Bell size={22} color="#0f172a" />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={async () => {
-                try {
-                  await signOut(auth);
-                } finally {
-                  router.replace("/(auth)/login");
-                }
-              }}
-            >
+            <TouchableOpacity onPress={confirmLogout}>
               <LogOut size={22} color="#0f172a" />
             </TouchableOpacity>
           </View>
@@ -239,19 +264,82 @@ export default function CalendarScreen() {
         ===================== */}
         <View style={styles.card}>
           <View style={styles.monthHeader}>
-            <Text style={styles.monthTitle}>
-              {monthNames[month]} {year}
-            </Text>
+            <View style={styles.captionGroup}>
+              <TouchableOpacity
+                style={styles.captionButton}
+                onPress={() => {
+                  setShowMonthPicker(prev => !prev);
+                  setShowYearPicker(false);
+                }}
+              >
+                <Text style={styles.captionText}>{monthNames[month]}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.captionButton}
+                onPress={() => {
+                  setShowYearPicker(prev => !prev);
+                  setShowMonthPicker(false);
+                }}
+              >
+                <Text style={styles.captionText}>{year}</Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.navIcons}>
               <TouchableOpacity onPress={prevMonth}>
-                <ChevronLeft size={22} color="#0f172a" />
+                <ChevronLeft size={20} color="#0f172a" />
               </TouchableOpacity>
               <TouchableOpacity onPress={nextMonth}>
-                <ChevronRight size={22} color="#0f172a" />
+                <ChevronRight size={20} color="#0f172a" />
               </TouchableOpacity>
             </View>
           </View>
+          {showMonthPicker ? (
+            <View style={styles.dropdown}>
+              {monthNames.map((name, idx) => (
+                <TouchableOpacity
+                  key={name}
+                  style={[
+                    styles.dropdownRow,
+                    idx === month && styles.dropdownRowActive,
+                  ]}
+                  onPress={() => selectMonth(idx)}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownText,
+                      idx === month && styles.dropdownTextActive,
+                    ]}
+                  >
+                    {name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+          {showYearPicker ? (
+            <View style={styles.dropdown}>
+              {yearOptions.map(value => (
+                <TouchableOpacity
+                  key={value}
+                  style={[
+                    styles.dropdownRow,
+                    value === year && styles.dropdownRowActive,
+                  ]}
+                  onPress={() => selectYear(value)}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownText,
+                      value === year && styles.dropdownTextActive,
+                    ]}
+                  >
+                    {value}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
 
           {/* WEEK ROW */}
           <View style={styles.weekRow}>
@@ -277,56 +365,79 @@ export default function CalendarScreen() {
                 );
               }
 
+              const dateKey = `${year}-${pad(month + 1)}-${pad(day)}`;
+              const status = getDateStatus(dateKey, attendanceMap, getShiftsForDate);
+              const isToday = dateKey === todayKey;
               return (
                 <TouchableOpacity
                   key={day}
                   style={[
                     styles.dayCell,
+                    isToday && styles.todayCell,
                     selectedDay === day && styles.selectedDay,
                   ]}
                   onPress={() => {
                     setSelectedDay(day);
                     setSelectedDate(`${year}-${pad(month + 1)}-${pad(day)}`);
+                    setActiveTooltipDate(null);
                   }}
                 >
-                  {(() => {
-                    const dateKey = `${year}-${pad(month + 1)}-${pad(day)}`;
-                    const status = getDateStatus(dateKey, attendanceMap, getShiftsForDate);
-                    return (
-                      <>
                   <Text
                     style={[
                       styles.dayText,
+                      isToday && styles.todayText,
                       selectedDay === day && styles.selectedDayText,
                     ]}
                   >
                     {day}
                   </Text>
-
-                  <View
-                    style={[
-                      styles.dotPlaceholder,
-                      status === "scheduled" && styles.dotScheduled,
-                      status === "completed" && styles.dotCompleted,
-                      status === "absent" && styles.dotAbsent,
-                      status === "none" && styles.dotNone,
-                    ]}
-                  />
-                  {status !== "none" ? (
-                    <Text
+                  <View style={styles.statusRow}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (status === "none") return;
+                        setActiveTooltipDate(prev =>
+                          prev === dateKey ? null : dateKey
+                        );
+                      }}
                       style={[
-                        styles.statusLabel,
-                        status === "scheduled" && styles.statusLabelScheduled,
-                        status === "completed" && styles.statusLabelCompleted,
-                        status === "absent" && styles.statusLabelAbsent,
+                        styles.dotPlaceholder,
+                        status === "scheduled" && styles.dotScheduled,
+                        status === "completed" && styles.dotCompleted,
+                        status === "absent" && styles.dotAbsent,
+                        status === "none" && styles.dotNone,
                       ]}
-                    >
-                      {statusLabel(status)}
-                    </Text>
+                      disabled={status === "none"}
+                    />
+                  </View>
+                  {activeTooltipDate === dateKey ? (
+                    <View style={styles.tooltip}>
+                      {(() => {
+                        const shiftsForDay = getShiftsForDate(dateKey);
+                        if (!shiftsForDay.length) {
+                          return (
+                            <Text style={styles.tooltipText}>No shift</Text>
+                          );
+                        }
+                        const first = shiftsForDay[0];
+                        const extra = shiftsForDay.length - 1;
+                        return (
+                          <>
+                            <Text style={styles.tooltipTitle}>
+                              {first.role || "Shift"}
+                            </Text>
+                            <Text style={styles.tooltipText}>
+                              {first.start} - {first.end}
+                            </Text>
+                            {extra > 0 ? (
+                              <Text style={styles.tooltipText}>
+                                +{extra} more
+                              </Text>
+                            ) : null}
+                          </>
+                        );
+                      })()}
+                    </View>
                   ) : null}
-                      </>
-                    );
-                  })()}
                 </TouchableOpacity>
               );
             })}
@@ -352,6 +463,10 @@ export default function CalendarScreen() {
               <Text style={styles.detailButtonText}>View details</Text>
             </TouchableOpacity>
           </View>
+          <Text style={styles.selectedDateText}>
+            {formatDateLabel(selectedDate)} • {shiftsForSelectedDate.length} shift
+            {shiftsForSelectedDate.length === 1 ? "" : "s"}
+          </Text>
           {schedule ? (
             <Text style={styles.subText}>
               {schedule.name} • {schedule.startTime} - {schedule.endTime}
@@ -365,7 +480,7 @@ export default function CalendarScreen() {
           ) : (
             shiftsForSelectedDate.map(shift => (
               <View key={shift.id} style={styles.shiftRow}>
-                <View>
+                <View style={styles.shiftLeft}>
                   <Text style={styles.shiftTitle}>{shift.role}</Text>
                   <View style={styles.shiftMetaRow}>
                     <Text style={styles.shiftMeta}>
@@ -390,7 +505,7 @@ export default function CalendarScreen() {
                     </View>
                   </View>
                 </View>
-                <View style={styles.shiftActions}>
+                <View style={styles.shiftRight}>
                   <Text style={styles.shiftLocation}>{shift.location}</Text>
                   <TouchableOpacity
                     style={styles.detailButton}
@@ -588,9 +703,17 @@ const getDateStatus = (
 
 function getNextShift(allShifts: any[]) {
   if (!allShifts.length) return null;
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const todayKey = now.toISOString().slice(0, 10);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const future = allShifts
-    .filter(shift => shift.date > todayKey)
+    .filter(shift => {
+      if (shift.date > todayKey) return true;
+      if (shift.date < todayKey) return false;
+      const [startH, startM] = shift.start.split(":").map(Number);
+      const shiftMinutes = (startH || 0) * 60 + (startM || 0);
+      return shiftMinutes > currentMinutes;
+    })
     .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
   return future[0] || null;
 }
@@ -678,55 +801,96 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  monthTitle: { fontSize: 20, fontWeight: "700", color: "#0f172a" },
-  navIcons: { flexDirection: "row", gap: 12 },
+  captionGroup: { flexDirection: "row", gap: 8, alignItems: "center" },
+  captionButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  captionText: { fontSize: 12, fontWeight: "700", color: "#0f172a" },
+  navIcons: { flexDirection: "row", gap: 8 },
+  dropdown: {
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  dropdownRow: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
+  dropdownRowActive: {
+    backgroundColor: "#0f172a",
+  },
+  dropdownText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
+  dropdownTextActive: { color: "#ffffff" },
 
   weekRow: { flexDirection: "row", marginBottom: 8 },
   weekText: {
     textAlign: "center",
     fontWeight: "600",
     color: "#64748b",
+    fontSize: 12,
   },
 
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
 
   dayCell: {
     width: CELL_WIDTH,
-    height: 64,
-    marginRight: GAP,
-    marginBottom: GAP,
+    height: 72,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 8,
+    justifyContent: "space-between",
+    backgroundColor: "#ffffff",
+    position: "relative",
   },
 
   selectedDay: {
     borderColor: "#0ea5e9",
     backgroundColor: "#e0f2fe",
   },
+  todayCell: {
+    borderColor: "#0f172a",
+  },
 
-  dayText: { color: "#334155" },
+  dayText: { color: "#334155", fontWeight: "600" },
+  todayText: { color: "#0f172a", fontWeight: "700" },
   selectedDayText: {
     color: "#0ea5e9",
     fontWeight: "700",
   },
 
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   dotPlaceholder: {
     width: 6,
     height: 6,
     borderRadius: 999,
-    marginTop: 4,
   },
   dotNone: { backgroundColor: "transparent" },
   dotScheduled: { backgroundColor: "#3b82f6" },
   dotCompleted: { backgroundColor: "#22c55e" },
   dotAbsent: { backgroundColor: "#ef4444" },
-  statusLabel: { fontSize: 9, marginTop: 2, fontWeight: "600", color: "#0f172a" },
-  statusLabelScheduled: { color: "#3b82f6" },
-  statusLabelCompleted: { color: "#22c55e" },
-  statusLabelAbsent: { color: "#ef4444" },
+  tooltip: {
+    position: "absolute",
+    top: -6,
+    left: -4,
+    right: -4,
+    backgroundColor: "#0f172a",
+    borderRadius: 10,
+    padding: 6,
+    zIndex: 10,
+  },
+  tooltipTitle: { color: "#ffffff", fontSize: 10, fontWeight: "700" },
+  tooltipText: { color: "#e2e8f0", fontSize: 9, marginTop: 2 },
 
   emptyBox: {
     backgroundColor: "#f1f5f9",
@@ -745,11 +909,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
   },
+  shiftLeft: { flex: 1 },
+  shiftRight: { alignItems: "flex-end", gap: 6 },
   shiftTitle: { fontWeight: "700", fontSize: 15, color: "#0f172a" },
   shiftMetaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   shiftMeta: { color: "#64748b", marginTop: 2 },
   shiftLocation: { color: "#0f172a", fontWeight: "600" },
-  shiftActions: { alignItems: "flex-end", gap: 6 },
   detailButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -778,6 +943,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  selectedDateText: {
+    color: "#64748b",
+    marginBottom: 8,
   },
 
   legendItem: {

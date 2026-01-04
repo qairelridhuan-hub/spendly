@@ -157,10 +157,25 @@ export default function AdminSetup() {
     });
   };
 
+  const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  const toMinutes = (value: string) => {
+    const [hours, minutes] = value.split(":").map(Number);
+    return (hours || 0) * 60 + (minutes || 0);
+  };
+
   const validateForm = () => {
     if (!formData.name.trim()) return "Schedule name is required.";
-    if (!formData.hourlyRate) return "Hourly rate is required.";
+    const hourlyRate = Number(formData.hourlyRate);
+    if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+      return "Hourly rate must be greater than 0.";
+    }
     if (formData.days.length === 0) return "Select at least one working day.";
+    if (!isValidTime(formData.startTime) || !isValidTime(formData.endTime)) {
+      return "Start and end time must be in HH:MM format.";
+    }
+    if (toMinutes(formData.startTime) >= toMinutes(formData.endTime)) {
+      return "End time must be after start time.";
+    }
     return "";
   };
 

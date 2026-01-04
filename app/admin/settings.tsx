@@ -62,6 +62,50 @@ export default function AdminSettings() {
   const [status, setStatus] = useState("");
   const [generating, setGenerating] = useState(false);
 
+  const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  const toMinutes = (value: string) => {
+    const [hours, minutes] = value.split(":").map(Number);
+    return (hours || 0) * 60 + (minutes || 0);
+  };
+
+  const getConfigError = () => {
+    const days = Number(workConfig.workingDaysPerWeek);
+    const hours = Number(workConfig.hoursPerDay);
+    const months = Number(workConfig.durationMonths);
+    const hourlyRate = Number(paymentConfig.hourlyRate);
+    const overtimeRate = Number(paymentConfig.overtimeRate);
+
+    if (!Number.isFinite(days) || days <= 0 || days > 7) {
+      return "Working days per week must be between 1 and 7.";
+    }
+    if (!Number.isFinite(hours) || hours <= 0 || hours > 24) {
+      return "Working hours per day must be between 1 and 24.";
+    }
+    if (!Number.isFinite(months) || months <= 0) {
+      return "Total duration (months) must be greater than 0.";
+    }
+    if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+      return "Hourly rate must be greater than 0.";
+    }
+    if (!Number.isFinite(overtimeRate) || overtimeRate <= 0) {
+      return "Overtime rate must be greater than 0.";
+    }
+    if (workConfig.preferredStart && !isValidTime(workConfig.preferredStart)) {
+      return "Preferred start must be in HH:MM format.";
+    }
+    if (workConfig.preferredEnd && !isValidTime(workConfig.preferredEnd)) {
+      return "Preferred end must be in HH:MM format.";
+    }
+    if (
+      workConfig.preferredStart &&
+      workConfig.preferredEnd &&
+      toMinutes(workConfig.preferredStart) >= toMinutes(workConfig.preferredEnd)
+    ) {
+      return "Preferred end must be after preferred start.";
+    }
+    return "";
+  };
+
   useEffect(() => {
     const configRef = doc(db, "config", "system");
     const unsubConfig = onSnapshot(configRef, snap => {
@@ -121,18 +165,23 @@ export default function AdminSettings() {
 
   const handleSaveConfig = async () => {
     setStatus("");
+    const error = getConfigError();
+    if (error) {
+      setStatus(error);
+      return;
+    }
     try {
       await setDoc(
         doc(db, "config", "system"),
         {
-        workingDaysPerWeek: Number(workConfig.workingDaysPerWeek || 0),
-        hoursPerDay: Number(workConfig.hoursPerDay || 0),
-        durationMonths: Number(workConfig.durationMonths || 0),
-        preferredStart: workConfig.preferredStart,
-        preferredEnd: workConfig.preferredEnd,
-        hourlyRate: Number(paymentConfig.hourlyRate || 0),
-        overtimeRate: Number(paymentConfig.overtimeRate || 0),
-        updatedAt: new Date().toISOString(),
+          workingDaysPerWeek: Number(workConfig.workingDaysPerWeek || 0),
+          hoursPerDay: Number(workConfig.hoursPerDay || 0),
+          durationMonths: Number(workConfig.durationMonths || 0),
+          preferredStart: workConfig.preferredStart,
+          preferredEnd: workConfig.preferredEnd,
+          hourlyRate: Number(paymentConfig.hourlyRate || 0),
+          overtimeRate: Number(paymentConfig.overtimeRate || 0),
+          updatedAt: new Date().toISOString(),
         },
         { merge: true }
       );

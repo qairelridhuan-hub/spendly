@@ -23,7 +23,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recentEmails, setRecentEmails] = useState<string[]>([]);
-  const [showEmailList, setShowEmailList] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
 
@@ -34,16 +33,15 @@ export default function Login() {
         const list = storedList ? JSON.parse(storedList) : [];
         if (Array.isArray(list)) {
           setRecentEmails(list);
-          if (!email && list[0]) setEmail(list[0]);
         }
         const lastEmail = await AsyncStorage.getItem(LAST_EMAIL_KEY);
-        if (lastEmail && !email) setEmail(lastEmail);
+        if (lastEmail) setEmail(lastEmail);
       } catch {
         // ignore storage errors
       }
     };
     loadRecentEmails();
-  }, [email]);
+  }, []);
 
   const validateEmail = () => {
     if (!email.trim()) {
@@ -165,7 +163,6 @@ export default function Login() {
               placeholder="Email"
               value={email}
               onChangeText={setEmail}
-              onFocus={() => setShowEmailList(true)}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
@@ -181,23 +178,6 @@ export default function Login() {
                 paddingLeft: 44,
               }}
             />
-            {showEmailList && recentEmails.length > 0 ? (
-              <View style={styles.emailList}>
-                {recentEmails.map(item => (
-                  <TouchableOpacity
-                    key={item}
-                    style={styles.emailRow}
-                    onPress={() => {
-                      setEmail(item);
-                      setShowEmailList(false);
-                      passwordRef.current?.focus();
-                    }}
-                  >
-                    <Text style={styles.emailRowText}>{item}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
           </View>
 
           {/* PASSWORD */}

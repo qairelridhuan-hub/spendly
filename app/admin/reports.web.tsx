@@ -42,16 +42,33 @@ const chartColors = {
 
 export default function AdminReportsWeb() {
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
+  const [breakLogs, setBreakLogs] = useState<any[]>([]);
+  const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<WorkerMap>({});
   const [config, setConfig] = useState({
     hourlyRate: 0,
     hoursPerDay: 0,
+    overtimeRate: 0,
   });
 
   useEffect(() => {
     const unsubAttendance = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data() as AttendanceLog);
       setAttendanceLogs(list);
+    });
+    const unsubBreaks = onSnapshot(collectionGroup(db, "breaks"), snapshot => {
+      const list = snapshot.docs.map(docSnap => ({
+        workerId: getOwnerId(docSnap),
+        ...docSnap.data(),
+      }));
+      setBreakLogs(list);
+    });
+    const unsubOvertime = onSnapshot(collectionGroup(db, "overtime"), snapshot => {
+      const list = snapshot.docs.map(docSnap => ({
+        workerId: getOwnerId(docSnap),
+        ...docSnap.data(),
+      }));
+      setOvertimeLogs(list);
     });
     const workersQuery = query(
       collection(db, "users"),
@@ -75,10 +92,13 @@ export default function AdminReportsWeb() {
       setConfig({
         hourlyRate: Number(data.hourlyRate ?? 0),
         hoursPerDay: Number(data.hoursPerDay ?? 0),
+        overtimeRate: Number(data.overtimeRate ?? 0),
       });
     });
     return () => {
       unsubAttendance();
+      unsubBreaks();
+      unsubOvertime();
       unsubWorkers();
       unsubConfig();
     };
@@ -88,24 +108,65 @@ export default function AdminReportsWeb() {
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
   );
+  const breakMinutesByKey = useMemo(() => buildBreakMinutesMap(breakLogs), [breakLogs]);
+  const overtimeHoursByKey = useMemo(() => buildOvertimeHoursMap(overtimeLogs), [overtimeLogs]);
 
   const weeklyHoursData = useMemo(
-    () => buildWeeklyHours(approvedLogs),
-    [approvedLogs]
+    () =>
+      buildWeeklyHours(
+        approvedLogs,
+        breakMinutesByKey,
+        overtimeHoursByKey
+      ),
+    [approvedLogs, breakMinutesByKey, overtimeHoursByKey]
   );
 
   const monthlySummary = useMemo(
-    () => aggregateAttendance(approvedLogs, attendanceLogs, workers, config.hourlyRate),
-    [approvedLogs, attendanceLogs, workers, config.hourlyRate]
+    () =>
+      aggregateAttendance(
+        approvedLogs,
+        attendanceLogs,
+        workers,
+        config.hourlyRate,
+        config.overtimeRate,
+        breakMinutesByKey,
+        overtimeHoursByKey
+      ),
+    [
+      approvedLogs,
+      attendanceLogs,
+      workers,
+      config.hourlyRate,
+      config.overtimeRate,
+      breakMinutesByKey,
+      overtimeHoursByKey,
+    ]
   );
   const currentPeriod = getPeriodKey(new Date());
   const currentSummary =
     monthlySummary.find(row => row.period === currentPeriod) ||
-    buildSummaryFromAttendance(approvedLogs, attendanceLogs, currentPeriod, workers, config.hourlyRate);
+    buildSummaryFromAttendance(
+      approvedLogs,
+      attendanceLogs,
+      currentPeriod,
+      workers,
+      config.hourlyRate,
+      config.overtimeRate,
+      breakMinutesByKey,
+      overtimeHoursByKey
+    );
 
   const monthlyEarningsData = useMemo(
-    () => buildMonthlyEarnings(approvedLogs, workers, config.hourlyRate),
-    [approvedLogs, workers, config.hourlyRate]
+    () =>
+      buildMonthlyEarnings(
+        approvedLogs,
+        workers,
+        config.hourlyRate,
+        config.overtimeRate,
+        breakMinutesByKey,
+        overtimeHoursByKey
+      ),
+    [approvedLogs, workers, config.hourlyRate, config.overtimeRate, breakMinutesByKey, overtimeHoursByKey]
   );
 
   const breakdownData = useMemo(
@@ -115,9 +176,21 @@ export default function AdminReportsWeb() {
         attendanceLogs,
         workers,
         config.hourlyRate,
-        config.hoursPerDay
+        config.overtimeRate,
+        config.hoursPerDay,
+        breakMinutesByKey,
+        overtimeHoursByKey
       ),
-    [approvedLogs, attendanceLogs, workers, config.hourlyRate, config.hoursPerDay]
+    [
+      approvedLogs,
+      attendanceLogs,
+      workers,
+      config.hourlyRate,
+      config.overtimeRate,
+      config.hoursPerDay,
+      breakMinutesByKey,
+      overtimeHoursByKey,
+    ]
   );
 
   return (
@@ -266,7 +339,11 @@ export default function AdminReportsWeb() {
   );
 }
 
-function buildWeeklyHours(logs: AttendanceLog[]) {
+function buildWeeklyHours(
+  logs: AttendanceLog[],
+  breakMinutesByKey: Record<string, number>,
+  overtimeHoursByKey: Record<string, number>
+) {
   const start = startOfWeek(new Date());
   const end = endOfWeek(new Date());
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -275,7 +352,14 @@ function buildWeeklyHours(logs: AttendanceLog[]) {
     const date = new Date(`${log.date}T00:00:00`);
     if (Number.isNaN(date.getTime()) || date < start || date > end) return;
     const dayIndex = (date.getDay() + 6) % 7;
-    totals[dayIndex].hours += Number(log.hours ?? 0);
+    totals[dayIndex].hours += getLogHours(log, breakMinutesByKey);
+  });
+  Object.entries(overtimeHoursByKey).forEach(([key, hours]) => {
+    const [, dateKey] = key.split(":");
+    const date = new Date(`${dateKey}T00:00:00`);
+    if (Number.isNaN(date.getTime()) || date < start || date > end) return;
+    const dayIndex = (date.getDay() + 6) % 7;
+    totals[dayIndex].hours += hours;
   });
   return totals;
 }
@@ -283,7 +367,10 @@ function buildWeeklyHours(logs: AttendanceLog[]) {
 function buildMonthlyEarnings(
   logs: AttendanceLog[],
   workers: WorkerMap,
-  defaultRate: number
+  defaultRate: number,
+  overtimeRate: number,
+  breakMinutesByKey: Record<string, number>,
+  overtimeHoursByKey: Record<string, number>
 ) {
   const months = lastSixMonths();
   const totals: Record<string, number> = {};
@@ -293,7 +380,14 @@ function buildMonthlyEarnings(
     const period = date.slice(0, 7);
     const workerId = String(log.workerId ?? "");
     const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
-    totals[period] = (totals[period] || 0) + Number(log.hours ?? 0) * rate;
+    totals[period] =
+      (totals[period] || 0) + getLogHours(log, breakMinutesByKey) * rate;
+  });
+  Object.entries(overtimeHoursByKey).forEach(([key, hours]) => {
+    const [, date] = key.split(":");
+    if (!date || date.length < 7) return;
+    const period = date.slice(0, 7);
+    totals[period] = (totals[period] || 0) + hours * overtimeRate;
   });
   return months.map(item => ({
     month: item.label,
@@ -306,7 +400,10 @@ function buildEarningsBreakdown(
   allLogs: AttendanceLog[],
   workers: WorkerMap,
   defaultRate: number,
-  hoursPerDay: number
+  overtimeRate: number,
+  hoursPerDay: number,
+  breakMinutesByKey: Record<string, number>,
+  overtimeHoursByKey: Record<string, number>
 ) {
   const period = getPeriodKey(new Date());
   let regular = 0;
@@ -315,7 +412,14 @@ function buildEarningsBreakdown(
     if (!date.startsWith(period)) return;
     const workerId = String(log.workerId ?? "");
     const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
-    regular += Number(log.hours ?? 0) * rate;
+    regular += getLogHours(log, breakMinutesByKey) * rate;
+  });
+
+  let overtime = 0;
+  Object.entries(overtimeHoursByKey).forEach(([key, hours]) => {
+    const [, date] = key.split(":");
+    if (!date?.startsWith(period)) return;
+    overtime += hours * overtimeRate;
   });
 
   let deductions = 0;
@@ -330,7 +434,7 @@ function buildEarningsBreakdown(
 
   return [
     { label: "Regular", value: regular, color: chartColors.success },
-    { label: "Overtime", value: 0, color: chartColors.secondary },
+    { label: "Overtime", value: overtime, color: chartColors.secondary },
     { label: "Deductions", value: deductions, color: chartColors.danger },
   ];
 }
@@ -339,7 +443,10 @@ function aggregateAttendance(
   approvedLogs: AttendanceLog[],
   allLogs: AttendanceLog[],
   workers: WorkerMap,
-  defaultRate: number
+  defaultRate: number,
+  overtimeRate: number,
+  breakMinutesByKey: Record<string, number>,
+  overtimeHoursByKey: Record<string, number>
 ) {
   const map: Record<string, any> = {};
   approvedLogs.forEach(log => {
@@ -355,9 +462,24 @@ function aggregateAttendance(
       totalEarnings: 0,
       workers: new Set<string>(),
     };
-    map[period].totalHours += Number(log.hours ?? 0);
-    map[period].totalEarnings += Number(log.hours ?? 0) * rate;
+    const hours = getLogHours(log, breakMinutesByKey);
+    map[period].totalHours += hours;
+    map[period].totalEarnings += hours * rate;
     if (workerId) map[period].workers.add(workerId);
+  });
+  Object.entries(overtimeHoursByKey).forEach(([key, hours]) => {
+    const [, date] = key.split(":");
+    if (!date || date.length < 7) return;
+    const period = date.slice(0, 7);
+    map[period] = map[period] || {
+      period,
+      totalHours: 0,
+      absenceDeductions: 0,
+      totalEarnings: 0,
+      workers: new Set<string>(),
+    };
+    map[period].totalHours += hours;
+    map[period].totalEarnings += hours * overtimeRate;
   });
   allLogs.forEach(log => {
     const date = String(log.date ?? "");
@@ -383,12 +505,20 @@ function buildSummaryFromAttendance(
   allLogs: AttendanceLog[],
   period: string,
   workers: WorkerMap,
-  defaultRate: number
+  defaultRate: number,
+  overtimeRate: number,
+  breakMinutesByKey: Record<string, number>,
+  overtimeHoursByKey: Record<string, number>
 ) {
   const totalHours = approvedLogs.reduce((sum, log) => {
     const date = String(log.date ?? "");
     if (!date.startsWith(period)) return sum;
-    return sum + Number(log.hours ?? 0);
+    return sum + getLogHours(log, breakMinutesByKey);
+  }, 0);
+  const overtimeHours = Object.entries(overtimeHoursByKey).reduce((sum, [key, hours]) => {
+    const [, date] = key.split(":");
+    if (!date?.startsWith(period)) return sum;
+    return sum + hours;
   }, 0);
   const absences = allLogs.filter(
     log => String(log.status ?? "") === "absent" && String(log.date ?? "").startsWith(period)
@@ -398,7 +528,7 @@ function buildSummaryFromAttendance(
     if (!date.startsWith(period)) return sum;
     const workerId = String(log.workerId ?? "");
     const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
-    return sum + Number(log.hours ?? 0) * rate;
+    return sum + getLogHours(log, breakMinutesByKey) * rate;
   }, 0);
   const workersSet = new Set(
     approvedLogs
@@ -408,11 +538,83 @@ function buildSummaryFromAttendance(
   );
   return {
     period,
-    totalHours,
+    totalHours: totalHours + overtimeHours,
     absenceDeductions: absences,
-    totalEarnings,
+    totalEarnings: totalEarnings + overtimeHours * overtimeRate,
     workers: workersSet,
   };
+}
+
+function getOwnerId(docSnap: any) {
+  return docSnap.ref?.parent?.parent?.id || docSnap.data()?.workerId || "";
+}
+
+function buildBreakMinutesMap(entries: any[]) {
+  const map: Record<string, number> = {};
+  entries.forEach(entry => {
+    const workerId = String(entry.workerId ?? "");
+    const date = String(entry.date ?? "");
+    if (!workerId || !date) return;
+    if (!entry.startTime || !entry.endTime) return;
+    const minutes = calcMinutesDiff(entry.startTime, entry.endTime);
+    map[`${workerId}:${date}`] = (map[`${workerId}:${date}`] ?? 0) + minutes;
+  });
+  return map;
+}
+
+function buildOvertimeHoursMap(entries: any[]) {
+  const map: Record<string, number> = {};
+  entries.forEach(entry => {
+    const workerId = String(entry.workerId ?? "");
+    const date = String(entry.date ?? "");
+    if (!workerId || !date) return;
+    let hours = Number(entry.hours ?? 0);
+    if (!hours && entry.startTime && entry.endTime) {
+      hours = calcHoursFromTimes(entry.startTime, entry.endTime, 0);
+    }
+    if (!hours) return;
+    map[`${workerId}:${date}`] = (map[`${workerId}:${date}`] ?? 0) + hours;
+  });
+  return map;
+}
+
+function getLogHours(log: AttendanceLog, breakMinutesByKey: Record<string, number>) {
+  const stored = Number(log.hours ?? 0);
+  if (stored > 0) return stored;
+  const breakMinutes = getBreakMinutesForLog(log, breakMinutesByKey);
+  return calcHoursFromTimes(
+    String((log as any).clockIn ?? ""),
+    String((log as any).clockOut ?? ""),
+    breakMinutes
+  );
+}
+
+function getBreakMinutesForLog(log: AttendanceLog, breakMinutesByKey: Record<string, number>) {
+  const stored = Number((log as any).breakMinutes ?? 0);
+  if (stored > 0) return stored;
+  const dateKey = `${String(log.workerId ?? "")}:${String(log.date ?? "")}`;
+  return breakMinutesByKey[dateKey] ?? 0;
+}
+
+function calcMinutesDiff(start: string, end: string) {
+  const startMinutes = parseTimeToMinutes(start);
+  const endMinutes = parseTimeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) return 0;
+  return Math.max(0, endMinutes - startMinutes);
+}
+
+function calcHoursFromTimes(start: string, end: string, breakMinutes = 0) {
+  const startMinutes = parseTimeToMinutes(start);
+  const endMinutes = parseTimeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) return 0;
+  const totalMinutes = Math.max(0, endMinutes - startMinutes - breakMinutes);
+  return totalMinutes / 60;
+}
+
+function parseTimeToMinutes(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
 }
 
 function averagePerWorker(summary: any) {

@@ -56,6 +56,20 @@ export default function AdminWorkers() {
   const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null);
   const [formError, setFormError] = useState("");
 
+  const isValidEmail = (value: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  const getWorkerFormError = () => {
+    if (!formData.name.trim()) return "Name is required.";
+    if (!formData.email.trim()) return "Email is required.";
+    if (!isValidEmail(formData.email.trim())) return "Enter a valid email address.";
+    const rate = Number(formData.hourlyRate);
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return "Hourly rate must be greater than 0.";
+    }
+    return "";
+  };
+
   const [formData, setFormData] = useState({
     uid: "",
     name: "",
@@ -171,8 +185,9 @@ export default function AdminWorkers() {
 
   const handleAddWorker = async () => {
     setFormError("");
-    if (!formData.name.trim() || !formData.email.trim() || !formData.hourlyRate) {
-      setFormError("Name, email, and hourly rate are required.");
+    const error = getWorkerFormError();
+    if (error) {
+      setFormError(error);
       return;
     }
     const payload = {
@@ -207,8 +222,9 @@ export default function AdminWorkers() {
   const handleEditWorker = async () => {
     if (!selectedWorker) return;
     setFormError("");
-    if (!formData.name.trim() || !formData.email.trim() || !formData.hourlyRate) {
-      setFormError("Name, email, and hourly rate are required.");
+    const error = getWorkerFormError();
+    if (error) {
+      setFormError(error);
       return;
     }
     try {
