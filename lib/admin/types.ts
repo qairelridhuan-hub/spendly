@@ -6,6 +6,28 @@ export type WorkConfig = {
   preferredEnd: string;
   hourlyRate: number;
   overtimeRate: number;
+  payType?: "hourly" | "daily" | "mixed";
+  dailyRate?: number;
+  dailyMinHours?: number;
+  dailyProrate?: boolean;
+  otAfterHours?: number;
+  otMultiplier?: number;
+  breakPaid?: boolean;
+  breakFixedMinutes?: number;
+  autoBreak?: boolean;
+  roundingMinutes?: number;
+  roundingMode?: "nearest" | "floor" | "ceil";
+  roundingScope?: "net" | "punch";
+  lateGraceMinutes?: number;
+  earlyGraceMinutes?: number;
+  weekendMultiplier?: number;
+  holidayMultiplier?: number;
+  holidays?: string[];
+  allowedStart?: string;
+  allowedEnd?: string;
+  maxHoursPerDay?: number;
+  maxHoursPerWeek?: number;
+  minRestHours?: number;
 };
 
 export type ShiftType = "normal" | "half-day" | "remote";

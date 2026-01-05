@@ -139,10 +139,11 @@ export default function AdminWorkers() {
       if (!workerId) return;
       const workerRate =
         workers.find(worker => worker.id === workerId)?.hourlyRate ?? 0;
-      const hours = Number(log.hours ?? 0);
+      const hours = getLogHours(log);
+      const earnings = getLogEarnings(log, Number(workerRate ?? 0));
       map[workerId] = map[workerId] || { hours: 0, earnings: 0 };
       map[workerId].hours += hours;
-      map[workerId].earnings += hours * Number(workerRate ?? 0);
+      map[workerId].earnings += earnings;
     });
     return map;
   }, [attendanceLogs, currentPeriod, workers]);
@@ -410,7 +411,15 @@ export default function AdminWorkers() {
                 "Schedule",
                 "Actions",
               ].map(label => (
-                <Text key={label} style={tableHeaderText}>
+                <Text
+                  key={label}
+                  style={[
+                    tableHeaderText,
+                    label === "Worker" && { minWidth: 220 },
+                    label === "Status" && { minWidth: 140 },
+                    label === "Schedule" && { minWidth: 120 },
+                  ]}
+                >
                   {label}
                 </Text>
               ))}
@@ -419,7 +428,7 @@ export default function AdminWorkers() {
               const workerTotals = totals[worker.id] || { hours: 0, earnings: 0 };
               return (
                 <View key={worker.id} style={tableRow}>
-                  <View style={[tableCell, { flexDirection: "row", gap: 10 }]}>
+                  <View style={[tableCell, { flexDirection: "row", gap: 10, minWidth: 220 }]}>
                     <View style={avatar}>
                       <Text style={avatarText}>
                         {worker.name ? worker.name[0] : "W"}
@@ -443,7 +452,7 @@ export default function AdminWorkers() {
                   <Text style={tableCell}>
                     RM {workerTotals.earnings.toFixed(2)}
                   </Text>
-                  <View style={tableCell}>
+                  <View style={[tableCell, { minWidth: 140 }]}>
                     <Text
                       style={[
                         statusBadge,
@@ -455,7 +464,7 @@ export default function AdminWorkers() {
                       {worker.status === "active" ? "Active" : "Inactive"}
                     </Text>
                   </View>
-                  <View style={tableCell}>
+                  <View style={[tableCell, { minWidth: 120 }]}>
                     {worker.scheduleId ? (
                       <TouchableOpacity
                         style={scheduleChip}
@@ -869,6 +878,7 @@ const tableHeader = {
 
 const tableHeaderText = {
   flex: 1,
+  minWidth: 110,
   color: adminPalette.textMuted,
   fontSize: 12,
   fontWeight: "600" as const,
@@ -883,8 +893,8 @@ const tableRow = {
   alignItems: "center" as const,
 };
 
-const tableCell = { flex: 1, color: adminPalette.text, fontSize: 12 };
-const tableCellMuted = { flex: 1, color: adminPalette.textMuted, fontSize: 12 };
+const tableCell = { flex: 1, minWidth: 110, color: adminPalette.text, fontSize: 12 };
+const tableCellMuted = { flex: 1, minWidth: 110, color: adminPalette.textMuted, fontSize: 12 };
 
 const avatar = {
   width: 36,
@@ -1031,3 +1041,67 @@ const secondaryButtonText = { color: adminPalette.text, fontWeight: "600" as con
 
 const errorText = { color: adminPalette.danger, fontSize: 12 };
 const deleteText = { color: adminPalette.textMuted, fontSize: 12, marginTop: 8 };
+
+const getLogHours = (log: any) => {
+  const storedNet = Number(log.netHours ?? log.net_hours ?? 0);
+  if (storedNet > 0) return storedNet;
+  const stored = Number(log.hours ?? 0);
+  if (stored > 0) return stored;
+  const breakMinutes = getBreakMinutesForLog(log);
+  if (log.clockInTs && log.clockOutTs) {
+    const minutes = Math.max(
+      0,
+      Math.round((log.clockOutTs - log.clockInTs) / 60000) - breakMinutes
+    );
+    return minutes / 60;
+  }
+  if (log.clockIn && log.clockOut) {
+    return calcHoursFromTimes(log.clockIn, log.clockOut, breakMinutes);
+  }
+  return 0;
+};
+
+const getLogOvertimeHours = (log: any) => {
+  const stored = Number(log.overtimeHours ?? log.overtime_hours ?? 0);
+  if (stored > 0) return stored;
+  return 0;
+};
+
+const getLogEarnings = (log: any, hourlyRate: number) => {
+  const finalPay = Number(log.finalPay ?? log.final_pay ?? 0);
+  if (finalPay > 0) return finalPay;
+  const netHours = getLogHours(log);
+  const overtimeHours = getLogOvertimeHours(log);
+  const regularHours = Math.max(0, netHours - overtimeHours);
+  const overtimeRate = hourlyRate * 1.5;
+  return regularHours * hourlyRate + overtimeHours * overtimeRate;
+};
+
+const getBreakMinutesForLog = (log: any) => {
+  const stored = Number(log.breakMinutes ?? 0);
+  if (stored > 0) return stored;
+  if (log.breakStart && log.breakEnd) {
+    return Math.max(0, calcMinutesDiff(log.breakStart, log.breakEnd));
+  }
+  return 0;
+};
+
+const calcHoursFromTimes = (start: string, end: string, breakMinutes = 0) => {
+  const startMinutes = parseTimeToMinutes(start);
+  const endMinutes = parseTimeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) return 0;
+  return Math.max(0, endMinutes - startMinutes - breakMinutes) / 60;
+};
+
+const calcMinutesDiff = (start: string, end: string) => {
+  const startMinutes = parseTimeToMinutes(start);
+  const endMinutes = parseTimeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) return 0;
+  return Math.max(0, endMinutes - startMinutes);
+};
+
+const parseTimeToMinutes = (time: string) => {
+  const [h, m] = time.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+};

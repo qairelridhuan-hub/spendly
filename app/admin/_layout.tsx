@@ -16,11 +16,11 @@ import {
 } from "lucide-react-native";
 import { auth, db } from "@/lib/firebase";
 import { adminPalette } from "@/lib/admin/palette";
-import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Setup", href: "/admin/setup", icon: Settings },
+  { label: "Rules", href: "/admin/settings", icon: Settings },
   { label: "Calendar", href: "/admin/calendar", icon: Calendar },
   { label: "Workers", href: "/admin/workers", icon: Users },
   { label: "Attendance", href: "/admin/attendance", icon: ClipboardCheck },
@@ -106,34 +106,19 @@ export default function AdminLayout() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
-      <AnimatedBlobs
-        blobStyle={{
-          position: "absolute",
-          width: 320,
-          height: 320,
-          borderRadius: 999,
-          backgroundColor: "rgba(14,165,233,0.12)",
-          top: -140,
-          right: -120,
-        }}
-        blobAltStyle={{
-          position: "absolute",
-          width: 360,
-          height: 360,
-          borderRadius: 999,
-          backgroundColor: "rgba(249,115,22,0.12)",
-          bottom: -180,
-          left: -140,
-        }}
-      />
       <View style={{ flex: 1, flexDirection: "row" }}>
         <View
           style={{
-            width: 260,
-            padding: 20,
+            width: 248,
+            padding: 22,
             borderRightWidth: 1,
             borderRightColor: adminPalette.border,
             backgroundColor: adminPalette.surface,
+            shadowColor: "#0f172a",
+            shadowOpacity: 0.04,
+            shadowRadius: 12,
+            shadowOffset: { width: 6, height: 0 },
+            elevation: 2,
           }}
         >
           <View style={{ marginBottom: 24 }}>
@@ -143,18 +128,18 @@ export default function AdminLayout() {
                   width: 40,
                   height: 40,
                   borderRadius: 12,
-                  backgroundColor: adminPalette.brand,
+                  backgroundColor: adminPalette.accent,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: "#fff", fontSize: 18 }}>💰</Text>
+                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>S</Text>
               </View>
               <View>
                 <Text
                   style={{
-                    color: adminPalette.brand,
-                    fontSize: 18,
+                    color: adminPalette.text,
+                    fontSize: 17,
                     fontWeight: "700",
                   }}
                 >
@@ -182,19 +167,19 @@ export default function AdminLayout() {
                     paddingVertical: 10,
                     paddingHorizontal: 12,
                     borderRadius: 12,
-                    backgroundColor: isActive
-                      ? adminPalette.infoSoft
-                      : "transparent",
+                    backgroundColor: isActive ? adminPalette.infoSoft : "transparent",
+                    borderLeftWidth: isActive ? 3 : 0,
+                    borderLeftColor: adminPalette.accent,
                     marginBottom: 6,
                   }}
                 >
                   <Icon
                     size={18}
-                    color={isActive ? adminPalette.accent : adminPalette.textMuted}
+                    color={isActive ? adminPalette.accentStrong : adminPalette.textMuted}
                   />
                   <Text
                     style={{
-                      color: isActive ? adminPalette.accent : adminPalette.textMuted,
+                      color: isActive ? adminPalette.accentStrong : adminPalette.textMuted,
                       fontWeight: "600",
                     }}
                   >
@@ -219,13 +204,13 @@ export default function AdminLayout() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: adminPalette.infoSoft,
+                  backgroundColor: adminPalette.surfaceAlt,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: adminPalette.accent, fontSize: 14 }}>
-                  👤
+                <Text style={{ color: adminPalette.textMuted, fontSize: 12 }}>
+                  ADM
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -271,6 +256,11 @@ export default function AdminLayout() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
+              shadowColor: "#0f172a",
+              shadowOpacity: 0.04,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 2,
             }}
           >
             <View>

@@ -94,7 +94,8 @@ export default function CalendarScreen() {
   const startDay = new Date(year, month, 1).getDay();
   const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
   const shiftsForSelectedDate = getShiftsForDate(selectedDate);
-  const nextShift = getNextShift(shifts);
+  const nextShift = getNextShift(shifts, attendanceMap);
+  const selectedDateLabel = getSelectedDateLabel(selectedDate, todayKey);
   const pad = (value: number) => String(value).padStart(2, "0");
   const todayKey = `${today.getFullYear()}-${padValue(today.getMonth() + 1)}-${padValue(
     today.getDate()
@@ -449,7 +450,7 @@ export default function CalendarScreen() {
         ===================== */}
         <View style={styles.card}>
           <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>Upcoming Shifts</Text>
+            <Text style={styles.cardTitle}>{selectedDateLabel}</Text>
             <TouchableOpacity
               style={styles.detailButton}
               onPress={() => {
@@ -701,13 +702,20 @@ const getDateStatus = (
   return status;
 };
 
-function getNextShift(allShifts: any[]) {
+function getNextShift(allShifts: any[], attendanceMap: Record<string, string>) {
   if (!allShifts.length) return null;
   const now = new Date();
   const todayKey = now.toISOString().slice(0, 10);
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const future = allShifts
     .filter(shift => {
+      const effectiveStatus = resolveStatus(
+        shift.status,
+        attendanceMap[shift.date]
+      );
+      if (effectiveStatus === "completed" || effectiveStatus === "absent") {
+        return false;
+      }
       if (shift.date > todayKey) return true;
       if (shift.date < todayKey) return false;
       const [startH, startM] = shift.start.split(":").map(Number);
@@ -717,6 +725,12 @@ function getNextShift(allShifts: any[]) {
     .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
   return future[0] || null;
 }
+
+const getSelectedDateLabel = (selectedDate: string, todayKey: string) => {
+  if (selectedDate < todayKey) return "Past shifts";
+  if (selectedDate === todayKey) return "Today's shifts";
+  return "Upcoming shifts";
+};
 
 const statusLabel = (status: string) => {
   if (status === "completed") return "Completed";

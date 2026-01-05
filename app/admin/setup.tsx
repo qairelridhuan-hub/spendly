@@ -12,6 +12,7 @@ import { Clock, Edit, Plus, Trash2, X } from "lucide-react-native";
 import {
   addDoc,
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
   onSnapshot,
@@ -63,6 +64,9 @@ export default function AdminSetup() {
   const [shifts, setShifts] = useState<any[]>([]);
   const [shiftToDelete, setShiftToDelete] = useState<string | null>(null);
   const [showShiftDelete, setShowShiftDelete] = useState(false);
+  const [showShiftDetails, setShowShiftDetails] = useState(false);
+  const [activeShift, setActiveShift] = useState<any | null>(null);
+  const [attendanceMap, setAttendanceMap] = useState<Record<string, any>>({});
 
   const [formData, setFormData] = useState({
     name: "",
@@ -128,11 +132,26 @@ export default function AdminSetup() {
       }));
       setShifts(list);
     });
+    const unsubAttendance = onSnapshot(
+      collectionGroup(db, "attendance"),
+      snapshot => {
+        const map: Record<string, any> = {};
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data() as any;
+          const workerId = String(data.workerId || getAttendanceOwnerId(docSnap) || "");
+          const date = String(data.date || "");
+          if (!workerId || !date) return;
+          map[`${workerId}:${date}`] = data;
+        });
+        setAttendanceMap(map);
+      }
+    );
 
     return () => {
       unsub();
       unsubWorkers();
       unsubShifts();
+      unsubAttendance();
     };
   }, []);
 
@@ -297,6 +316,11 @@ export default function AdminSetup() {
     }
   };
 
+  const openShiftDetails = (shift: any) => {
+    setActiveShift(shift);
+    setShowShiftDetails(true);
+  };
+
   const calculateHours = (start: string, end: string) => {
     const [startHour, startMin] = start.split(":").map(Number);
     const [endHour, endMin] = end.split(":").map(Number);
@@ -342,6 +366,25 @@ export default function AdminSetup() {
     return order === "latest" ? sorted.reverse() : sorted;
   };
 
+  const shiftSummary = useMemo(() => {
+    const pastDates = new Set<string>();
+    const currentDates = new Set<string>();
+    const completedDates = new Set<string>();
+    shifts.forEach(shift => {
+      const date = String(shift.date ?? "");
+      if (!date) return;
+      const status = resolveShiftStatus(shift);
+      if (status === "completed") completedDates.add(date);
+      if (date === todayKey) currentDates.add(date);
+      if (date < todayKey) pastDates.add(date);
+    });
+    return {
+      pastCount: pastDates.size,
+      currentCount: currentDates.size,
+      completedCount: completedDates.size,
+    };
+  }, [shifts, todayKey]);
+
   return (
     <LinearGradient
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
@@ -365,6 +408,19 @@ export default function AdminSetup() {
             <Plus size={18} color="#fff" />
             <Text style={styles.primaryButtonText}>Add Schedule</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.summaryRow}>
+          {[
+            { label: "Past shifts", value: shiftSummary.pastCount },
+            { label: "Current shifts", value: shiftSummary.currentCount },
+            { label: "Completed shifts", value: shiftSummary.completedCount },
+          ].map(item => (
+            <View key={item.label} style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>{item.label}</Text>
+              <Text style={styles.summaryValue}>{item.value}</Text>
+            </View>
+          ))}
         </View>
 
         {workSchedules.length === 0 ? (
@@ -576,6 +632,12 @@ export default function AdminSetup() {
                       </Text>
                     </Text>
                   </View>
+                  <TouchableOpacity
+                    style={styles.viewButton}
+                    onPress={() => openShiftDetails(shift)}
+                  >
+                    <Text style={styles.viewButtonText}>View details</Text>
+                  </TouchableOpacity>
                   <View
                     style={[
                       styles.shiftStatusPill,
@@ -930,6 +992,118 @@ export default function AdminSetup() {
           </View>
         </View>
       ) : null}
+
+      {showShiftDetails && activeShift ? (
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Shift Details</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowShiftDetails(false);
+                  setActiveShift(null);
+                }}
+                style={styles.iconButton}
+              >
+                <X size={18} color={adminPalette.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalContent}>
+              {(() => {
+                const attendance =
+                  attendanceMap[`${String(activeShift.workerId || "")}:${String(
+                    activeShift.date || ""
+                  )}`] || null;
+                return attendance ? (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={styles.detailSectionTitle}>Attendance</Text>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Clock in</Text>
+                      <Text style={styles.detailValue}>
+                        {attendance.clockIn || "--:--"}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Clock out</Text>
+                      <Text style={styles.detailValue}>
+                        {attendance.clockOut || "--:--"}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Break</Text>
+                      <Text style={styles.detailValue}>
+                        {attendance.breakStart
+                          ? attendance.breakEnd
+                            ? `${attendance.breakStart}-${attendance.breakEnd}`
+                            : `${attendance.breakStart}-...`
+                          : attendance.breakMinutes
+                          ? `${attendance.breakMinutes} min`
+                          : "--"}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Net hours</Text>
+                      <Text style={styles.detailValue}>
+                        {Number(attendance.netHours ?? attendance.hours ?? 0).toFixed(1)}h
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Final pay</Text>
+                      <Text style={styles.detailValue}>
+                        RM {Number(attendance.finalPay ?? 0).toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null;
+              })()}
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Date</Text>
+                <Text style={styles.detailValue}>{activeShift.date || "-"}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Time</Text>
+                <Text style={styles.detailValue}>
+                  {activeShift.start || "--:--"} - {activeShift.end || "--:--"}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Worker</Text>
+                <Text style={styles.detailValue}>
+                  {workerMap[String(activeShift.workerId || "")]?.name ||
+                    activeShift.workerId ||
+                    "Worker"}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Status</Text>
+                <Text style={styles.detailValue}>
+                  {resolveShiftStatus(activeShift)}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Hours</Text>
+                <Text style={styles.detailValue}>
+                  {activeShift.hours ||
+                    calculateHours(activeShift.start || "", activeShift.end || "")}
+                  h
+                </Text>
+              </View>
+              {activeShift.role ? (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Role</Text>
+                  <Text style={styles.detailValue}>{activeShift.role}</Text>
+                </View>
+              ) : null}
+              {activeShift.location ? (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Location</Text>
+                  <Text style={styles.detailValue}>{activeShift.location}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      ) : null}
     </LinearGradient>
   );
 }
@@ -1007,6 +1181,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  summaryRow: {
+    marginTop: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  summaryCard: {
+    minWidth: 160,
+    flex: 1,
+    backgroundColor: adminPalette.surface,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+  },
+  summaryLabel: { color: adminPalette.textMuted, fontSize: 12 },
+  summaryValue: { color: adminPalette.text, fontSize: 18, fontWeight: "700" },
   sortControls: { flexDirection: "row", gap: 8 },
   sortButton: {
     paddingHorizontal: 10,
@@ -1166,8 +1357,8 @@ const styles = StyleSheet.create({
     backgroundColor: adminPalette.surface,
   },
   shiftRowCompleted: {
-    borderColor: adminPalette.success,
-    backgroundColor: adminPalette.successSoft,
+    borderColor: adminPalette.border,
+    backgroundColor: adminPalette.surface,
   },
   shiftRowAbsent: {
     borderColor: adminPalette.danger,
@@ -1185,4 +1376,31 @@ const styles = StyleSheet.create({
   shiftStatusCompleted: { backgroundColor: adminPalette.successSoft },
   shiftStatusAbsent: { backgroundColor: adminPalette.dangerSoft },
   shiftStatusText: { color: adminPalette.text, fontSize: 10, fontWeight: "700" },
+  viewButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    backgroundColor: adminPalette.surfaceAlt,
+  },
+  viewButtonText: { color: adminPalette.textMuted, fontSize: 11, fontWeight: "600" },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  detailLabel: { color: adminPalette.textMuted, fontSize: 12 },
+  detailValue: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  detailSectionTitle: {
+    color: adminPalette.text,
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
 });
+
+const getAttendanceOwnerId = (docSnap: any) => {
+  return docSnap.ref?.parent?.parent?.id || docSnap.data()?.workerId || "";
+};

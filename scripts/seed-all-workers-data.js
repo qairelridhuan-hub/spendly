@@ -2,11 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
 
-const [serviceAccountPath] = process.argv.slice(2);
+const [serviceAccountPath, startDateArg, endDateArg] = process.argv.slice(2);
 
 if (!serviceAccountPath) {
   console.error(
-    "Usage: node scripts/seed-all-workers-data.js /absolute/path/to/serviceAccount.json"
+    "Usage: node scripts/seed-all-workers-data.js /absolute/path/to/serviceAccount.json [YYYY-MM-DD] [YYYY-MM-DD]"
   );
   process.exit(1);
 }
@@ -27,6 +27,23 @@ const db = admin.firestore();
 const pad = value => String(value).padStart(2, "0");
 const formatDate = date =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+const parseDateArg = value => {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
+const listDatesInRange = (start, end) => {
+  const dates = [];
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    dates.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+};
 
 const setTime = (date, time) => {
   const [h, m] = time.split(":").map(Number);
@@ -184,38 +201,48 @@ const defaultGoals = () => {
   ];
 };
 
-async function seedWorker(workerId) {
-  const shiftSnap = await db
-    .collection("shifts")
-    .where("workerId", "==", workerId)
-    .limit(1)
-    .get();
-  if (shiftSnap.empty) {
-    const pastDates = getPastWeekdays(10);
-    const upcomingDates = getUpcomingWeekdays(3);
-    const writes = [];
+async function seedWorker(workerId, dateList) {
+  const writes = [];
+  const datesToSeed = dateList.length > 0 ? dateList : getPastWeekdays(10);
 
-    pastDates.forEach((dateObj, index) => {
-      const date = formatDate(dateObj);
-      const status = index === 2 ? "absent" : index === 6 ? "pending" : "approved";
-      const shiftStatus =
-        status === "approved" ? "completed" : status === "absent" ? "absent" : "scheduled";
-      writes.push(db.collection("shifts").add(buildShift(workerId, date, index, shiftStatus)));
+  for (const [index, dateObj] of datesToSeed.entries()) {
+    const date = formatDate(dateObj);
+    const shiftQuery = await db
+      .collection("shifts")
+      .where("workerId", "==", workerId)
+      .where("date", "==", date)
+      .limit(1)
+      .get();
+    if (shiftQuery.empty) {
+      writes.push(db.collection("shifts").add(buildShift(workerId, date, index, "completed")));
+    }
+
+    const attendanceRef = db
+      .collection("users")
+      .doc(workerId)
+      .collection("attendance")
+      .doc(date);
+    const attendanceSnap = await attendanceRef.get();
+    if (!attendanceSnap.exists) {
       writes.push(
-        db
-          .collection("users")
-          .doc(workerId)
-          .collection("attendance")
-          .doc(date)
-          .set(buildAttendance(workerId, date, index, status), { merge: true })
+        attendanceRef.set(buildAttendance(workerId, date, index, "approved"), {
+          merge: true,
+        })
       );
-    });
+    }
+  }
 
+  if (dateList.length === 0) {
+    const upcomingDates = getUpcomingWeekdays(3);
     upcomingDates.forEach((dateObj, index) => {
       const date = formatDate(dateObj);
-      writes.push(db.collection("shifts").add(buildShift(workerId, date, index + 20, "scheduled")));
+      writes.push(
+        db.collection("shifts").add(buildShift(workerId, date, index + 20, "scheduled"))
+      );
     });
+  }
 
+  if (writes.length > 0) {
     await Promise.all(writes);
   }
 
@@ -244,6 +271,25 @@ async function seedWorker(workerId) {
 }
 
 async function seedAll() {
+  const startDate = parseDateArg(startDateArg);
+  const endDate = parseDateArg(endDateArg);
+  if ((startDateArg && !startDate) || (endDateArg && !endDate)) {
+    console.error("Invalid date format. Use YYYY-MM-DD for start and end.");
+    process.exit(1);
+  }
+  if ((startDate && !endDate) || (!startDate && endDate)) {
+    console.error("Provide both start and end dates, or neither.");
+    process.exit(1);
+  }
+  let dateList = [];
+  if (startDate && endDate) {
+    if (startDate > endDate) {
+      console.error("Start date must be before or equal to end date.");
+      process.exit(1);
+    }
+    dateList = listDatesInRange(startDate, endDate);
+  }
+
   const workersSnap = await db
     .collection("users")
     .where("role", "==", "worker")
@@ -253,7 +299,7 @@ async function seedAll() {
     return;
   }
   for (const docSnap of workersSnap.docs) {
-    await seedWorker(docSnap.id);
+    await seedWorker(docSnap.id, dateList);
   }
   console.log("Seeded shifts, attendance, and goals for all workers (if missing).");
 }

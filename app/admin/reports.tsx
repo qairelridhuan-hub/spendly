@@ -215,6 +215,21 @@ export default function AdminReports() {
           </TouchableOpacity>
         </View>
 
+        <View style={generateCard}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Download size={18} color={adminPalette.accent} />
+            <View>
+              <Text style={sectionTitle}>Generate report</Text>
+              <Text style={sectionSub}>
+                Create a PDF summary for the selected period
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity style={generateButton} onPress={handleExportReport}>
+            <Text style={generateButtonText}>Generate</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
           <View style={statCard}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -337,6 +352,26 @@ const chartCard = {
 const sectionTitle = { color: adminPalette.text, fontWeight: "600" as const };
 const emptyText = { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 };
 
+const generateCard = {
+  marginTop: 16,
+  backgroundColor: adminPalette.surface,
+  borderRadius: 16,
+  padding: 16,
+  borderWidth: 1,
+  borderColor: adminPalette.border,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  justifyContent: "space-between" as const,
+  gap: 12,
+};
+const generateButton = {
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+  borderRadius: 12,
+  backgroundColor: adminPalette.accentStrong,
+};
+const generateButtonText = { color: "#fff", fontWeight: "600" as const, fontSize: 12 };
+
 const tableHeader = {
   flexDirection: "row" as const,
   backgroundColor: adminPalette.surfaceAlt,
@@ -387,24 +422,9 @@ const aggregateAttendance = (
       workers: new Set<string>(),
     };
     map[period].totalHours += hours;
-    map[period].totalEarnings += hours * rate;
+    map[period].totalEarnings += getLogEarnings(log, rate, overtimeRate, breakMinutesByKey);
+    map[period].overtimeHours += getLogOvertimeHours(log);
     if (workerId) map[period].workers.add(workerId);
-  });
-  Object.entries(overtimeHoursByKey).forEach(([key, hours]) => {
-    const [, date] = key.split(":");
-    if (!date || date.length < 7) return;
-    const period = date.slice(0, 7);
-    map[period] = map[period] || {
-      period,
-      totalHours: 0,
-      overtimeHours: 0,
-      absenceDeductions: 0,
-      totalEarnings: 0,
-      workers: new Set<string>(),
-    };
-    map[period].overtimeHours += hours;
-    map[period].totalHours += hours;
-    map[period].totalEarnings += hours * overtimeRate;
   });
   allLogs.forEach(log => {
     const date = String(log.date ?? "");
@@ -442,10 +462,10 @@ const buildSummaryFromAttendance = (
     if (!date.startsWith(period)) return sum;
     return sum + getLogHours(log, breakMinutesByKey);
   }, 0);
-  const overtimeHours = Object.entries(overtimeHoursByKey).reduce((sum, [key, hours]) => {
-    const [, date] = key.split(":");
-    if (!date?.startsWith(period)) return sum;
-    return sum + hours;
+  const overtimeHours = approvedLogs.reduce((sum, log) => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(period)) return sum;
+    return sum + getLogOvertimeHours(log);
   }, 0);
   const absences = allLogs.filter(
     log => String(log.status ?? "") === "absent" && String(log.date ?? "").startsWith(period)
@@ -455,14 +475,14 @@ const buildSummaryFromAttendance = (
     if (!date.startsWith(period)) return sum;
     const workerId = String(log.workerId ?? "");
     const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
-    return sum + getLogHours(log, breakMinutesByKey) * rate;
+    return sum + getLogEarnings(log, rate, overtimeRate, breakMinutesByKey);
   }, 0);
   return {
     period,
-    totalHours: totalHours + overtimeHours,
+    totalHours,
     overtimeHours,
     absenceDeductions: absences,
-    totalEarnings: totalEarnings + overtimeHours * overtimeRate,
+    totalEarnings,
   };
 };
 
@@ -509,6 +529,8 @@ const buildOvertimeHoursMap = (entries: any[]) => {
 };
 
 const getLogHours = (log: any, breakMinutesByKey: Record<string, number>) => {
+  const storedNet = Number(log.netHours ?? log.net_hours ?? 0);
+  if (storedNet > 0) return storedNet;
   const stored = Number(log.hours ?? 0);
   if (stored > 0) return stored;
   const breakMinutes = getBreakMinutesForLog(log, breakMinutesByKey);
@@ -523,6 +545,27 @@ const getLogHours = (log: any, breakMinutesByKey: Record<string, number>) => {
     return calcHoursFromTimes(log.clockIn, log.clockOut, breakMinutes);
   }
   return 0;
+};
+
+const getLogOvertimeHours = (log: any) => {
+  const stored = Number(log.overtimeHours ?? log.overtime_hours ?? 0);
+  if (stored > 0) return stored;
+  return 0;
+};
+
+const getLogEarnings = (
+  log: any,
+  hourlyRate: number,
+  overtimeRate: number,
+  breakMinutesByKey: Record<string, number>
+) => {
+  const finalPay = Number(log.finalPay ?? log.final_pay ?? 0);
+  if (finalPay > 0) return finalPay;
+  const netHours = getLogHours(log, breakMinutesByKey);
+  const overtimeHours = getLogOvertimeHours(log);
+  const regularHours = Math.max(0, netHours - overtimeHours);
+  const resolvedOvertimeRate = overtimeRate || hourlyRate * 1.5;
+  return regularHours * hourlyRate + overtimeHours * resolvedOvertimeRate;
 };
 
 const getBreakMinutesForLog = (log: any, breakMinutesByKey: Record<string, number>) => {

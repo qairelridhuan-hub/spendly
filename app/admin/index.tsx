@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import {
   collection,
   collectionGroup,
@@ -27,11 +28,13 @@ import { adminPalette } from "@/lib/admin/palette";
 import { getPeriodKey } from "@/lib/reports/report";
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [workerCount, setWorkerCount] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
   const [workers, setWorkers] = useState<Record<string, any>>({});
-  const [config, setConfig] = useState({ hourlyRate: 0 });
+  const [config, setConfig] = useState({ hourlyRate: 0, overtimeRate: 0 });
 
   useEffect(() => {
     const workersQuery = query(
@@ -57,6 +60,16 @@ export default function AdminDashboard() {
       setAttendanceLogs(list);
     });
 
+    const overtimeQuery = collectionGroup(db, "overtime");
+    const unsubOvertime = onSnapshot(overtimeQuery, snapshot => {
+      const list = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        refPath: docSnap.ref.path,
+        ...docSnap.data(),
+      }));
+      setOvertimeLogs(list);
+    });
+
     const shiftsQuery = collection(db, "shifts");
     const unsubShifts = onSnapshot(shiftsQuery, snapshot => {
       const list = snapshot.docs.map(docSnap => ({
@@ -72,12 +85,14 @@ export default function AdminDashboard() {
       if (!data) return;
       setConfig({
         hourlyRate: Number(data.hourlyRate ?? 0),
+        overtimeRate: Number(data.overtimeRate ?? 0),
       });
     });
 
     return () => {
       unsubWorkers();
       unsubAttendance();
+      unsubOvertime();
       unsubShifts();
       unsubConfig();
     };
@@ -104,14 +119,21 @@ export default function AdminDashboard() {
         if (!date.startsWith(currentPeriod)) return acc;
         const workerId = String(log.workerId ?? "");
         const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
-        const hours = Number(log.hours ?? 0);
+        const hours = getLogHours(log);
         acc.totalHours += hours;
-        acc.totalEarnings += hours * rate;
+        acc.totalEarnings += getLogEarnings(log, rate, config);
         return acc;
       },
       { totalHours: 0, totalEarnings: 0 }
     );
   }, [approvedLogs, currentPeriod, workers, config.hourlyRate]);
+  const adjustedTotals = useMemo(
+    () => ({
+      totalHours,
+      totalEarnings,
+    }),
+    [totalHours, totalEarnings]
+  );
 
   const cards = useMemo(() => [
       {
@@ -125,7 +147,7 @@ export default function AdminDashboard() {
       },
       {
         label: "Total Hours (Month)",
-        value: `${Math.round(totalHours)}h`,
+        value: `${Math.round(adjustedTotals.totalHours)}h`,
         icon: Clock,
         color: adminPalette.success,
         bg: adminPalette.successSoft,
@@ -134,7 +156,7 @@ export default function AdminDashboard() {
       },
       {
         label: "Total Payroll",
-        value: `RM ${totalEarnings.toFixed(2)}`,
+        value: `RM ${adjustedTotals.totalEarnings.toFixed(2)}`,
         icon: DollarSign,
         color: adminPalette.accent,
         bg: adminPalette.infoSoft,
@@ -153,8 +175,8 @@ export default function AdminDashboard() {
     ],
   [
     workerCount,
-    totalHours,
-    totalEarnings,
+    adjustedTotals.totalHours,
+    adjustedTotals.totalEarnings,
     workingDays,
   ]);
 
@@ -170,10 +192,10 @@ export default function AdminDashboard() {
       const workerId = String(log.workerId ?? "");
       if (!workerId) return;
       const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
-      const hours = Number(log.hours ?? 0);
+      const hours = getLogHours(log);
       map[workerId] = map[workerId] || { hours: 0, earnings: 0 };
       map[workerId].hours += hours;
-      map[workerId].earnings += hours * rate;
+      map[workerId].earnings += getLogEarnings(log, rate, config);
     });
     return Object.entries(map)
       .map(([workerId, totals]) => ({
@@ -188,7 +210,13 @@ export default function AdminDashboard() {
       }))
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 3);
-  }, [approvedLogs, currentPeriod, workers, config.hourlyRate]);
+  }, [
+    approvedLogs,
+    currentPeriod,
+    workers,
+    config.hourlyRate,
+    config.overtimeRate,
+  ]);
 
   return (
     <LinearGradient
@@ -205,11 +233,16 @@ export default function AdminDashboard() {
                 style={{
                   width: "48%",
                   minWidth: 220,
-                  backgroundColor: "#ffffff",
+                  backgroundColor: adminPalette.surface,
                   borderRadius: 16,
                   padding: 16,
                   borderWidth: 1,
                   borderColor: adminPalette.border,
+                  shadowColor: "#0f172a",
+                  shadowOpacity: 0.06,
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 2,
                 }}
               >
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -237,6 +270,7 @@ export default function AdminDashboard() {
                   style={{
                     color: adminPalette.text,
                     fontWeight: "700",
+                    fontSize: 20,
                     marginTop: 12,
                   }}
                 >
@@ -286,7 +320,9 @@ export default function AdminDashboard() {
           <View style={[sectionCard, { flex: 1, minWidth: 260 }]}>
             <View style={sectionHeaderRow}>
               <Text style={sectionTitle}>Recent Activity</Text>
-              <Text style={sectionLink}>View All</Text>
+              <TouchableOpacity onPress={() => router.push("/admin/attendance")}>
+                <Text style={sectionLink}>View All</Text>
+              </TouchableOpacity>
             </View>
             {recentActivity.length === 0 ? (
               <Text style={emptyText}>No recent activity yet.</Text>
@@ -311,7 +347,9 @@ export default function AdminDashboard() {
           <View style={[sectionCard, { flex: 1, minWidth: 260 }]}>
             <View style={sectionHeaderRow}>
               <Text style={sectionTitle}>Upcoming Shifts</Text>
-              <Text style={sectionLink}>Manage</Text>
+              <TouchableOpacity onPress={() => router.push("/admin/setup")}>
+                <Text style={sectionLink}>Manage</Text>
+              </TouchableOpacity>
             </View>
             {upcomingShifts.length === 0 ? (
               <Text style={emptyText}>No upcoming shifts.</Text>
@@ -466,15 +504,24 @@ const sectionCard = {
   padding: 20,
   borderWidth: 1,
   borderColor: adminPalette.border,
+  shadowColor: "#0f172a",
+  shadowOpacity: 0.05,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 2,
 };
 
-const sectionTitle = { color: adminPalette.text, fontWeight: "700" };
+const sectionTitle = { color: adminPalette.text, fontWeight: "700", fontSize: 15 };
 const sectionSub = { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 };
 const sectionLink = { color: adminPalette.accent, fontSize: 12 };
-const sectionHeaderRow = { flexDirection: "row" as const, justifyContent: "space-between" as const, marginBottom: 12 };
+const sectionHeaderRow = {
+  flexDirection: "row" as const,
+  justifyContent: "space-between" as const,
+  marginBottom: 14,
+};
 
 const emptyText = { color: adminPalette.textMuted, fontSize: 12 };
-const chartLabel = { color: adminPalette.textMuted, fontSize: 10, marginTop: 6 };
+const chartLabel = { color: adminPalette.textMuted, fontSize: 11, marginTop: 6 };
 
 const listRow = {
   flexDirection: "row" as const,
@@ -494,6 +541,8 @@ const shiftRow = {
   padding: 12,
   backgroundColor: adminPalette.surfaceAlt,
   borderRadius: 12,
+  borderWidth: 1,
+  borderColor: adminPalette.border,
 };
 const chip = {
   backgroundColor: adminPalette.infoSoft,
@@ -510,6 +559,7 @@ const pendingRow = {
   borderRadius: 12,
   borderWidth: 1,
   borderColor: adminPalette.border,
+  backgroundColor: adminPalette.surfaceAlt,
 };
 const iconBadge = { width: 40, height: 40, borderRadius: 12, alignItems: "center" as const, justifyContent: "center" as const };
 const actionButton = { padding: 8, borderRadius: 10 };
@@ -532,7 +582,7 @@ const alertCardWarning = {
   backgroundColor: adminPalette.warningSoft,
   borderRadius: 12,
   borderWidth: 1,
-  borderColor: adminPalette.warning,
+  borderColor: adminPalette.warningSoft,
   padding: 12,
   alignItems: "flex-start" as const,
 };
@@ -550,7 +600,7 @@ const buildWeeklyHours = (logs: any[]) => {
     const date = new Date(`${log.date}T00:00:00`);
     if (Number.isNaN(date.getTime()) || date < start || date > end) return;
     const dayIndex = (date.getDay() + 6) % 7;
-    totals[dayIndex].hours += Number(log.hours ?? 0);
+    totals[dayIndex].hours += getLogHours(log);
   });
   return totals;
 };
@@ -558,7 +608,7 @@ const buildWeeklyHours = (logs: any[]) => {
 const buildRecentActivity = (logs: any[], workers: Record<string, any>) =>
   logs
     .slice()
-    .sort((a, b) => String(b.createdAt ?? b.date ?? "").localeCompare(String(a.createdAt ?? a.date ?? "")))
+    .sort((a, b) => getTimeValue(b.updatedAt ?? b.createdAt ?? b.date) - getTimeValue(a.updatedAt ?? a.createdAt ?? a.date))
     .slice(0, 5)
     .map(log => ({
       id: log.refPath,
@@ -574,12 +624,25 @@ const buildRecentActivity = (logs: any[], workers: Record<string, any>) =>
 
 const buildUpcomingShifts = (shifts: any[], workers: Record<string, any>) => {
   const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const nowMinutes = today.getHours() * 60 + today.getMinutes();
   return shifts
     .filter(shift => {
-      const date = new Date(`${shift.date}T00:00:00`);
-      return !Number.isNaN(date.getTime()) && date >= startOfDay(today);
+      const dateKey = String(shift.date ?? "");
+      if (!dateKey) return false;
+      const status = String(shift.status ?? "");
+      if (["completed", "absent", "off", "leave"].includes(status)) return false;
+      const date = new Date(`${dateKey}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return false;
+      if (dateKey > todayKey) return true;
+      if (dateKey < todayKey) return false;
+      const shiftEnd = parseTimeToMinutes(shift.end);
+      if (shiftEnd !== null && shiftEnd <= nowMinutes) return false;
+      return true;
     })
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .sort((a, b) =>
+      `${a.date || ""} ${a.start || ""}`.localeCompare(`${b.date || ""} ${b.start || ""}`)
+    )
     .slice(0, 4)
     .map(shift => ({
       id: shift.id,
@@ -605,6 +668,77 @@ const statusColor = (status: string) => {
   if (status === "absent") return adminPalette.danger;
   if (status === "pending") return adminPalette.warning;
   return adminPalette.success;
+};
+
+const getTimeValue = (value: any) => {
+  if (!value) return 0;
+  if (typeof value.toMillis === "function") return value.toMillis();
+  if (typeof value.seconds === "number") return value.seconds * 1000;
+  if (typeof value === "string") {
+    const parsed = new Date(value).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const parseTimeToMinutes = (time?: string) => {
+  if (!time) return null;
+  const [h, m] = String(time).split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+};
+
+const getOvertimeHours = (entry: any) => {
+  const stored = Number(entry.hours ?? 0);
+  if (stored > 0) return stored;
+  if (entry.startTime && entry.endTime) {
+    return calcHoursFromTimes(entry.startTime, entry.endTime);
+  }
+  return 0;
+};
+
+const getLogHours = (log: any) => {
+  const storedNet = Number(log.netHours ?? log.net_hours ?? 0);
+  if (storedNet > 0) return storedNet;
+  const stored = Number(log.hours ?? 0);
+  if (stored > 0) return stored;
+  const breakMinutes = getBreakMinutesForLog(log);
+  if (log.clockInTs && log.clockOutTs) {
+    const minutes = Math.max(
+      0,
+      Math.round((log.clockOutTs - log.clockInTs) / 60000) - breakMinutes
+    );
+    return minutes / 60;
+  }
+  if (log.clockIn && log.clockOut) {
+    return calcHoursFromTimes(log.clockIn, log.clockOut, breakMinutes);
+  }
+  return 0;
+};
+
+const getLogOvertimeHours = (log: any) => {
+  const stored = Number(log.overtimeHours ?? log.overtime_hours ?? 0);
+  if (stored > 0) return stored;
+  return 0;
+};
+
+const getLogEarnings = (log: any, hourlyRate: number, config: { overtimeRate: number }) => {
+  const finalPay = Number(log.finalPay ?? log.final_pay ?? 0);
+  if (finalPay > 0) return finalPay;
+  const netHours = getLogHours(log);
+  const overtimeHours = getLogOvertimeHours(log);
+  const regularHours = Math.max(0, netHours - overtimeHours);
+  const overtimeRate = Number(config.overtimeRate ?? 0) || hourlyRate * 1.5;
+  return regularHours * hourlyRate + overtimeHours * overtimeRate;
+};
+
+const getBreakMinutesForLog = (log: any) => {
+  const stored = Number(log.breakMinutes ?? 0);
+  if (stored > 0) return stored;
+  if (log.breakStart && log.breakEnd) {
+    return Math.max(0, calcMinutesDiff(log.breakStart, log.breakEnd));
+  }
+  return 0;
 };
 
 const startOfWeek = (date: Date) => {
@@ -634,3 +768,17 @@ const isThisMonth = (dateValue: string) => {
 
 const maxHours = (stats: { hours: number }[]) =>
   stats.reduce((max, item) => Math.max(max, item.hours), 1);
+
+const calcHoursFromTimes = (start: string, end: string, breakMinutes = 0) => {
+  const startMinutes = parseTimeToMinutes(start);
+  const endMinutes = parseTimeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) return 0;
+  return Math.max(0, endMinutes - startMinutes - breakMinutes) / 60;
+};
+
+const calcMinutesDiff = (start: string, end: string) => {
+  const startMinutes = parseTimeToMinutes(start);
+  const endMinutes = parseTimeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) return 0;
+  return Math.max(0, endMinutes - startMinutes);
+};

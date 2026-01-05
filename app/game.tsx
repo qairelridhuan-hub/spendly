@@ -1214,6 +1214,8 @@ const getWeeklyShiftCount = (logs: any[]) => {
 };
 
 const getLogHours = (log: any) => {
+  const storedNet = Number(log.netHours ?? log.net_hours ?? 0);
+  if (storedNet > 0) return storedNet;
   const stored = Number(log.hours ?? 0);
   if (stored > 0) return stored;
   const [startH, startM] = String(log.clockIn ?? "").split(":").map(Number);
@@ -1233,6 +1235,8 @@ const getMonthlyEarnings = (logs: any[], hourlyRate: number) => {
     const date = log?.date ? new Date(`${log.date}T00:00:00`) : null;
     if (!date || Number.isNaN(date.getTime())) return sum;
     if (date.getMonth() !== month || date.getFullYear() !== year) return sum;
+    const finalPay = Number(log.finalPay ?? log.final_pay ?? 0);
+    if (finalPay > 0) return sum + finalPay;
     return sum + getLogHours(log) * hourlyRate;
   }, 0);
 };

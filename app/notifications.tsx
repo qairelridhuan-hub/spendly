@@ -6,6 +6,7 @@ import {
   View,
   StyleSheet,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Bell, Check, ChevronLeft } from "lucide-react-native";
 import { onAuthStateChanged } from "firebase/auth";
@@ -80,73 +81,85 @@ export default function NotificationsScreen() {
     ));
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)/index");
+    }
+  };
+
   return (
-    <LinearGradient colors={[colors.backgroundStart, colors.backgroundEnd]} style={styles.screen}>
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ChevronLeft size={20} color={colors.text} />
-          </TouchableOpacity>
-          <View style={styles.headerRow}>
-            <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
-            {unreadCount > 0 ? (
-              <TouchableOpacity style={styles.markAllButton} onPress={markAllRead}>
-                <Check size={14} color={colors.text} />
-                <Text style={[styles.markAllText, { color: colors.text }]}>
-                  Mark all read
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.cardHeader}>
-            <Bell size={18} color={colors.text} />
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Alerts</Text>
-          </View>
-
-          {filtered.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              No notifications yet.
-            </Text>
-          ) : (
-            <View style={styles.list}>
-              {filtered.map(item => (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.item,
-                    { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-                    !item.readAt && styles.itemUnread,
-                  ]}
-                >
-                  <Text style={[styles.itemTitle, { color: colors.text }]}>
-                    {item.title || "Notification"}
+    <SafeAreaView style={styles.safe}>
+      <LinearGradient colors={[colors.backgroundStart, colors.backgroundEnd]} style={styles.screen}>
+        <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+              <ChevronLeft size={20} color={colors.text} />
+            </TouchableOpacity>
+            <View style={styles.headerRow}>
+              <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
+              {unreadCount > 0 ? (
+                <TouchableOpacity style={styles.markAllButton} onPress={markAllRead}>
+                  <Check size={14} color={colors.text} />
+                  <Text style={[styles.markAllText, { color: colors.text }]}>
+                    Mark all read
                   </Text>
-                  <Text style={[styles.itemMessage, { color: colors.textMuted }]}>
-                    {item.message || "-"}
-                  </Text>
-                  <View style={styles.itemFooter}>
-                    <Text style={[styles.itemTime, { color: colors.textMuted }]}>
-                      {formatTimestamp(item.createdAt)}
-                    </Text>
-                    {!item.readAt ? (
-                      <TouchableOpacity onPress={() => markRead(item.id)}>
-                        <Text style={[styles.markReadText, { color: colors.text }]}>
-                          Mark read
-                        </Text>
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                </View>
-              ))}
+                </TouchableOpacity>
+              ) : null}
             </View>
-          )}
-        </View>
-      </ScrollView>
-    </LinearGradient>
+          </View>
+
+          <View
+            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <View style={styles.cardHeader}>
+              <Bell size={18} color={colors.text} />
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Alerts</Text>
+            </View>
+
+            {filtered.length === 0 ? (
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                No notifications yet.
+              </Text>
+            ) : (
+              <View style={styles.list}>
+                {filtered.map(item => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.item,
+                      { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+                      !item.readAt && styles.itemUnread,
+                    ]}
+                  >
+                    <Text style={[styles.itemTitle, { color: colors.text }]}>
+                      {item.title || "Notification"}
+                    </Text>
+                    <Text style={[styles.itemMessage, { color: colors.textMuted }]}>
+                      {item.message || "-"}
+                    </Text>
+                    <View style={styles.itemFooter}>
+                      <Text style={[styles.itemTime, { color: colors.textMuted }]}>
+                        {formatTimestamp(item.createdAt)}
+                      </Text>
+                      {!item.readAt ? (
+                        <TouchableOpacity onPress={() => markRead(item.id)}>
+                          <Text style={[styles.markReadText, { color: colors.text }]}>
+                            Mark read
+                          </Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
@@ -169,6 +182,7 @@ const formatTimestamp = (value: any) => {
 };
 
 const styles = StyleSheet.create({
+  safe: { flex: 1 },
   screen: { flex: 1 },
   container: { padding: 16, paddingBottom: 120 },
   bgBlob: {

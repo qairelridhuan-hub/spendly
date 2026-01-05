@@ -14,8 +14,6 @@ import {
   Clock,
   DollarSign,
   Target,
-  Calendar,
-  User,
   Gamepad2,
   LogOut,
   ChevronRight,
@@ -41,6 +39,27 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+};
+
+type AttendancePolicy = {
+  payType: string;
+  dailyRate: number;
+  dailyMinHours: number;
+  dailyProrate: boolean;
+  otAfterHours: number;
+  otMultiplier: number;
+  overtimeRate: number;
+  breakPaid: boolean;
+  breakFixedMinutes: number;
+  autoBreak: boolean;
+  roundingMinutes: number;
+  roundingMode: string;
+  roundingScope: string;
+  lateGraceMinutes: number;
+  earlyGraceMinutes: number;
+  weekendMultiplier: number;
+  holidayMultiplier: number;
+  holidays: string[];
 };
 
 const FINANCE_SYSTEM_PROMPT =
@@ -92,6 +111,23 @@ export default function WorkerHomeScreen() {
     hoursPerDay: 0,
     hourlyRate: 0,
     overtimeRate: 0,
+    payType: "hourly",
+    dailyRate: 0,
+    dailyMinHours: 6,
+    dailyProrate: false,
+    otAfterHours: 8,
+    otMultiplier: 1.5,
+    breakPaid: false,
+    breakFixedMinutes: 0,
+    autoBreak: true,
+    roundingMinutes: 15,
+    roundingMode: "nearest",
+    roundingScope: "net",
+    lateGraceMinutes: 5,
+    earlyGraceMinutes: 5,
+    weekendMultiplier: 1.25,
+    holidayMultiplier: 2,
+    holidays: [] as string[],
   });
   /* =====================
      STATE
@@ -101,6 +137,7 @@ export default function WorkerHomeScreen() {
   const slideAnim = useRef(new Animated.Value(12)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
   const spinLoop = useRef<Animated.CompositeAnimation | null>(null);
+  const tickAnim = useRef(new Animated.Value(0)).current;
 
   const [selectedPeriod, setSelectedPeriod] = useState(
     getCurrentPeriodKey(new Date())
@@ -126,11 +163,22 @@ export default function WorkerHomeScreen() {
     ? diffHours(schedule.startTime, schedule.endTime)
     : workConfig.hoursPerDay;
   const hourlyRate =
-    schedule?.hourlyRate ?? userHourlyRate ?? workConfig.hourlyRate;
+    userHourlyRate || workConfig.hourlyRate || schedule?.hourlyRate || 0;
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
   );
+  const attendanceStatusMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    attendanceLogs.forEach(log => {
+      const date = String(log.date ?? "");
+      if (!date) return;
+      const existing = map[date];
+      const nextStatus = String(log.status ?? "pending");
+      map[date] = mergeAttendanceStatus(existing, nextStatus);
+    });
+    return map;
+  }, [attendanceLogs]);
   const weeklyRegularHours = getWeeklyHoursFromLogs(approvedLogs);
   const weeklyOvertimeHours = getWeeklyOvertimeHours(overtimeLogs);
   const weeklyCurrent = weeklyRegularHours + weeklyOvertimeHours;
@@ -138,7 +186,14 @@ export default function WorkerHomeScreen() {
     weeklyRegularHours * hourlyRate +
     weeklyOvertimeHours * workConfig.overtimeRate;
   const todayShift = getTodayShift();
-  const nextShift = getNextShift(shifts);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayStatus = todayShift
+    ? resolveStatus(todayShift.status, attendanceStatusMap[todayKey])
+    : "scheduled";
+  const todayProgress = todayShift
+    ? getShiftProgress(todayShift, todayStatus)
+    : 0;
+  const nextShift = getNextShift(shifts, attendanceStatusMap);
   const currentPeriod = getCurrentPeriodKey(new Date());
   const periodBounds = getPeriodBounds(selectedPeriod);
   const cutoffDate =
@@ -386,6 +441,18 @@ export default function WorkerHomeScreen() {
   }, [gameSpin, showGameSplash]);
 
   useEffect(() => {
+    const spinAnimation = Animated.loop(
+      Animated.timing(tickAnim, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      })
+    );
+    spinAnimation.start();
+    return () => spinAnimation.stop();
+  }, [tickAnim]);
+
+  useEffect(() => {
     if (!scheduleId) {
       setSchedule(null);
       return;
@@ -461,30 +528,53 @@ export default function WorkerHomeScreen() {
     const overtimeRef = doc(db, "users", userId, "overtime", todayKey);
     const now = new Date();
     const nowTs = now.getTime();
-    const clockInTime = todayAttendance?.clockIn;
     const clockOutTime = formatTime(now);
-    const breakMinutes = calcBreakMinutes(
-      todayAttendance?.breakStart,
-      todayAttendance?.breakEnd,
-      todayAttendance?.breakStartTs,
-      todayAttendance?.breakEndTs
-    );
-    const hours =
-      clockInTime
-        ? calcHours(
-            clockInTime,
-            clockOutTime,
-            breakMinutes,
-            todayAttendance?.clockInTs,
-            nowTs
-          )
-        : 0;
+    const manualBreakMinutes =
+      Number(todayAttendance?.breakMinutes ?? 0) ||
+      calcBreakMinutes(
+        todayAttendance?.breakStart,
+        todayAttendance?.breakEnd,
+        todayAttendance?.breakStartTs,
+        todayAttendance?.breakEndTs
+      );
+    const plannedStart = todayShift?.start ?? schedule?.startTime ?? null;
+    const plannedEnd = todayShift?.end ?? schedule?.endTime ?? null;
+    const metrics = computeAttendanceMetrics({
+      clockInTs: todayAttendance?.clockInTs,
+      clockOutTs: nowTs,
+      manualBreakMinutes,
+      plannedStart,
+      plannedEnd,
+      dateKey: todayKey,
+      policy: workConfig,
+      hourlyRate,
+    });
+    const breakMinutes = metrics.breakMinutes;
+    const hours = metrics.netHours;
     await setDoc(
       attendanceRef,
       {
         clockOut: clockOutTime,
         clockOutTs: nowTs,
         hours,
+        rawMinutes: metrics.rawMinutes,
+        breakMinutes: metrics.breakMinutes,
+        netMinutes: metrics.netMinutes,
+        roundedMinutes: metrics.roundedMinutes,
+        netHours: metrics.netHours,
+        regularHours: metrics.regularHours,
+        overtimeHours: metrics.overtimeHours,
+        basePay: metrics.basePay,
+        overtimePay: metrics.overtimePay,
+        dailyPay: metrics.dailyPay,
+        dayMultiplier: metrics.dayMultiplier,
+        finalPay: metrics.finalPay,
+        plannedStart,
+        plannedEnd,
+        isLate: metrics.isLate,
+        lateMinutes: metrics.lateMinutes,
+        isEarlyLeave: metrics.isEarlyLeave,
+        earlyLeaveMinutes: metrics.earlyLeaveMinutes,
         status: "pending",
         ...(todayAttendance?.breakStart && !todayAttendance?.breakEnd
           ? {
@@ -510,19 +600,30 @@ export default function WorkerHomeScreen() {
       );
     }
 
-    const scheduledEnd = todayShift?.end ?? schedule?.endTime;
-    if (scheduledEnd) {
-      const overtimeHours = calcHours(scheduledEnd, clockOutTime, 0);
+    if (metrics.overtimeHours > 0) {
       await setDoc(
         overtimeRef,
         {
           date: todayKey,
           workerId: userId,
-          startTime: overtimeHours > 0 ? scheduledEnd : null,
-          endTime: overtimeHours > 0 ? clockOutTime : null,
-          hours: overtimeHours,
+          startTime: plannedEnd ?? null,
+          endTime: clockOutTime,
+          hours: metrics.overtimeHours,
           updatedAt: serverTimestamp(),
           createdAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } else {
+      await setDoc(
+        overtimeRef,
+        {
+          date: todayKey,
+          workerId: userId,
+          startTime: null,
+          endTime: null,
+          hours: 0,
+          updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
@@ -618,6 +719,23 @@ export default function WorkerHomeScreen() {
         breakEndTs: null,
         breakMinutes: 0,
         hours: 0,
+        rawMinutes: 0,
+        netMinutes: 0,
+        roundedMinutes: 0,
+        netHours: 0,
+        regularHours: 0,
+        overtimeHours: 0,
+        basePay: 0,
+        overtimePay: 0,
+        dailyPay: 0,
+        dayMultiplier: 1,
+        finalPay: 0,
+        plannedStart: null,
+        plannedEnd: null,
+        isLate: false,
+        lateMinutes: 0,
+        isEarlyLeave: false,
+        earlyLeaveMinutes: 0,
         status: "pending",
         updatedAt: serverTimestamp(),
       },
@@ -777,6 +895,25 @@ export default function WorkerHomeScreen() {
         hoursPerDay: Number(data.hoursPerDay ?? 0),
         hourlyRate: Number(data.hourlyRate ?? 0),
         overtimeRate: Number(data.overtimeRate ?? 0),
+        payType: String(data.payType ?? "hourly"),
+        dailyRate: Number(data.dailyRate ?? 0),
+        dailyMinHours: Number(data.dailyMinHours ?? 6),
+        dailyProrate: Boolean(data.dailyProrate ?? false),
+        otAfterHours: Number(data.otAfterHours ?? 8),
+        otMultiplier: Number(data.otMultiplier ?? 1.5),
+        breakPaid: Boolean(data.breakPaid ?? false),
+        breakFixedMinutes: Number(data.breakFixedMinutes ?? 0),
+        autoBreak: Boolean(data.autoBreak ?? true),
+        roundingMinutes: Number(data.roundingMinutes ?? 15),
+        roundingMode: String(data.roundingMode ?? "nearest"),
+        roundingScope: String(data.roundingScope ?? "net"),
+        lateGraceMinutes: Number(data.lateGraceMinutes ?? 5),
+        earlyGraceMinutes: Number(data.earlyGraceMinutes ?? 5),
+        weekendMultiplier: Number(data.weekendMultiplier ?? 1.25),
+        holidayMultiplier: Number(data.holidayMultiplier ?? 2),
+        holidays: Array.isArray(data.holidays)
+          ? data.holidays.map((value: any) => String(value))
+          : [],
       });
     });
     return unsub;
@@ -1042,7 +1179,20 @@ export default function WorkerHomeScreen() {
             <View style={styles.card}>
               <View style={styles.rowBetween}>
                 <Text style={styles.cardTitle}>Today shift</Text>
-                <Clock size={20} color="#0ea5e9" />
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        rotate: tickAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["0deg", "360deg"],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <Clock size={20} color="#0ea5e9" />
+                </Animated.View>
               </View>
 
               {schedule ? (
@@ -1057,17 +1207,38 @@ export default function WorkerHomeScreen() {
                   <Text style={styles.shiftMeta}>
                     {todayShift.start} - {todayShift.end} • {todayShift.location}
                   </Text>
-                  <View style={styles.progressBarBg} />
-                  <TouchableOpacity
-                    style={styles.detailButton}
-                    onPress={() => {
-                      setActiveShift(todayShift);
-                      setShowShiftDetails(true);
-                    }}
-                  >
-                    <Text style={styles.detailButtonText}>View details</Text>
-                    <ChevronRight size={16} color="#0f172a" />
-                  </TouchableOpacity>
+                  <View style={styles.statusRow}>
+                    <Text
+                      style={[
+                        styles.statusText,
+                        todayStatus === "completed" && styles.statusCompleted,
+                        todayStatus === "absent" && styles.statusAbsent,
+                      ]}
+                    >
+                      {todayStatus}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.viewButton}
+                      onPress={() => {
+                        setActiveShift({
+                          ...todayShift,
+                          status: todayStatus,
+                        });
+                        setShowShiftDetails(true);
+                      }}
+                    >
+                      <Text style={styles.viewButtonText}>View details</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.progressBarBg}>
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        { width: `${Math.round(todayProgress * 100)}%` },
+                        todayStatus === "completed" && styles.progressBarFillComplete,
+                      ]}
+                    />
+                  </View>
                   <View style={styles.clockRow}>
                     <View style={styles.clockItem}>
                       <Text style={styles.clockLabel}>Clock in</Text>
@@ -1129,7 +1300,9 @@ export default function WorkerHomeScreen() {
               ) : (
                 <>
                   <Text style={styles.smallText}>No shift scheduled today</Text>
-                  <View style={styles.progressBarBg} />
+                  <View style={styles.progressBarBg}>
+                    <View style={[styles.progressBarFill, { width: "0%" }]} />
+                  </View>
                   <View style={styles.clockRow}>
                     <View style={styles.clockItem}>
                       <Text style={styles.clockLabel}>Clock in</Text>
@@ -1202,7 +1375,13 @@ export default function WorkerHomeScreen() {
                     <TouchableOpacity
                       style={styles.detailButton}
                       onPress={() => {
-                        setActiveShift(nextShift);
+                        setActiveShift({
+                          ...nextShift,
+                          status: resolveStatus(
+                            nextShift.status,
+                            attendanceStatusMap[nextShift.date]
+                          ),
+                        });
                         setShowShiftDetails(true);
                       }}
                     >
@@ -1218,63 +1397,6 @@ export default function WorkerHomeScreen() {
                     </View>
                   </>
                 )}
-              </View>
-            </View>
-
-            {/* ⚡ Quick Stats */}
-            <View style={styles.grid}>
-              <StatBox
-                icon={<Clock size={16} color="#0ea5e9" />}
-                label="hours"
-                value={`${Math.round(weeklyCurrent)}`}
-                tone="#e0f2fe"
-              />
-              <StatBox
-                icon={<DollarSign size={16} color="#22c55e" />}
-                label="earnings"
-                value={`RM ${Math.round(weeklyEarnings)}`}
-                tone="#dcfce7"
-              />
-              <StatBox
-                icon={<Target size={16} color="#f97316" />}
-                label="goals"
-                value={`${goalsCount}`}
-                tone="#ffedd5"
-              />
-            </View>
-
-            {/* 🚀 Quick Actions */}
-            <View style={styles.card}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.cardTitle}>Quick actions</Text>
-                <Text style={styles.cardHint}>Shortcuts</Text>
-              </View>
-
-              <View style={styles.actionGrid}>
-                <ActionBox
-                  icon={<Calendar size={18} color="#0f172a" />}
-                  label="Calendar"
-                  subtitle="View shifts"
-                  onPress={() => router.push("/(tabs)/calendar")}
-                />
-                <ActionBox
-                  icon={<DollarSign size={18} color="#0f172a" />}
-                  label="Earnings"
-                  subtitle="Monthly summary"
-                  onPress={() => router.push("/(tabs)/earnings")}
-                />
-                <ActionBox
-                  icon={<Target size={18} color="#0f172a" />}
-                  label="Goals"
-                  subtitle="Track progress"
-                  onPress={() => router.push("/(tabs)/goals")}
-                />
-                <ActionBox
-                  icon={<User size={18} color="#0f172a" />}
-                  label="Profile"
-                  subtitle="Your details"
-                  onPress={() => router.push("/(tabs)/profile")}
-                />
               </View>
             </View>
 
@@ -1667,26 +1789,6 @@ export default function WorkerHomeScreen() {
    SMALL COMPONENTS
 ===================== */
 
-function StatBox({
-  icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  tone: string;
-}) {
-  return (
-    <View style={[styles.statBox, { backgroundColor: tone }]}>
-      {icon}
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-    </View>
-  );
-}
-
 function pad(value: number) {
   return String(value).padStart(2, "0");
 }
@@ -1747,6 +1849,194 @@ function calcHours(
   return totalMinutes / 60;
 }
 
+function resolveStatus(shiftStatus?: string, attendanceStatus?: string) {
+  if (attendanceStatus === "absent" || attendanceStatus === "rejected") {
+    return "absent";
+  }
+  if (attendanceStatus === "approved") return "completed";
+  if (attendanceStatus === "pending") return "scheduled";
+  if (shiftStatus === "completed") return "completed";
+  if (shiftStatus === "absent" || shiftStatus === "off" || shiftStatus === "leave") {
+    return "absent";
+  }
+  if (shiftStatus === "work") return "scheduled";
+  return shiftStatus || "scheduled";
+}
+
+function mergeAttendanceStatus(existing?: string, next?: string) {
+  if (existing === "absent" || existing === "rejected") return existing;
+  if (next === "absent" || next === "rejected") return next;
+  if (existing === "approved") return existing;
+  if (next === "approved") return next;
+  return next || existing || "pending";
+}
+
+function getShiftProgress(
+  shift: { date: string; start: string; end: string },
+  status: string
+) {
+  if (status === "completed") return 1;
+  const now = new Date();
+  const todayKey = now.toISOString().slice(0, 10);
+  if (shift.date !== todayKey) return 0;
+  const startMinutes = parseTimeToMinutes(shift.start);
+  const endMinutes = parseTimeToMinutes(shift.end);
+  if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+    return 0;
+  }
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  if (nowMinutes <= startMinutes) return 0;
+  if (nowMinutes >= endMinutes) return 1;
+  return (nowMinutes - startMinutes) / (endMinutes - startMinutes);
+}
+
+function computeAttendanceMetrics({
+  clockInTs,
+  clockOutTs,
+  manualBreakMinutes,
+  plannedStart,
+  plannedEnd,
+  dateKey,
+  policy,
+  hourlyRate,
+}: {
+  clockInTs?: number | null;
+  clockOutTs?: number | null;
+  manualBreakMinutes: number;
+  plannedStart: string | null;
+  plannedEnd: string | null;
+  dateKey: string;
+  policy: AttendancePolicy;
+  hourlyRate: number;
+}) {
+  const rawMinutes =
+    clockInTs && clockOutTs
+      ? Math.max(0, Math.round((clockOutTs - clockInTs) / 60000))
+      : 0;
+  const breakMinutes = resolveBreakMinutes(rawMinutes, manualBreakMinutes, policy);
+  const netMinutes = Math.max(0, rawMinutes - breakMinutes);
+  const roundedMinutes = roundMinutes(
+    netMinutes,
+    policy.roundingMinutes,
+    policy.roundingMode
+  );
+  const netHours = roundedMinutes / 60;
+  const regularHours = Math.min(netHours, policy.otAfterHours);
+  const overtimeHours = Math.max(netHours - policy.otAfterHours, 0);
+  const overtimeRate =
+    policy.overtimeRate > 0 ? policy.overtimeRate : hourlyRate * policy.otMultiplier;
+  let basePay = regularHours * hourlyRate;
+  let overtimePay = overtimeHours * overtimeRate;
+  let dailyPay = basePay + overtimePay;
+  if (policy.payType === "daily" && policy.dailyRate > 0) {
+    if (netHours >= policy.dailyMinHours) {
+      dailyPay = policy.dailyRate + overtimePay;
+    } else if (policy.dailyProrate) {
+      dailyPay = (policy.dailyRate * netHours) / policy.dailyMinHours + overtimePay;
+    }
+  }
+  const dayMultiplier = resolveDayMultiplier(dateKey, policy);
+  const finalPay = dailyPay * dayMultiplier;
+
+  const lateMinutes = getLateMinutes(clockInTs, dateKey, plannedStart, policy);
+  const earlyLeaveMinutes = getEarlyLeaveMinutes(
+    clockOutTs,
+    dateKey,
+    plannedEnd,
+    policy
+  );
+
+  return {
+    rawMinutes,
+    breakMinutes,
+    netMinutes,
+    roundedMinutes,
+    netHours,
+    regularHours,
+    overtimeHours,
+    basePay,
+    overtimePay,
+    dailyPay,
+    dayMultiplier,
+    finalPay,
+    isLate: lateMinutes > 0,
+    lateMinutes,
+    isEarlyLeave: earlyLeaveMinutes > 0,
+    earlyLeaveMinutes,
+  };
+}
+
+function resolveBreakMinutes(
+  rawMinutes: number,
+  manualBreakMinutes: number,
+  policy: AttendancePolicy
+) {
+  if (policy.breakPaid) return 0;
+  if (manualBreakMinutes > 0) return manualBreakMinutes;
+  if (policy.breakFixedMinutes > 0) return policy.breakFixedMinutes;
+  if (!policy.autoBreak) return 0;
+  if (rawMinutes >= 540) return 60;
+  if (rawMinutes >= 360) return 30;
+  return 0;
+}
+
+function roundMinutes(minutes: number, interval: number, mode: string) {
+  if (!interval || interval <= 1) return minutes;
+  const factor = minutes / interval;
+  if (mode === "floor") return Math.floor(factor) * interval;
+  if (mode === "ceil") return Math.ceil(factor) * interval;
+  return Math.round(factor) * interval;
+}
+
+function resolveDayMultiplier(dateKey: string, policy: AttendancePolicy) {
+  if (policy.holidays.includes(dateKey)) return policy.holidayMultiplier;
+  const date = new Date(`${dateKey}T00:00:00`);
+  const day = date.getDay();
+  if (day === 0 || day === 6) return policy.weekendMultiplier;
+  return 1;
+}
+
+function getMinutesOfDay(ts?: number | null) {
+  if (!ts) return null;
+  const date = new Date(ts);
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function getLateMinutes(
+  clockInTs: number | null | undefined,
+  dateKey: string,
+  plannedStart: string | null,
+  policy: AttendancePolicy
+) {
+  if (!clockInTs || !plannedStart) return 0;
+  const plan = parseTimeToMinutes(plannedStart);
+  const actual = getMinutesOfDay(clockInTs);
+  if (plan === null || actual === null) return 0;
+  const allowed = plan + policy.lateGraceMinutes;
+  return actual > allowed ? actual - allowed : 0;
+}
+
+function getEarlyLeaveMinutes(
+  clockOutTs: number | null | undefined,
+  dateKey: string,
+  plannedEnd: string | null,
+  policy: AttendancePolicy
+) {
+  if (!clockOutTs || !plannedEnd) return 0;
+  const plan = parseTimeToMinutes(plannedEnd);
+  const actual = getMinutesOfDay(clockOutTs);
+  if (plan === null || actual === null) return 0;
+  const allowed = plan - policy.earlyGraceMinutes;
+  return actual < allowed ? allowed - actual : 0;
+}
+
+function parseTimeToMinutes(time?: string | null) {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+}
+
 function getCurrentPeriodKey(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
@@ -1784,6 +2074,7 @@ const getShiftHours = (shift: { hours?: number; start?: string; end?: string }) 
 
 const getLogHours = (log: {
   hours?: number;
+  netHours?: number;
   clockIn?: string;
   clockOut?: string;
   breakMinutes?: number;
@@ -1794,6 +2085,8 @@ const getLogHours = (log: {
   breakStartTs?: number;
   breakEndTs?: number;
 }) => {
+  const storedNet = Number((log as any).netHours ?? (log as any).net_hours ?? 0);
+  if (storedNet > 0) return storedNet;
   const stored = Number(log.hours ?? 0);
   if (stored > 0) return stored;
   const breakMinutes =
@@ -1917,13 +2210,21 @@ const diffHours = (start: string, end: string) => {
 };
 
 const getNextShift = (
-  shifts: { date: string; start: string; end: string }[]
+  shifts: { date: string; start: string; end: string; status?: string }[],
+  attendanceMap: Record<string, string>
 ) => {
   const now = new Date();
   const todayKey = now.toISOString().slice(0, 10);
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const future = shifts
     .filter(shift => {
+      const effectiveStatus = resolveStatus(
+        shift.status,
+        attendanceMap[shift.date]
+      );
+      if (effectiveStatus === "completed" || effectiveStatus === "absent") {
+        return false;
+      }
       if (shift.date > todayKey) return true;
       if (shift.date < todayKey) return false;
       const [startH, startM] = shift.start.split(":").map(Number);
@@ -1944,28 +2245,6 @@ const formatDateLabel = (value: string) => {
     year: "numeric",
   });
 };
-
-function ActionBox({
-  icon,
-  label,
-  subtitle,
-  onPress,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  subtitle?: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity style={styles.actionCard} onPress={onPress}>
-      <View style={styles.actionIconWrap}>{icon}</View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.actionTitle}>{label}</Text>
-        {subtitle ? <Text style={styles.actionSubtitle}>{subtitle}</Text> : null}
-      </View>
-    </TouchableOpacity>
-  );
-}
 
 /* =====================
    STYLES
@@ -2148,7 +2427,31 @@ const styles = StyleSheet.create({
     backgroundColor: "#e2e8f0",
     borderRadius: 6,
     marginVertical: 8,
+    overflow: "hidden",
   },
+  progressBarFill: {
+    height: 6,
+    backgroundColor: "#0ea5e9",
+    borderRadius: 6,
+  },
+  progressBarFillComplete: { backgroundColor: "#22c55e" },
+  statusRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  statusText: { fontSize: 12, color: "#64748b", fontWeight: "600" },
+  statusCompleted: { color: "#22c55e" },
+  statusAbsent: { color: "#ef4444" },
+  viewButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#e2e8f0",
+  },
+  viewButtonText: { color: "#0f172a", fontSize: 11, fontWeight: "600" },
   detailButton: {
     marginTop: 8,
     alignSelf: "flex-start",
@@ -2277,21 +2580,6 @@ const styles = StyleSheet.create({
   breakdownAmount: { color: "#0f172a", fontSize: 12, fontWeight: "700" },
 
 
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 12,
-  },
-  statBox: {
-    width: "47%",
-    borderRadius: 14,
-    padding: 12,
-  },
-  statLabel: { fontSize: 12, color: "#475569", marginTop: 6 },
-  statValue: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-
-  cardHint: { fontSize: 12, color: "#94a3b8" },
   chatBadge: {
     backgroundColor: "#0f172a",
     paddingHorizontal: 10,
@@ -2348,32 +2636,4 @@ const styles = StyleSheet.create({
   chatSendText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
   chatError: { marginTop: 6, color: "#ef4444", fontSize: 11 },
   chatDisclaimer: { marginTop: 8, fontSize: 10, color: "#94a3b8" },
-  actionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginTop: 4,
-  },
-  actionCard: {
-    width: "48%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#ffffff",
-  },
-  actionIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "#f1f5f9",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionTitle: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
-  actionSubtitle: { fontSize: 12, color: "#64748b", marginTop: 2 },
 });

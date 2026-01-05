@@ -40,6 +40,28 @@ export async function getSystemConfig(): Promise<WorkConfig | null> {
     preferredEnd: String(data.preferredEnd ?? ""),
     hourlyRate: Number(data.hourlyRate ?? 0),
     overtimeRate: Number(data.overtimeRate ?? 0),
+    payType: data.payType ?? "hourly",
+    dailyRate: Number(data.dailyRate ?? 0),
+    dailyMinHours: Number(data.dailyMinHours ?? 0),
+    dailyProrate: Boolean(data.dailyProrate ?? false),
+    otAfterHours: Number(data.otAfterHours ?? 0),
+    otMultiplier: Number(data.otMultiplier ?? 0),
+    breakPaid: Boolean(data.breakPaid ?? false),
+    breakFixedMinutes: Number(data.breakFixedMinutes ?? 0),
+    autoBreak: Boolean(data.autoBreak ?? true),
+    roundingMinutes: Number(data.roundingMinutes ?? 0),
+    roundingMode: data.roundingMode ?? "nearest",
+    roundingScope: data.roundingScope ?? "net",
+    lateGraceMinutes: Number(data.lateGraceMinutes ?? 0),
+    earlyGraceMinutes: Number(data.earlyGraceMinutes ?? 0),
+    weekendMultiplier: Number(data.weekendMultiplier ?? 0),
+    holidayMultiplier: Number(data.holidayMultiplier ?? 0),
+    holidays: Array.isArray(data.holidays) ? data.holidays : [],
+    allowedStart: String(data.allowedStart ?? ""),
+    allowedEnd: String(data.allowedEnd ?? ""),
+    maxHoursPerDay: Number(data.maxHoursPerDay ?? 0),
+    maxHoursPerWeek: Number(data.maxHoursPerWeek ?? 0),
+    minRestHours: Number(data.minRestHours ?? 0),
   };
 }
 
@@ -64,9 +86,51 @@ export async function generateShiftsForWorkers(config: WorkConfig) {
   const startDate = new Date();
   const totalDays = Math.max(1, config.durationMonths * 30);
   const hours = config.hoursPerDay || diffHours(config.preferredStart, config.preferredEnd);
+  const allowedStart = config.allowedStart || "00:00";
+  const allowedEnd = config.allowedEnd || "23:59";
+  const allowedStartMinutes = parseTime(allowedStart).h * 60 + parseTime(allowedStart).m;
+  const allowedEndMinutes = parseTime(allowedEnd).h * 60 + parseTime(allowedEnd).m;
+  const maxHoursPerDay = config.maxHoursPerDay || 0;
+  const maxHoursPerWeek = config.maxHoursPerWeek || 0;
+  const minRestHours = config.minRestHours || 0;
 
-  workers.forEach(worker => {
+  for (const worker of workers) {
+    const existingShiftsSnap = await getDocs(
+      query(collection(db, "shifts"), where("workerId", "==", worker.id))
+    );
+    const existingShifts = existingShiftsSnap.docs.map(docSnap => docSnap.data() as any);
+    const existingByDate = new Map<
+      string,
+      { startMinutes: number; endMinutes: number; hours: number }[]
+    >();
+    existingShifts.forEach(shift => {
+      const dateKey = String(shift.date || "");
+      if (!dateKey) return;
+      const startMinutes = parseTime(String(shift.start || "00:00"));
+      const endMinutes = parseTime(String(shift.end || "00:00"));
+      const startValue = startMinutes.h * 60 + startMinutes.m;
+      const endValue = endMinutes.h * 60 + endMinutes.m;
+      if (!existingByDate.has(dateKey)) existingByDate.set(dateKey, []);
+      existingByDate.get(dateKey)?.push({
+        startMinutes: startValue,
+        endMinutes: endValue,
+        hours: Number(shift.hours || 0),
+      });
+    });
+
+    const weeklyHours = new Map<string, number>();
+    existingShifts.forEach(shift => {
+      const dateKey = String(shift.date || "");
+      if (!dateKey) return;
+      const dateValue = new Date(`${dateKey}T00:00:00`);
+      if (Number.isNaN(dateValue.getTime())) return;
+      const weekKey = getWeekKey(dateValue);
+      const current = weeklyHours.get(weekKey) || 0;
+      weeklyHours.set(weekKey, current + Number(shift.hours || 0));
+    });
+
     let workDaysCount = 0;
+    let lastGeneratedEnd: number | null = null;
     for (let i = 0; i < totalDays; i += 1) {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
@@ -77,9 +141,64 @@ export async function generateShiftsForWorkers(config: WorkConfig) {
         workDaysCount % 7 < Math.min(5, config.workingDaysPerWeek || 5);
 
       if (shouldWork) {
+        const dateKey = formatDate(date);
+        const startMinutes = parseTime(config.preferredStart || "09:00");
+        const endMinutes = parseTime(config.preferredEnd || "17:00");
+        const startValue = startMinutes.h * 60 + startMinutes.m;
+        const endValue = endMinutes.h * 60 + endMinutes.m;
+        if (endValue <= startValue || hours <= 0) {
+          continue;
+        }
+        const dateExisting = existingByDate.get(dateKey) || [];
+        const overlaps = dateExisting.some(
+          existing =>
+            startValue < existing.endMinutes && endValue > existing.startMinutes
+        );
+        if (overlaps) {
+          continue;
+        }
+        if (startValue < allowedStartMinutes || endValue > allowedEndMinutes) {
+          continue;
+        }
+        if (maxHoursPerDay && hours > maxHoursPerDay) {
+          continue;
+        }
+
+        if (minRestHours) {
+          const prevDate = new Date(date);
+          prevDate.setDate(prevDate.getDate() - 1);
+          const prevKey = formatDate(prevDate);
+          const prevShifts = existingByDate.get(prevKey) || [];
+          const latestPrevEnd = prevShifts.reduce(
+            (max, item) => Math.max(max, item.endMinutes),
+            -1
+          );
+          const restFromExisting =
+            latestPrevEnd >= 0
+              ? startValue + 24 * 60 - latestPrevEnd
+              : null;
+          const restFromGenerated =
+            lastGeneratedEnd !== null
+              ? startValue + 24 * 60 - lastGeneratedEnd
+              : null;
+          const minRestMinutes = minRestHours * 60;
+          if (
+            (restFromExisting !== null && restFromExisting < minRestMinutes) ||
+            (restFromGenerated !== null && restFromGenerated < minRestMinutes)
+          ) {
+            continue;
+          }
+        }
+
+        const weekKey = getWeekKey(date);
+        const weekHours = weeklyHours.get(weekKey) || 0;
+        if (maxHoursPerWeek && weekHours + hours > maxHoursPerWeek) {
+          continue;
+        }
+
         const shift: Shift = {
           workerId: worker.id,
-          date: formatDate(date),
+          date: dateKey,
           start: config.preferredStart || "09:00",
           end: config.preferredEnd || "17:00",
           hours,
@@ -90,9 +209,19 @@ export async function generateShiftsForWorkers(config: WorkConfig) {
         const docRef = doc(shiftsRef);
         batch.set(docRef, shift);
         workDaysCount += 1;
+        weeklyHours.set(weekKey, weekHours + hours);
+        lastGeneratedEnd = endValue;
       }
     }
-  });
+  }
 
   await batch.commit();
 }
+
+const getWeekKey = (date: Date) => {
+  const copy = new Date(date);
+  const day = copy.getDay();
+  const diff = (day + 6) % 7;
+  copy.setDate(copy.getDate() - diff);
+  return formatDate(copy);
+};

@@ -75,7 +75,7 @@ export default function EarningsScreen() {
   const { shifts } = useCalendar();
 
   const hourlyRate =
-    schedule?.hourlyRate ?? userHourlyRate ?? workConfig.hourlyRate;
+    userHourlyRate || workConfig.hourlyRate || schedule?.hourlyRate || 0;
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
@@ -137,11 +137,11 @@ export default function EarningsScreen() {
       getTotalEarningsForPeriod(
         approvedLogs,
         hourlyRate,
+        workConfig.overtimeRate,
         currentPeriod,
         breakMinutesByDate
-      ) +
-      overtimeHours * workConfig.overtimeRate,
-    [approvedLogs, hourlyRate, currentPeriod, breakMinutesByDate, overtimeHours, workConfig.overtimeRate]
+      ),
+    [approvedLogs, hourlyRate, currentPeriod, breakMinutesByDate, workConfig.overtimeRate]
   );
   const approvedBreakdownRows = useMemo(
     () =>
@@ -156,8 +156,13 @@ export default function EarningsScreen() {
   );
   const prevMonthly = useMemo(
     () =>
-      getTotalEarningsForPeriod(approvedLogs, hourlyRate, prevPeriod, breakMinutesByDate) +
-      prevOvertimeHours * workConfig.overtimeRate,
+      getTotalEarningsForPeriod(
+        approvedLogs,
+        hourlyRate,
+        workConfig.overtimeRate,
+        prevPeriod,
+        breakMinutesByDate
+      ) + prevOvertimeHours * workConfig.overtimeRate,
     [approvedLogs, hourlyRate, prevPeriod, breakMinutesByDate, prevOvertimeHours, workConfig.overtimeRate]
   );
   const maxWeekly = weeklyData.length
@@ -837,6 +842,9 @@ const getTotalEarningsForPeriod = (
   logs: {
     date?: string;
     hours?: number;
+    netHours?: number;
+    overtimeHours?: number;
+    finalPay?: number;
     clockIn?: string;
     clockOut?: string;
     clockInTs?: number;
@@ -846,9 +854,15 @@ const getTotalEarningsForPeriod = (
     breakEnd?: string;
   }[],
   hourlyRate: number,
+  overtimeRate: number,
   period: string,
   breakMinutesByDate: Record<string, number>
-) => getTotalHoursForPeriod(logs, period, breakMinutesByDate) * hourlyRate;
+) =>
+  logs.reduce((sum, log) => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(period)) return sum;
+    return sum + getLogEarnings(log, hourlyRate, overtimeRate, breakMinutesByDate);
+  }, 0);
 
 const getAbsenceDaysForPeriod = (
   logs: { date?: string; status?: string }[],
@@ -874,6 +888,9 @@ const getLogHours = (
   log: {
     date?: string;
     hours?: number;
+    netHours?: number;
+    overtimeHours?: number;
+    finalPay?: number;
     clockIn?: string;
     clockOut?: string;
     clockInTs?: number;
@@ -884,6 +901,8 @@ const getLogHours = (
   },
   breakMinutesByDate: Record<string, number>
 ) => {
+  const storedNet = Number((log as any).netHours ?? (log as any).net_hours ?? 0);
+  if (storedNet > 0) return storedNet;
   const stored = Number(log.hours ?? 0);
   if (stored > 0) return stored;
   const breakMinutes = getBreakMinutesForLog(log, breakMinutesByDate);
@@ -898,6 +917,41 @@ const getLogHours = (
     return calcHoursFromTimes(log.clockIn, log.clockOut, breakMinutes);
   }
   return 0;
+};
+
+const getLogOvertimeHours = (log: {
+  overtimeHours?: number;
+}) => {
+  const stored = Number((log as any).overtimeHours ?? (log as any).overtime_hours ?? 0);
+  if (stored > 0) return stored;
+  return 0;
+};
+
+const getLogEarnings = (
+  log: {
+    finalPay?: number;
+    overtimeHours?: number;
+    hours?: number;
+    netHours?: number;
+    clockIn?: string;
+    clockOut?: string;
+    clockInTs?: number;
+    clockOutTs?: number;
+    breakMinutes?: number;
+    breakStart?: string;
+    breakEnd?: string;
+  },
+  hourlyRate: number,
+  overtimeRate: number,
+  breakMinutesByDate: Record<string, number>
+) => {
+  const finalPay = Number((log as any).finalPay ?? (log as any).final_pay ?? 0);
+  if (finalPay > 0) return finalPay;
+  const netHours = getLogHours(log, breakMinutesByDate);
+  const overtimeHours = getLogOvertimeHours(log);
+  const regularHours = Math.max(0, netHours - overtimeHours);
+  const resolvedOvertimeRate = overtimeRate || hourlyRate * 1.5;
+  return regularHours * hourlyRate + overtimeHours * resolvedOvertimeRate;
 };
 
 const getBreakMinutesForLog = (

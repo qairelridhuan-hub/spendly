@@ -20,6 +20,7 @@ import {
   X,
   Pencil,
   Trash2,
+  ChevronDown,
 } from "lucide-react-native";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
@@ -88,6 +89,8 @@ export default function GoalsScreen() {
   const [timeFilter, setTimeFilter] = useState<"current" | "past" | "all">("current");
   const [statusFilter, setStatusFilter] = useState<"all" | "ongoing" | "completed">("all");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [paceUnit, setPaceUnit] = useState<"day" | "week" | "month">("week");
+  const [paceMenuFor, setPaceMenuFor] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("User");
   const [hourlyRate, setHourlyRate] = useState(0);
@@ -426,51 +429,14 @@ export default function GoalsScreen() {
     return Math.min(100, Math.round((goal.savedAmount / goal.targetAmount) * 100));
   };
 
-  const getWeeklyPace = (goal: Goal) => {
+  const getRemainingUnits = (goal: Goal, unit: "day" | "week" | "month") => {
     const today = new Date();
     const end = new Date(goal.deadline);
     const diffMs = end.getTime() - today.getTime();
     const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    const weeks = Math.max(1, Math.ceil(diffDays / 7));
-    const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
-    if (remaining <= 0) return 0;
-    return remaining / weeks;
-  };
-
-  const getTotalWeeks = (goal: Goal) => {
-    const start = new Date(goal.createdAt);
-    const end = new Date(goal.deadline);
-    const diffMs = Math.max(0, end.getTime() - start.getTime());
-    return Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7)));
-  };
-
-  const getWeeksElapsed = (goal: Goal) => {
-    const start = new Date(goal.createdAt);
-    const today = new Date();
-    const diffMs = Math.max(0, today.getTime() - start.getTime());
-    return Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7)));
-  };
-
-  const getStreakWeeks = (goal: Goal) => {
-    const totalWeeks = getTotalWeeks(goal);
-    const expectedPerWeek = goal.targetAmount / totalWeeks;
-    const expectedByNow = expectedPerWeek * getWeeksElapsed(goal);
-    return goal.savedAmount >= expectedByNow ? getWeeksElapsed(goal) : 0;
-  };
-
-  const getNextContributionDate = (goal: Goal) => {
-    if (goal.targetAmount <= goal.savedAmount) return "—";
-    const today = new Date();
-    const next = new Date();
-    next.setDate(next.getDate() + 7);
-    const deadlineDate = toDateFromString(goal.deadline);
-    if (deadlineDate && deadlineDate < next && deadlineDate > today) {
-      return formatDate(deadlineDate);
-    }
-    if (deadlineDate && deadlineDate <= today) {
-      return formatDate(today);
-    }
-    return formatDate(next);
+    if (unit === "day") return Math.max(1, diffDays);
+    if (unit === "week") return Math.max(1, Math.ceil(diffDays / 7));
+    return Math.max(1, Math.ceil(diffDays / 30.44));
   };
 
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -501,12 +467,6 @@ export default function GoalsScreen() {
     }, 0);
     return totalHours * hourlyRate;
   }, [assignedHoursSoFar, approvedLogs, hourlyRate, currentPeriod]);
-
-  const estimateMonthsToGoal = (goal: Goal) => {
-    const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
-    if (monthlyEarnings <= 0) return null;
-    return Math.ceil(remaining / monthlyEarnings);
-  };
 
   const filteredGoals = useMemo(() => {
     const todayKey = formatDate(new Date());
@@ -666,20 +626,39 @@ export default function GoalsScreen() {
         {filteredGoals.length > 0 && (
           <View style={styles.goalList}>
             {filteredGoals.map(goal => {
-                const progress = getProgress(goal);
-                const weeklyPace = getWeeklyPace(goal);
-                const streakWeeks = getStreakWeeks(goal);
-                const nextContribution = getNextContributionDate(goal);
-                const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
-                const monthsToGoal = estimateMonthsToGoal(goal);
+              const progress = getProgress(goal);
+              const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
+              const unitsRemaining = getRemainingUnits(goal, paceUnit);
+              const requiredPerUnit = unitsRemaining ? remaining / unitsRemaining : 0;
+              const earningsPerUnit =
+                paceUnit === "month"
+                  ? monthlyEarnings
+                  : paceUnit === "week"
+                  ? monthlyEarnings / 4.33
+                  : monthlyEarnings / 30.44;
+              const earningsShare =
+                earningsPerUnit > 0
+                  ? Math.min(100, Math.round((requiredPerUnit / earningsPerUnit) * 100))
+                  : null;
+              const unitLabel = paceUnit === "day" ? "day" : paceUnit === "week" ? "week" : "month";
+              const isPaceMenuOpen = paceMenuFor === goal.id;
               return (
                 <View key={goal.id} style={styles.goalCard}>
                   <View style={styles.goalHeader}>
                     <View>
                       <Text style={styles.goalName}>{goal.name}</Text>
-                      <Text style={styles.goalMeta}>
-                        RM {goal.savedAmount.toFixed(2)} / RM {goal.targetAmount.toFixed(2)}
-                      </Text>
+                      <View style={styles.metaRow}>
+                        <Text style={styles.goalMeta}>
+                          RM {goal.savedAmount.toFixed(2)} / RM{" "}
+                          {goal.targetAmount.toFixed(2)}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.editSavedButton}
+                          onPress={() => openEditModal(goal)}
+                        >
+                          <Text style={styles.editSavedText}>Edit saved</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                     <View style={styles.goalHeaderRight}>
                       <View style={[styles.priorityChip, styles[`priority${goal.priority}`]]}>
@@ -704,17 +683,6 @@ export default function GoalsScreen() {
                     </View>
                   </View>
 
-                  <View style={styles.streakRow}>
-                    <Text style={styles.streakText}>
-                      {streakWeeks > 0
-                        ? `${streakWeeks} weeks on track`
-                        : "Behind pace"}
-                    </Text>
-                    <Text style={styles.streakHint}>
-                      Weekly target RM {weeklyPace.toFixed(2)}
-                    </Text>
-                  </View>
-
                   <View style={styles.progressRow}>
                     <Text style={styles.progressLabel}>{progress}% saved</Text>
                     <Text style={styles.progressLabel}>
@@ -722,7 +690,20 @@ export default function GoalsScreen() {
                     </Text>
                   </View>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${progress}%` }]} />
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: `${progress}%`,
+                          backgroundColor:
+                            progress < 50
+                              ? "#ef4444"
+                              : progress < 75
+                              ? "#f59e0b"
+                              : "#22c55e",
+                        },
+                      ]}
+                    />
                   </View>
 
                   <View style={styles.milestoneRow}>
@@ -739,16 +720,90 @@ export default function GoalsScreen() {
                     ))}
                   </View>
 
-                  <View style={styles.nextCard}>
+                  <View style={styles.collectionHeader}>
+                    <Text style={styles.collectionTitle}>Collection plan</Text>
+                    <View style={styles.paceDropdown}>
+                      <TouchableOpacity
+                        style={styles.paceButton}
+                        onPress={() =>
+                          setPaceMenuFor(prev => (prev === goal.id ? null : goal.id))
+                        }
+                      >
+                        <Text style={styles.paceButtonText}>
+                          {unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1)}
+                        </Text>
+                        <ChevronDown size={14} color="#64748b" />
+                      </TouchableOpacity>
+                      {isPaceMenuOpen ? (
+                        <View style={styles.paceMenu}>
+                          {(["day", "week", "month"] as const).map(option => (
+                            <TouchableOpacity
+                              key={option}
+                              style={styles.paceMenuItem}
+                              onPress={() => {
+                                setPaceUnit(option);
+                                setPaceMenuFor(null);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  styles.paceMenuText,
+                                  option === paceUnit && styles.paceMenuTextActive,
+                                ]}
+                              >
+                                {option.charAt(0).toUpperCase() + option.slice(1)}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+
+                  <View style={styles.summaryCard}>
                     <View>
-                      <Text style={styles.nextTitle}>Next contribution</Text>
-                      <Text style={styles.nextAmount}>
-                        RM {weeklyPace.toFixed(2)}
+                      <Text style={styles.summaryLabel}>Saved total</Text>
+                      <Text style={styles.summaryValue}>
+                        RM {goal.savedAmount.toFixed(2)}
                       </Text>
                     </View>
                     <View>
-                      <Text style={styles.nextTitle}>Due date</Text>
-                      <Text style={styles.nextAmount}>{nextContribution}</Text>
+                      <Text style={styles.summaryLabel}>Remaining</Text>
+                      <Text style={styles.summaryValue}>
+                        RM {remaining.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.planCard}>
+                    <View style={styles.planRow}>
+                      <View style={styles.planItem}>
+                        <Text style={styles.planLabel}>Need to collect</Text>
+                        <Text style={styles.planValue}>
+                          RM {requiredPerUnit.toFixed(2)} / {unitLabel}
+                        </Text>
+                      </View>
+                      <View style={styles.planItem}>
+                        <Text style={styles.planLabel}>Time left</Text>
+                        <Text style={styles.planValue}>
+                          {unitsRemaining} {unitLabel}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.planDivider} />
+                    <View style={styles.planRow}>
+                      <View style={styles.planItem}>
+                        <Text style={styles.planLabel}>Total earnings</Text>
+                        <Text style={styles.planValue}>
+                          RM {Math.max(0, earningsPerUnit).toFixed(2)} / {unitLabel}
+                        </Text>
+                      </View>
+                      <View style={styles.planItem}>
+                        <Text style={styles.planLabel}>Needed from earnings</Text>
+                        <Text style={styles.planValue}>
+                          {earningsShare !== null ? `${earningsShare}%` : "—"}
+                        </Text>
+                      </View>
                     </View>
                   </View>
 
@@ -758,37 +813,6 @@ export default function GoalsScreen() {
                       <Text style={styles.noteText}>{goal.notes}</Text>
                     </View>
                   ) : null}
-
-
-                  <View style={styles.goalFooter}>
-                    <View>
-                      <Text style={styles.goalFootLabel}>Weekly pace</Text>
-                      <Text style={styles.goalFootValue}>
-                        RM {weeklyPace.toFixed(2)} / week
-                      </Text>
-                    </View>
-                    <View>
-                      <Text style={styles.goalFootLabel}>Remaining</Text>
-                      <Text style={styles.goalFootValue}>
-                        RM {remaining.toFixed(2)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.earningsRow}>
-                    <View>
-                      <Text style={styles.goalFootLabel}>Current earnings</Text>
-                      <Text style={styles.goalFootValue}>
-                        RM {monthlyEarnings.toFixed(2)} / month
-                      </Text>
-                    </View>
-                    <View>
-                      <Text style={styles.goalFootLabel}>Time to reach</Text>
-                      <Text style={styles.goalFootValue}>
-                        {monthsToGoal ? `${monthsToGoal} mo` : "—"}
-                      </Text>
-                    </View>
-                  </View>
                 </View>
               );
             })}
@@ -862,7 +886,7 @@ export default function GoalsScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Saved Amount (RM)</Text>
+                <Text style={styles.label}>Saved so far (RM)</Text>
                 <TextInput
                   value={savedAmount}
                   onChangeText={value => {
@@ -1208,7 +1232,10 @@ const styles = StyleSheet.create({
   },
   goalHeaderRight: { alignItems: "flex-end", gap: 8 },
   goalName: { fontSize: 18, fontWeight: "700", color: "#111827" },
-  goalMeta: { color: "#64748b", marginTop: 4 },
+  goalMeta: { color: "#64748b" },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
+  editSavedButton: { paddingVertical: 2 },
+  editSavedText: { color: "#0ea5e9", fontSize: 12, fontWeight: "600" },
   goalActions: { flexDirection: "row", gap: 8 },
   iconButton: {
     width: 32,
@@ -1266,18 +1293,74 @@ const styles = StyleSheet.create({
   },
   milestoneDotActive: { backgroundColor: "#0ea5e9" },
   milestoneText: { fontSize: 10, color: "#94a3b8" },
-  nextCard: {
+  collectionHeader: {
+    marginTop: 16,
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#f8fafc",
-    borderRadius: 14,
-    padding: 12,
-    marginTop: 12,
+    alignItems: "center",
+  },
+  collectionTitle: { fontSize: 13, fontWeight: "700", color: "#0f172a" },
+  paceDropdown: { position: "relative" },
+  paceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
   },
-  nextTitle: { fontSize: 11, color: "#64748b" },
-  nextAmount: { fontWeight: "700", color: "#0f172a", marginTop: 2 },
+  paceButtonText: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  paceMenu: {
+    position: "absolute",
+    top: 34,
+    right: 0,
+    minWidth: 120,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    paddingVertical: 6,
+    zIndex: 10,
+  },
+  paceMenuItem: { paddingHorizontal: 10, paddingVertical: 8 },
+  paceMenuText: { color: "#64748b", fontSize: 12 },
+  paceMenuTextActive: { color: "#0ea5e9", fontWeight: "700" },
+  summaryCard: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  summaryLabel: { color: "#64748b", fontSize: 12 },
+  summaryValue: { color: "#0f172a", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  planCard: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+  },
+  planRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  planItem: { flex: 1 },
+  planLabel: { color: "#64748b", fontSize: 12 },
+  planValue: { color: "#0f172a", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  planDivider: {
+    height: 1,
+    backgroundColor: "#e2e8f0",
+    marginVertical: 10,
+  },
   noteBox: {
     marginTop: 12,
     padding: 12,
