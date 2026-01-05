@@ -169,6 +169,12 @@ export const buildAdminReportHtml = (params: {
   workers: AdminWorkerRow[];
 }) => {
   const { period, summary, workers } = params;
+  const safeSummary = {
+    totalHours: Number(summary.totalHours ?? 0),
+    overtimeHours: Number(summary.overtimeHours ?? 0),
+    absenceDeductions: Number(summary.absenceDeductions ?? 0),
+    totalEarnings: Number(summary.totalEarnings ?? 0),
+  };
   return `
 <!DOCTYPE html>
 <html>
@@ -196,19 +202,19 @@ export const buildAdminReportHtml = (params: {
     <div class="summary">
       <div class="card">
         <div class="muted">Total Hours</div>
-        <div class="value">${summary.totalHours.toFixed(1)}h</div>
+        <div class="value">${safeSummary.totalHours.toFixed(1)}h</div>
       </div>
       <div class="card">
         <div class="muted">Total Earnings</div>
-        <div class="value">${formatCurrency(summary.totalEarnings)}</div>
+        <div class="value">${formatCurrency(safeSummary.totalEarnings)}</div>
       </div>
       <div class="card">
         <div class="muted">Overtime</div>
-        <div class="value">${summary.overtimeHours.toFixed(1)}h</div>
+        <div class="value">${safeSummary.overtimeHours.toFixed(1)}h</div>
       </div>
       <div class="card">
         <div class="muted">Absences</div>
-        <div class="value">${summary.absenceDeductions.toFixed(0)}</div>
+        <div class="value">${safeSummary.absenceDeductions.toFixed(0)}</div>
       </div>
     </div>
 

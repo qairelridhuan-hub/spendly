@@ -1,6 +1,6 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { Alert, ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Calendar, Download, TrendingUp } from "lucide-react-native";
+import { Calendar, Download, FileText, TrendingUp } from "lucide-react-native";
 import { collection, collectionGroup, doc, onSnapshot, query, where } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
@@ -193,7 +193,19 @@ export default function AdminReports() {
       },
       workers: workerRows,
     });
-    await printReport(html);
+    Alert.alert(
+      "Download report?",
+      "Generate and download the PDF report for this period?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Download",
+          onPress: async () => {
+            await printReport(html);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -226,6 +238,7 @@ export default function AdminReports() {
             </View>
           </View>
           <TouchableOpacity style={generateButton} onPress={handleExportReport}>
+            <FileText size={16} color="#fff" />
             <Text style={generateButtonText}>Generate</Text>
           </TouchableOpacity>
         </View>
@@ -369,6 +382,9 @@ const generateButton = {
   paddingVertical: 10,
   borderRadius: 12,
   backgroundColor: adminPalette.accentStrong,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 8,
 };
 const generateButtonText = { color: "#fff", fontWeight: "600" as const, fontSize: 12 };
 

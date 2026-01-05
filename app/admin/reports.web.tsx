@@ -21,7 +21,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { getPeriodKey } from "@/lib/reports/report";
+import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
+import { printReport } from "@/lib/reports/print";
 
 type AttendanceLog = {
   date?: string;
@@ -192,6 +193,48 @@ export default function AdminReportsWeb() {
       overtimeHoursByKey,
     ]
   );
+  const workerRows = useMemo(
+    () =>
+      buildReportWorkers(
+        approvedLogs,
+        attendanceLogs,
+        currentPeriod,
+        workers,
+        config.hourlyRate,
+        config.overtimeRate,
+        breakMinutesByKey,
+        overtimeHoursByKey
+      ),
+    [
+      approvedLogs,
+      attendanceLogs,
+      currentPeriod,
+      workers,
+      config.hourlyRate,
+      config.overtimeRate,
+      breakMinutesByKey,
+      overtimeHoursByKey,
+    ]
+  );
+
+  const handleExportReport = async () => {
+    const shouldDownload =
+      typeof window === "undefined"
+        ? true
+        : window.confirm("Generate and download the PDF report for this period?");
+    if (!shouldDownload) return;
+    const html = buildAdminReportHtml({
+      period: currentPeriod,
+      summary: {
+        totalHours: currentSummary.totalHours,
+        overtimeHours: currentSummary.overtimeHours,
+        absenceDeductions: currentSummary.absenceDeductions,
+        totalEarnings: currentSummary.totalEarnings,
+      },
+      workers: workerRows,
+    });
+    await printReport(html);
+  };
 
   return (
     <div style={styles.page}>
@@ -202,6 +245,26 @@ export default function AdminReportsWeb() {
             Weekly hours, monthly earnings, and payroll breakdown
           </p>
         </div>
+        <button style={styles.generateButton} onClick={handleExportReport}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path d="M14 2v6h6" />
+            <path d="M16 13H8" />
+            <path d="M16 17H8" />
+            <path d="M10 9H8" />
+          </svg>
+          Generate report
+        </button>
       </div>
 
       <div style={styles.summaryGrid}>
@@ -423,6 +486,92 @@ function buildEarningsBreakdown(
     { label: "Overtime", value: overtime, color: chartColors.secondary },
     { label: "Deductions", value: deductions, color: chartColors.danger },
   ];
+}
+
+function buildReportWorkers(
+  approvedLogs: AttendanceLog[],
+  allLogs: AttendanceLog[],
+  period: string,
+  workers: WorkerMap,
+  defaultRate: number,
+  overtimeRate: number,
+  breakMinutesByKey: Record<string, number>,
+  overtimeHoursByKey: Record<string, number>
+) {
+  const map: Record<
+    string,
+    {
+      workerId: string;
+      name: string;
+      totalHours: number;
+      overtimeHours: number;
+      totalEarnings: number;
+      absenceDeductions: number;
+      status: string;
+    }
+  > = {};
+
+  approvedLogs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(period)) return;
+    const workerId = String(log.workerId ?? "");
+    if (!workerId) return;
+    const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
+    map[workerId] = map[workerId] || {
+      workerId,
+      name: workers[workerId]?.name || workerId || "Worker",
+      totalHours: 0,
+      overtimeHours: 0,
+      totalEarnings: 0,
+      absenceDeductions: 0,
+      status: "pending",
+    };
+    const hours = getLogHours(log, breakMinutesByKey);
+    map[workerId].totalHours += hours;
+    map[workerId].totalEarnings += getLogEarnings(
+      log,
+      rate,
+      overtimeRate,
+      breakMinutesByKey
+    );
+  });
+
+  Object.entries(overtimeHoursByKey).forEach(([key, hours]) => {
+    const [workerId, date] = key.split(":");
+    if (!date?.startsWith(period)) return;
+    map[workerId] = map[workerId] || {
+      workerId,
+      name: workers[workerId]?.name || workerId || "Worker",
+      totalHours: 0,
+      overtimeHours: 0,
+      totalEarnings: 0,
+      absenceDeductions: 0,
+      status: "pending",
+    };
+    map[workerId].overtimeHours += hours;
+    map[workerId].totalHours += hours;
+    map[workerId].totalEarnings += hours * overtimeRate;
+  });
+
+  allLogs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (!date.startsWith(period)) return;
+    if (String(log.status ?? "") !== "absent") return;
+    const workerId = String(log.workerId ?? "");
+    if (!workerId) return;
+    map[workerId] = map[workerId] || {
+      workerId,
+      name: workers[workerId]?.name || workerId || "Worker",
+      totalHours: 0,
+      overtimeHours: 0,
+      totalEarnings: 0,
+      absenceDeductions: 0,
+      status: "pending",
+    };
+    map[workerId].absenceDeductions += 1;
+  });
+
+  return Object.values(map);
 }
 
 function aggregateAttendance(
@@ -688,6 +837,18 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 24,
+  },
+  generateButton: {
+    padding: "10px 16px",
+    borderRadius: 10,
+    border: "none",
+    background: "#1e40af",
+    color: "#fff",
+    fontWeight: 600,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
   },
   title: { fontSize: 24, fontWeight: 700, margin: 0 },
   subtitle: { margin: "6px 0 0", color: "#64748b", fontSize: 14 },
