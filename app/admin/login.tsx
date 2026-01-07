@@ -2,7 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { Lock, Mail } from "lucide-react-native";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -17,15 +17,34 @@ import { useTheme } from "@/lib/context";
 
 export default function AdminLogin() {
   const { colors } = useTheme();
+  const adminUi = {
+    background: ["#070b14", "#0f172a", "#111827"],
+    card: "#0b1220",
+    cardBorder: "#1f2937",
+    text: "#f8fafc",
+    textMuted: "#94a3b8",
+    accent: "#ef4444",
+    accentStrong: "#dc2626",
+    inputBg: "#0f172a",
+    inputBorder: "#334155",
+    danger: "#f97316",
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const handleLogin = async () => {
     setError("");
-    if (!email.trim() || !password) {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !password) {
       setError("Email and password are required");
+      return;
+    }
+    if (!emailPattern.test(trimmedEmail)) {
+      setError("Invalid email format. Please try again.");
       return;
     }
 
@@ -33,7 +52,7 @@ export default function AdminLogin() {
     try {
       const credential = await signInWithEmailAndPassword(
         auth,
-        email.trim().toLowerCase(),
+        trimmedEmail,
         password
       );
       const snap = await getDoc(doc(db, "users", credential.user.uid));
@@ -48,6 +67,8 @@ export default function AdminLogin() {
       const code = err?.code || "";
       if (code === "auth/invalid-credential") {
         setError("Invalid email or password");
+      } else if (code === "auth/invalid-email") {
+        setError("Invalid email format. Please try again.");
       } else {
         setError("Login failed. Try again.");
       }
@@ -57,30 +78,27 @@ export default function AdminLogin() {
   };
 
   return (
-    <LinearGradient
-      colors={[colors.backgroundStart, colors.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
+    <LinearGradient colors={adminUi.background} style={{ flex: 1 }}>
       <View
         style={{
           position: "absolute",
-          width: 360,
-          height: 360,
-          borderRadius: 180,
-          backgroundColor: "rgba(14,165,233,0.12)",
-          top: -120,
-          right: -140,
+          width: 380,
+          height: 380,
+          borderRadius: 190,
+          backgroundColor: "rgba(239,68,68,0.16)",
+          top: -160,
+          right: -160,
         }}
       />
       <View
         style={{
           position: "absolute",
-          width: 420,
-          height: 420,
-          borderRadius: 210,
-          backgroundColor: "rgba(34,197,94,0.12)",
-          bottom: -180,
-          left: -160,
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: "rgba(14,116,144,0.2)",
+          bottom: -240,
+          left: -220,
         }}
       />
       <KeyboardAvoidingView
@@ -89,14 +107,19 @@ export default function AdminLogin() {
       >
         <View
           style={{
-            backgroundColor: colors.surface,
-            borderRadius: 24,
+            backgroundColor: adminUi.card,
+            borderRadius: 26,
             padding: 28,
             borderWidth: 1,
-            borderColor: colors.border,
+            borderColor: adminUi.cardBorder,
             maxWidth: 420,
             alignSelf: "center",
             width: "100%",
+            shadowColor: "#000",
+            shadowOpacity: 0.35,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 8,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -105,24 +128,25 @@ export default function AdminLogin() {
                 width: 44,
                 height: 44,
                 borderRadius: 22,
-                backgroundColor: colors.accentStrong,
+                backgroundColor: adminUi.accent,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 20 }}>💰</Text>
+              <Text style={{ color: "#fff", fontSize: 20 }}>🛡️</Text>
             </View>
             <View>
               <Text
                 style={{
-                  color: colors.text,
+                  color: adminUi.text,
                   fontSize: 16,
                   fontWeight: "700",
+                  letterSpacing: 0.4,
                 }}
               >
                 Spendly
               </Text>
-              <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+              <Text style={{ color: adminUi.textMuted, fontSize: 12 }}>
                 Admin Console
               </Text>
             </View>
@@ -134,31 +158,32 @@ export default function AdminLogin() {
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 999,
-              backgroundColor: colors.surfaceAlt,
+              backgroundColor: "rgba(239,68,68,0.14)",
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: "rgba(239,68,68,0.4)",
               marginBottom: 12,
             }}
           >
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              Admin Only
+            <Text style={{ color: adminUi.accent, fontSize: 12, fontWeight: "600" }}>
+              ADMIN ACCESS
             </Text>
           </View>
 
           <Text
             style={{
-              fontSize: 24,
-              fontWeight: "700",
-              color: colors.text,
+              fontSize: 26,
+              fontWeight: "800",
+              color: adminUi.text,
               marginTop: 8,
+              letterSpacing: 0.3,
             }}
           >
             Spendly Admin Portal
           </Text>
-          <Text style={{ color: colors.textMuted, marginTop: 6, marginBottom: 20 }}>
+          <Text style={{ color: adminUi.textMuted, marginTop: 6, marginBottom: 20 }}>
             Secure access for payroll, schedules, and system controls.
           </Text>
-          <Text style={{ color: colors.textMuted, marginBottom: 20 }}>
+          <Text style={{ color: adminUi.textMuted, marginBottom: 20 }}>
             Welcome back, administrator. Please verify your credentials to
             continue managing worker operations.
           </Text>
@@ -172,48 +197,66 @@ export default function AdminLogin() {
             <TextInput
               placeholder="Email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={value => {
+                setEmail(value);
+                if (error) setError("");
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               style={{
                 borderWidth: 1,
-                borderColor: colors.border,
+                borderColor: adminUi.inputBorder,
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
-                color: colors.text,
-                backgroundColor: colors.surfaceAlt,
+                color: adminUi.text,
+                backgroundColor: adminUi.inputBg,
               }}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={adminUi.textMuted}
             />
           </View>
 
           <View style={{ position: "relative", marginBottom: 12 }}>
             <Lock
               size={20}
-              color={colors.textMuted}
+              color={adminUi.textMuted}
               style={{ position: "absolute", left: 14, top: 16 }}
             />
             <TextInput
               placeholder="Password"
               value={password}
-              onChangeText={setPassword}
-              secureTextEntry
+              onChangeText={value => {
+                setPassword(value);
+                if (error) setError("");
+              }}
+              secureTextEntry={!showPassword}
               style={{
                 borderWidth: 1,
-                borderColor: colors.border,
+                borderColor: adminUi.inputBorder,
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
-                color: colors.text,
-                backgroundColor: colors.surfaceAlt,
+                paddingRight: 44,
+                color: adminUi.text,
+                backgroundColor: adminUi.inputBg,
               }}
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={adminUi.textMuted}
             />
+            <TouchableOpacity
+              onPress={() => setShowPassword(value => !value)}
+              style={{ position: "absolute", right: 14, top: 14, padding: 4 }}
+              accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <Eye size={20} color={adminUi.textMuted} />
+              ) : (
+                <EyeOff size={20} color={adminUi.textMuted} />
+              )}
+            </TouchableOpacity>
           </View>
 
           {error ? (
-            <Text style={{ color: colors.danger, textAlign: "center", marginBottom: 12 }}>
+            <Text style={{ color: adminUi.danger, textAlign: "center", marginBottom: 12 }}>
               {error}
             </Text>
           ) : null}
@@ -222,20 +265,22 @@ export default function AdminLogin() {
             onPress={handleLogin}
             disabled={loading}
             style={{
-              backgroundColor: colors.accentStrong,
+              backgroundColor: adminUi.accentStrong,
               padding: 14,
               borderRadius: 12,
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.08)",
               opacity: loading ? 0.7 : 1,
             }}
           >
-            <Text style={{ color: "#fff", textAlign: "center", fontWeight: "600" }}>
+            <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>
               {loading ? "Signing in..." : "Sign in"}
             </Text>
           </TouchableOpacity>
 
           <Text
             style={{
-              color: colors.textMuted,
+              color: adminUi.textMuted,
               fontSize: 11,
               marginTop: 16,
               textAlign: "center",

@@ -100,6 +100,7 @@ export default function WorkerHomeScreen() {
     clockOutTs?: number;
     breakStartTs?: number;
     breakEndTs?: number;
+    breakMinutes?: number;
     status?: string;
     hours?: number;
   } | null>(null);
@@ -2417,6 +2418,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
+  cardHint: { fontSize: 12, color: "#64748b", marginTop: 4 },
   smallText: { fontSize: 12, color: "#64748b" },
   emptyText: { fontSize: 12, color: "#64748b", textAlign: "center" },
   shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6 },

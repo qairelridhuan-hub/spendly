@@ -1,6 +1,13 @@
 import { Stack, usePathname, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Platform,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -30,26 +37,48 @@ const navItems = [
 export default function AdminLayout() {
   const router = useRouter();
   const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
   const [checking, setChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      Alert.alert("Logout failed", "Please try again.");
+    } finally {
+      router.replace("/admin/login");
+    }
+  };
   const confirmLogout = () => {
+    if (Platform.OS === "web") {
+      const ok =
+        typeof window !== "undefined" &&
+        window.confirm("Are you sure you want to log out?");
+      if (ok) {
+        void handleLogout();
+      }
+      return;
+    }
+
     Alert.alert("Logout?", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
         style: "destructive",
-        onPress: async () => {
-          await signOut(auth);
-          router.replace("/admin/login");
-        },
+        onPress: handleLogout,
       },
     ]);
   };
 
   useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
+      const currentPath = pathnameRef.current;
       if (!user) {
-        if (pathname !== "/admin/login") {
+        if (currentPath !== "/admin/login") {
           router.replace("/admin/login");
         }
         setChecking(false);
@@ -72,14 +101,14 @@ export default function AdminLayout() {
         "Admin";
       setAdminName(name);
 
-      if (pathname === "/admin/login") {
+      if (currentPath === "/admin/login") {
         router.replace("/admin");
       }
       setChecking(false);
     });
 
     return unsubscribe;
-  }, [pathname, router]);
+  }, [router]);
 
   const pageTitle = useMemo(() => {
     const match = navItems.find(item => item.href === pathname);
@@ -122,7 +151,11 @@ export default function AdminLayout() {
           }}
         >
           <View style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => router.push("/admin" as any)}
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              accessibilityLabel="Go to admin dashboard"
+            >
               <View
                 style={{
                   width: 40,
@@ -149,7 +182,7 @@ export default function AdminLayout() {
                   Admin Panel
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <ScrollView>
