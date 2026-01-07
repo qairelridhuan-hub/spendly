@@ -29,3 +29,4 @@ export const auth = hasApps
         persistence: getReactNativePersistence(AsyncStorage),
       });
 export const db = getFirestore(app);
+export const firebaseProjectId = firebaseConfig.projectId;

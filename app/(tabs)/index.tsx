@@ -15,6 +15,7 @@ import {
   DollarSign,
   Target,
   Gamepad2,
+  Sparkles,
   LogOut,
   ChevronRight,
   X,
@@ -30,7 +31,7 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, firebaseProjectId } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar, useTheme } from "@/lib/context";
@@ -770,7 +771,11 @@ export default function WorkerHomeScreen() {
   const handleSendChat = async () => {
     const trimmed = chatInput.trim();
     if (!trimmed || chatSending) return;
-    const jamAiChatUrl = process.env.EXPO_PUBLIC_JAMAI_CHAT_URL ?? "";
+    const envChatUrl = process.env.EXPO_PUBLIC_JAMAI_CHAT_URL ?? "";
+    const defaultChatUrl = firebaseProjectId
+      ? `https://us-central1-${firebaseProjectId}.cloudfunctions.net/jamAiChat`
+      : "";
+    const jamAiChatUrl = envChatUrl || defaultChatUrl;
     if (!jamAiChatUrl) {
       setChatError("Missing EXPO_PUBLIC_JAMAI_CHAT_URL.");
       return;
@@ -791,25 +796,39 @@ export default function WorkerHomeScreen() {
     setChatError(null);
 
     try {
-      const response = await fetch(jamAiChatUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: trimmed,
-          history: historyPayload,
-          context: {
-            system: FINANCE_SYSTEM_PROMPT,
+      const sendChatRequest = async (url: string) => {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        }),
-      });
-      const rawText = await response.text();
-      let data: any = null;
-      try {
-        data = rawText ? JSON.parse(rawText) : null;
-      } catch {
-        data = null;
+          body: JSON.stringify({
+            message: trimmed,
+            history: historyPayload,
+            context: {
+              system: FINANCE_SYSTEM_PROMPT,
+            },
+          }),
+        });
+        const rawText = await response.text();
+        let data: any = null;
+        try {
+          data = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          data = null;
+        }
+        return { response, data };
+      };
+
+      let { response, data } = await sendChatRequest(jamAiChatUrl);
+      if (
+        !response.ok &&
+        response.status === 404 &&
+        envChatUrl &&
+        defaultChatUrl &&
+        envChatUrl !== defaultChatUrl
+      ) {
+        ({ response, data } = await sendChatRequest(defaultChatUrl));
       }
       if (!response.ok) {
         const fallback =
@@ -1073,6 +1092,11 @@ export default function WorkerHomeScreen() {
                 />
                 <Gamepad2 size={22} color="#0f172a" />
               </Animated.View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/ai")}>
+              <View style={styles.gameIconWrap}>
+                <Sparkles size={20} color="#0f172a" />
+              </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push("/notifications")}>
               <Bell size={22} color="#0f172a" />
