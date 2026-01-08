@@ -2690,6 +2690,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: { color: "#e5e7eb", fontWeight: "700" },
+  monthPickerModal: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#f8fafc",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  monthPickerTitle: { color: "#0f172a", fontWeight: "700" },
   pastSalaryModal: {
     width: "100%",
     maxWidth: 360,
