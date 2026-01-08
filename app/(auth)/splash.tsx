@@ -11,6 +11,7 @@ export default function SplashScreen() {
     "SpaceGrotesk-SemiBold": require("../../assets/fonts/SpaceGrotesk-SemiBold.ttf"),
   });
   const [isNavigating, setIsNavigating] = useState(false);
+  const [sliderWidth, setSliderWidth] = useState(0);
   const logoScale = useRef(new Animated.Value(0.9)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
@@ -26,6 +27,7 @@ export default function SplashScreen() {
   const sliderHeight = 56;
   const sliderPadding = 2;
   const thumbSize = 52;
+  const maxTranslate = Math.max(1, sliderWidth - thumbSize - sliderPadding * 2);
 
   useEffect(() => {
     Animated.loop(
@@ -391,6 +393,7 @@ export default function SplashScreen() {
           <View
             onLayout={event => {
               const width = event.nativeEvent.layout.width;
+              setSliderWidth(width);
               maxTranslateRef.current = Math.max(
                 0,
                 width - thumbSize - sliderPadding * 2
@@ -417,10 +420,17 @@ export default function SplashScreen() {
                 textAlign: "center",
                 textTransform: "uppercase",
                 letterSpacing: 1.4,
-                opacity: sliderPulse.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.55, 0.9],
-                }),
+                opacity: Animated.multiply(
+                  sliderPulse.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.55, 0.9],
+                  }),
+                  swipeX.interpolate({
+                    inputRange: [0, maxTranslate],
+                    outputRange: [1, 0.15],
+                    extrapolate: "clamp",
+                  })
+                ),
                 textShadowColor: "rgba(248, 250, 252, 0.9)",
                 textShadowOffset: { width: 0, height: 0 },
                 textShadowRadius: 10,
