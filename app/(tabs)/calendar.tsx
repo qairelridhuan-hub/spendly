@@ -230,7 +230,7 @@ export default function CalendarScreen() {
   ===================== */
 
   return (
-    <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
+    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
       <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.container}>
@@ -252,10 +252,10 @@ export default function CalendarScreen() {
 
           <View style={styles.headerRight}>
             <TouchableOpacity onPress={() => router.push("/notifications")}>
-              <Bell size={22} color="#0f172a" />
+              <Bell size={22} color="#e5e7eb" />
             </TouchableOpacity>
             <TouchableOpacity onPress={confirmLogout}>
-              <LogOut size={22} color="#0f172a" />
+              <LogOut size={22} color="#e5e7eb" />
             </TouchableOpacity>
           </View>
         </View>
@@ -288,10 +288,10 @@ export default function CalendarScreen() {
 
             <View style={styles.navIcons}>
               <TouchableOpacity onPress={prevMonth}>
-                <ChevronLeft size={20} color="#0f172a" />
+                <ChevronLeft size={20} color="#e5e7eb" />
               </TouchableOpacity>
               <TouchableOpacity onPress={nextMonth}>
-                <ChevronRight size={20} color="#0f172a" />
+                <ChevronRight size={20} color="#e5e7eb" />
               </TouchableOpacity>
             </View>
           </View>
@@ -536,9 +536,9 @@ export default function CalendarScreen() {
           <Text style={styles.cardTitle}>Status</Text> 
 
           <View style={styles.legendRow}>
-            <Legend color="#3b82f6" label="Scheduled" />
-            <Legend color="#22c55e" label="Completed" />
-            <Legend color="#ef4444" label="Absent" />
+            <Legend color="#b7f34d" label="Scheduled" />
+            <Legend color="#34d399" label="Completed" />
+            <Legend color="#f87171" label="Absent" />
           </View>
         </View>
 
@@ -556,7 +556,7 @@ export default function CalendarScreen() {
                   setActiveShift(null);
                 }}
               >
-                <X size={18} color="#64748b" />
+                <X size={18} color="#9ca3af" />
               </TouchableOpacity>
             </View>
             {activeShift.type === "schedule" ? (
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(14,165,233,0.12)",
+    backgroundColor: "rgba(183,243,77,0.14)",
     top: -80,
     right: -60,
   },
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(249,115,22,0.12)",
+    backgroundColor: "rgba(15,23,42,0.6)",
     bottom: -120,
     left: -80,
   },
@@ -782,31 +782,33 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#141c2a",
     alignItems: "center",
     justifyContent: "center",
   },
-  appName: { fontWeight: "700", fontSize: 16, color: "#0f172a" },
-  subText: { color: "#64748b" },
+  appName: { fontWeight: "700", fontSize: 16, color: "#e5e7eb" },
+  subText: { color: "#9ca3af" },
   headerRight: { flexDirection: "row", gap: 16 },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#141c2a",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.06,
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#273244",
   },
 
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
-    color: "#0f172a",
+    color: "#e5e7eb",
   },
 
   monthHeader: {
@@ -821,36 +823,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
   },
-  captionText: { fontSize: 12, fontWeight: "700", color: "#0f172a" },
+  captionText: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
   navIcons: { flexDirection: "row", gap: 8 },
   dropdown: {
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#273244",
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#101826",
     overflow: "hidden",
   },
   dropdownRow: {
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#273244",
   },
   dropdownRowActive: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#b7f34d",
   },
-  dropdownText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
-  dropdownTextActive: { color: "#ffffff" },
+  dropdownText: { color: "#e5e7eb", fontWeight: "600", fontSize: 12 },
+  dropdownTextActive: { color: "#0b1220" },
 
   weekRow: { flexDirection: "row", marginBottom: 8 },
   weekText: {
     textAlign: "center",
     fontWeight: "600",
-    color: "#64748b",
+    color: "#9ca3af",
     fontSize: 12,
   },
 
@@ -861,25 +863,25 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#273244",
     padding: 8,
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#141c2a",
     position: "relative",
   },
 
   selectedDay: {
-    borderColor: "#0ea5e9",
-    backgroundColor: "#e0f2fe",
+    borderColor: "#b7f34d",
+    backgroundColor: "#1b2636",
   },
   todayCell: {
-    borderColor: "#0f172a",
+    borderColor: "#b7f34d",
   },
 
-  dayText: { color: "#334155", fontWeight: "600" },
-  todayText: { color: "#0f172a", fontWeight: "700" },
+  dayText: { color: "#e5e7eb", fontWeight: "600" },
+  todayText: { color: "#b7f34d", fontWeight: "700" },
   selectedDayText: {
-    color: "#0ea5e9",
+    color: "#b7f34d",
     fontWeight: "700",
   },
 
@@ -890,15 +892,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   dotNone: { backgroundColor: "transparent" },
-  dotScheduled: { backgroundColor: "#3b82f6" },
-  dotCompleted: { backgroundColor: "#22c55e" },
-  dotAbsent: { backgroundColor: "#ef4444" },
+  dotScheduled: { backgroundColor: "#b7f34d" },
+  dotCompleted: { backgroundColor: "#34d399" },
+  dotAbsent: { backgroundColor: "#f87171" },
   tooltip: {
     position: "absolute",
     top: -6,
     left: -4,
     right: -4,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#111827",
     borderRadius: 10,
     padding: 6,
     zIndex: 10,
@@ -907,13 +909,13 @@ const styles = StyleSheet.create({
   tooltipText: { color: "#e2e8f0", fontSize: 9, marginTop: 2 },
 
   emptyBox: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#101826",
     borderRadius: 14,
     padding: 16,
     alignItems: "center",
   },
 
-  emptyText: { color: "#6b7280" },
+  emptyText: { color: "#9ca3af" },
 
   shiftRow: {
     flexDirection: "row",
@@ -921,32 +923,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#273244",
   },
   shiftLeft: { flex: 1 },
   shiftRight: { alignItems: "flex-end", gap: 6 },
-  shiftTitle: { fontWeight: "700", fontSize: 15, color: "#0f172a" },
+  shiftTitle: { fontWeight: "700", fontSize: 15, color: "#e5e7eb" },
   shiftMetaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  shiftMeta: { color: "#64748b", marginTop: 2 },
-  shiftLocation: { color: "#0f172a", fontWeight: "600" },
+  shiftMeta: { color: "#9ca3af", marginTop: 2 },
+  shiftLocation: { color: "#e5e7eb", fontWeight: "600" },
   detailButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#1b2636",
   },
-  detailButtonText: { color: "#0f172a", fontWeight: "600", fontSize: 11 },
+  detailButtonText: { color: "#e5e7eb", fontWeight: "600", fontSize: 11 },
   statusPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#1b2636",
   },
-  statusPillText: { fontSize: 10, fontWeight: "700", color: "#0f172a" },
-  statusPillActive: { backgroundColor: "#dbeafe" },
-  statusPillScheduled: { backgroundColor: "#dbeafe" },
-  statusPillCompleted: { backgroundColor: "#dcfce7" },
-  statusPillAbsent: { backgroundColor: "#fee2e2" },
+  statusPillText: { fontSize: 10, fontWeight: "700", color: "#e5e7eb" },
+  statusPillActive: { backgroundColor: "#1b2636" },
+  statusPillScheduled: { backgroundColor: "#1b2636" },
+  statusPillCompleted: { backgroundColor: "#12251b" },
+  statusPillAbsent: { backgroundColor: "#2a1114" },
 
   legendRow: {
     flexDirection: "row",
@@ -959,7 +961,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   selectedDateText: {
-    color: "#64748b",
+    color: "#9ca3af",
     marginBottom: 8,
   },
 
@@ -984,7 +986,7 @@ const styles = StyleSheet.create({
   detailModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#141c2a",
     borderRadius: 16,
     padding: 16,
   },
@@ -994,12 +996,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: "#0f172a", fontWeight: "700" },
+  modalTitle: { color: "#e5e7eb", fontWeight: "700" },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  detailLabel: { color: "#64748b", fontSize: 12 },
-  detailValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: "#9ca3af", fontSize: 12 },
+  detailValue: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
 });

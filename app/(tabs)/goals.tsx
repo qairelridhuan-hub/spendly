@@ -485,7 +485,7 @@ export default function GoalsScreen() {
   }, [filter, goals, timeFilter, statusFilter]);
 
   return (
-    <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
+    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
       <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ===== HEADER ===== */}
@@ -506,12 +506,12 @@ export default function GoalsScreen() {
 
           <View style={styles.headerRight}>
           <TouchableOpacity onPress={() => router.push("/notifications")}>
-            <Bell size={22} color="#0f172a" />
+            <Bell size={22} color="#e5e7eb" />
             <View style={styles.notifDot} />
           </TouchableOpacity>
 
             <TouchableOpacity onPress={confirmLogout}>
-              <LogOut size={22} color="#0f172a" />
+              <LogOut size={22} color="#e5e7eb" />
             </TouchableOpacity>
           </View>
         </View>
@@ -529,7 +529,7 @@ export default function GoalsScreen() {
             style={styles.addButton}
             onPress={openCreateModal}
           >
-            <Plus size={26} color="#fff" />
+            <Plus size={26} color="#0b1220" />
           </TouchableOpacity>
         </View>
 
@@ -732,7 +732,7 @@ export default function GoalsScreen() {
                         <Text style={styles.paceButtonText}>
                           {unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1)}
                         </Text>
-                        <ChevronDown size={14} color="#64748b" />
+                        <ChevronDown size={14} color="#9ca3af" />
                       </TouchableOpacity>
                       {isPaceMenuOpen ? (
                         <View style={styles.paceMenu}>
@@ -822,7 +822,7 @@ export default function GoalsScreen() {
         {/* EMPTY STATE */}
         {goals.length === 0 && (
           <View style={styles.emptyCard}>
-            <Target size={40} color="#6366f1" />
+            <Target size={40} color="#b7f34d" />
             <Text style={styles.emptyTitle}>No goals yet</Text>
             <Text style={styles.emptyText}>
               Start by creating your first financial goal
@@ -850,7 +850,7 @@ export default function GoalsScreen() {
                   {editingGoalId ? "Edit Goal" : "Create New Goal"}
                 </Text>
                 <TouchableOpacity onPress={closeModal}>
-                  <X size={22} color="#6b7280" />
+                  <X size={22} color="#9ca3af" />
                 </TouchableOpacity>
               </View>
 
@@ -1054,7 +1054,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(14,165,233,0.12)",
+    backgroundColor: "rgba(183,243,77,0.14)",
     top: -80,
     right: -60,
   },
@@ -1063,7 +1063,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(249,115,22,0.12)",
+    backgroundColor: "rgba(15,23,42,0.6)",
     bottom: -120,
     left: -80,
   },
@@ -1086,13 +1086,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#141c2a",
     alignItems: "center",
     justifyContent: "center",
   },
   logoText: { fontSize: 18 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  subText: { fontSize: 13, color: "#64748b" },
+  appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
+  subText: { fontSize: 13, color: "#9ca3af" },
   headerRight: {
     flexDirection: "row",
     gap: 18,
@@ -1115,44 +1115,46 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  title: { fontSize: 22, fontWeight: "700", color: "#0f172a" },
-  subtitle: { fontSize: 14, color: "#64748b" },
+  title: { fontSize: 22, fontWeight: "700", color: "#e5e7eb" },
+  subtitle: { fontSize: 14, color: "#9ca3af" },
 
   addButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#b7f34d",
     alignItems: "center",
     justifyContent: "center",
   },
 
   emptyCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#141c2a",
     borderRadius: 18,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.06,
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#273244",
   },
-  emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700" },
+  emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
   emptyText: {
     marginTop: 6,
     fontSize: 14,
-    color: "#64748b",
+    color: "#9ca3af",
     textAlign: "center",
   },
   createButton: {
     marginTop: 16,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#b7f34d",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
   },
-  createText: { color: "#0f172a", fontWeight: "600" },
+  createText: { color: "#0b1220", fontWeight: "700" },
   filterRow: {
     flexDirection: "row",
     gap: 10,
@@ -1163,63 +1165,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#fff",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
   },
   filterMenuButtonActive: {
-    backgroundColor: "#0f172a",
-    borderColor: "#0f172a",
+    backgroundColor: "#b7f34d",
+    borderColor: "#b7f34d",
   },
-  filterMenuText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
-  filterMenuTextActive: { color: "#ffffff" },
+  filterMenuText: { color: "#e5e7eb", fontWeight: "600", fontSize: 12 },
+  filterMenuTextActive: { color: "#0b1220" },
   filterMenu: {
     marginBottom: 16,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#fff",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
     gap: 10,
   },
-  filterMenuTitle: { color: "#6b7280", fontSize: 12, fontWeight: "600" },
+  filterMenuTitle: { color: "#9ca3af", fontSize: 12, fontWeight: "600" },
   filterMenuRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   filterMenuChip: {
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
   },
   filterMenuChipActive: {
-    backgroundColor: "#0f172a",
-    borderColor: "#0f172a",
+    backgroundColor: "#b7f34d",
+    borderColor: "#b7f34d",
   },
-  filterMenuChipText: { color: "#64748b", fontSize: 12, fontWeight: "600" },
-  filterMenuChipTextActive: { color: "#ffffff" },
+  filterMenuChipText: { color: "#9ca3af", fontSize: 12, fontWeight: "600" },
+  filterMenuChipTextActive: { color: "#0b1220" },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
   },
   filterChipActive: {
-    backgroundColor: "#0f172a",
-    borderColor: "#0f172a",
+    backgroundColor: "#b7f34d",
+    borderColor: "#b7f34d",
   },
-  filterText: { fontSize: 12, color: "#64748b", fontWeight: "600" },
-  filterTextActive: { color: "#ffffff" },
+  filterText: { fontSize: 12, color: "#9ca3af", fontWeight: "600" },
+  filterTextActive: { color: "#0b1220" },
   goalList: { gap: 14 },
   goalCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#141c2a",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.06,
+    borderColor: "#273244",
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
@@ -1231,53 +1233,53 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   goalHeaderRight: { alignItems: "flex-end", gap: 8 },
-  goalName: { fontSize: 18, fontWeight: "700", color: "#111827" },
-  goalMeta: { color: "#64748b" },
+  goalName: { fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
+  goalMeta: { color: "#9ca3af" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
   editSavedButton: { paddingVertical: 2 },
-  editSavedText: { color: "#0ea5e9", fontSize: 12, fontWeight: "600" },
+  editSavedText: { color: "#b7f34d", fontSize: 12, fontWeight: "600" },
   goalActions: { flexDirection: "row", gap: 8 },
   iconButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#273244",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#101826",
   },
   priorityChip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  priorityText: { fontSize: 10, fontWeight: "700", color: "#0f172a" },
-  priorityhigh: { backgroundColor: "#fee2e2" },
-  prioritymedium: { backgroundColor: "#fef3c7" },
-  prioritylow: { backgroundColor: "#dcfce7" },
+  priorityText: { fontSize: 10, fontWeight: "700", color: "#e5e7eb" },
+  priorityhigh: { backgroundColor: "#2a1114" },
+  prioritymedium: { backgroundColor: "#2a200f" },
+  prioritylow: { backgroundColor: "#12251b" },
   streakRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  streakText: { fontSize: 12, fontWeight: "700", color: "#0f172a" },
-  streakHint: { fontSize: 12, color: "#64748b" },
+  streakText: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
+  streakHint: { fontSize: 12, color: "#9ca3af" },
   progressRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  progressLabel: { color: "#64748b", fontSize: 12 },
+  progressLabel: { color: "#9ca3af", fontSize: 12 },
   progressBar: {
     height: 8,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#273244",
     borderRadius: 8,
     overflow: "hidden",
   },
   progressFill: {
     height: 8,
-    backgroundColor: "#0ea5e9",
+    backgroundColor: "#b7f34d",
   },
   milestoneRow: {
     flexDirection: "row",
@@ -1289,17 +1291,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#273244",
   },
-  milestoneDotActive: { backgroundColor: "#0ea5e9" },
-  milestoneText: { fontSize: 10, color: "#94a3b8" },
+  milestoneDotActive: { backgroundColor: "#b7f34d" },
+  milestoneText: { fontSize: 10, color: "#9ca3af" },
   collectionHeader: {
     marginTop: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  collectionTitle: { fontSize: 13, fontWeight: "700", color: "#0f172a" },
+  collectionTitle: { fontSize: 13, fontWeight: "700", color: "#e5e7eb" },
   paceDropdown: { position: "relative" },
   paceButton: {
     flexDirection: "row",
@@ -1309,44 +1311,44 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
   },
-  paceButtonText: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  paceButtonText: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
   paceMenu: {
     position: "absolute",
     top: 34,
     right: 0,
     minWidth: 120,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#101826",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#273244",
     paddingVertical: 6,
     zIndex: 10,
   },
   paceMenuItem: { paddingHorizontal: 10, paddingVertical: 8 },
-  paceMenuText: { color: "#64748b", fontSize: 12 },
-  paceMenuTextActive: { color: "#0ea5e9", fontWeight: "700" },
+  paceMenuText: { color: "#9ca3af", fontSize: 12 },
+  paceMenuTextActive: { color: "#b7f34d", fontWeight: "700" },
   summaryCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  summaryLabel: { color: "#64748b", fontSize: 12 },
-  summaryValue: { color: "#0f172a", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  summaryLabel: { color: "#9ca3af", fontSize: 12 },
+  summaryValue: { color: "#e5e7eb", fontSize: 14, fontWeight: "700", marginTop: 2 },
   planCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#ffffff",
+    borderColor: "#273244",
+    backgroundColor: "#141c2a",
   },
   planRow: {
     flexDirection: "row",
@@ -1354,21 +1356,21 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   planItem: { flex: 1 },
-  planLabel: { color: "#64748b", fontSize: 12 },
-  planValue: { color: "#0f172a", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  planLabel: { color: "#9ca3af", fontSize: 12 },
+  planValue: { color: "#e5e7eb", fontSize: 14, fontWeight: "700", marginTop: 2 },
   planDivider: {
     height: 1,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#273244",
     marginVertical: 10,
   },
   noteBox: {
     marginTop: 12,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#101826",
   },
-  noteLabel: { fontSize: 11, color: "#475569", fontWeight: "700" },
-  noteText: { marginTop: 6, color: "#0f172a", fontSize: 12 },
+  noteLabel: { fontSize: 11, color: "#9ca3af", fontWeight: "700" },
+  noteText: { marginTop: 6, color: "#e5e7eb", fontSize: 12 },
   miniChart: {
     flexDirection: "row",
     gap: 8,
@@ -1381,7 +1383,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   miniBar: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#b7f34d",
     borderRadius: 8,
   },
   goalFooter: {
@@ -1389,8 +1391,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 12,
   },
-  goalFootLabel: { color: "#64748b", fontSize: 12 },
-  goalFootValue: { fontWeight: "700", marginTop: 2 },
+  goalFootLabel: { color: "#9ca3af", fontSize: 12 },
+  goalFootValue: { fontWeight: "700", marginTop: 2, color: "#e5e7eb" },
   earningsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1408,7 +1410,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modal: {
-    backgroundColor: "#fff",
+    backgroundColor: "#141c2a",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -1419,29 +1421,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  modalTitle: { fontSize: 18, fontWeight: "700" },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
 
   inputGroup: { marginBottom: 12 },
-  label: { fontSize: 13, color: "#6b7280", marginBottom: 6 },
+  label: { fontSize: 13, color: "#9ca3af", marginBottom: 6 },
   input: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#101826",
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#273244",
+    color: "#e5e7eb",
   },
   inputDisabled: {
     opacity: 0.6,
   },
   dateButton: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#101826",
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#273244",
   },
   dateButtonText: {
-    color: "#0f172a",
+    color: "#e5e7eb",
   },
   priorityRow: {
     flexDirection: "row",
@@ -1452,16 +1455,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#273244",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#101826",
   },
   priorityButtonActive: {
-    backgroundColor: "#0f172a",
-    borderColor: "#0f172a",
+    backgroundColor: "#b7f34d",
+    borderColor: "#b7f34d",
   },
-  priorityButtonText: { color: "#64748b", fontWeight: "600" },
-  priorityButtonTextActive: { color: "#ffffff" },
+  priorityButtonText: { color: "#9ca3af", fontWeight: "600" },
+  priorityButtonTextActive: { color: "#0b1220" },
   notesInput: { minHeight: 80, textAlignVertical: "top" },
   modalOverlay: {
     flex: 1,
@@ -1473,7 +1476,7 @@ const styles = StyleSheet.create({
   dateModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#fff",
+    backgroundColor: "#141c2a",
     borderRadius: 16,
     padding: 16,
   },
@@ -1498,16 +1501,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#1b2636",
+    borderWidth: 1,
+    borderColor: "#273244",
     alignItems: "center",
   },
-  cancelText: { color: "#374151", fontWeight: "600" },
+  cancelText: { color: "#e5e7eb", fontWeight: "600" },
   createBtn: {
     flex: 1,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#b7f34d",
     alignItems: "center",
   },
-  createBtnText: { color: "#fff", fontWeight: "600" },
+  createBtnText: { color: "#0b1220", fontWeight: "700" },
 });

@@ -321,7 +321,7 @@ export default function EarningsScreen() {
             .map((item: any) => ({
               category: String(item.category),
               amount: Number(item.amount ?? 0),
-              color: String(item.color ?? "#0ea5e9"),
+              color: String(item.color ?? "#b7f34d"),
             }))
         );
       } else {
@@ -358,7 +358,7 @@ export default function EarningsScreen() {
   });
 
   return (
-    <LinearGradient colors={["#f8fafc", "#eef2f7"]} style={styles.screen}>
+    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
       <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView contentContainerStyle={styles.container}>
@@ -379,24 +379,24 @@ export default function EarningsScreen() {
 
             <View style={styles.headerRight}>
               <TouchableOpacity onPress={() => router.push("/notifications")}>
-                <Bell size={22} color="#0f172a" />
+              <Bell size={22} color="#e5e7eb" />
                 <View style={styles.notifDot} />
               </TouchableOpacity>
 
               <TouchableOpacity onPress={confirmLogout}>
-                <LogOut size={22} color="#0f172a" />
+              <LogOut size={22} color="#e5e7eb" />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* ===== Collected Summary ===== */}
           <LinearGradient
-            colors={["#16a34a", "#22c55e"]}
+            colors={["#0f172a", "#1b2636"]}
             style={styles.summaryCard}
           >
             <View style={styles.summaryRow}>
               <View style={styles.summaryTag}>
-                <DollarSign size={16} color="#ffffff" />
+                <DollarSign size={16} color="#b7f34d" />
                 <Text style={styles.summaryMonth}>
                   {formatPeriodLabel(currentPeriod)}
                 </Text>
@@ -425,7 +425,7 @@ export default function EarningsScreen() {
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <TrendingUp size={18} color="#0ea5e9" />
+              <TrendingUp size={18} color="#b7f34d" />
               <Text style={styles.cardTitle}>Projected End-of-Month</Text>
             </View>
             <Text style={styles.summaryAmountDark}>
@@ -438,7 +438,7 @@ export default function EarningsScreen() {
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <DollarSign size={18} color="#0ea5e9" />
+              <DollarSign size={18} color="#b7f34d" />
               <Text style={styles.cardTitle}>Collected (Approved Shifts)</Text>
             </View>
             <Text style={styles.summaryAmountDark}>
@@ -478,7 +478,7 @@ export default function EarningsScreen() {
           {/* ===== Weekly Earnings ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <TrendingUp size={18} color="#0ea5e9" />
+              <TrendingUp size={18} color="#b7f34d" />
             <Text style={styles.cardTitle}>Approved Earnings (Weekly)</Text>
             </View>
 
@@ -508,7 +508,7 @@ export default function EarningsScreen() {
           {/* ===== Budget Allocation ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <PieChart size={18} color="#0ea5e9" />
+              <PieChart size={18} color="#b7f34d" />
               <Text style={styles.cardTitle}>Budget Allocation</Text>
             </View>
 
@@ -544,7 +544,7 @@ export default function EarningsScreen() {
           {/* ===== Salary Breakdown ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <BarChart3 size={18} color="#0ea5e9" />
+              <BarChart3 size={18} color="#b7f34d" />
               <Text style={styles.cardTitle}>Salary Breakdown</Text>
             </View>
 
@@ -595,7 +595,7 @@ export default function EarningsScreen() {
             <Text style={styles.tipTitle}>💡 Smart Suggestion</Text>
             <Text style={styles.tipText}>{suggestion.title}</Text>
             <View style={styles.tipRow}>
-              <Calendar size={14} color="#0f172a" />
+              <Calendar size={14} color="#b7f34d" />
               <Text style={styles.tipHint}>{suggestion.subtitle}</Text>
             </View>
             {suggestion.action ? (
@@ -1061,13 +1061,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#141c2a",
     alignItems: "center",
     justifyContent: "center",
   },
   logoText: { fontSize: 18 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  subText: { fontSize: 13, color: "#64748b" },
+  appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
+  subText: { fontSize: 13, color: "#9ca3af" },
   headerRight: {
     flexDirection: "row",
     gap: 18,
@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(14,165,233,0.12)",
+    backgroundColor: "rgba(183,243,77,0.14)",
     top: -80,
     right: -60,
   },
@@ -1096,7 +1096,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(249,115,22,0.12)",
+    backgroundColor: "rgba(15,23,42,0.6)",
     bottom: -120,
     left: -80,
   },
@@ -1128,8 +1128,8 @@ const styles = StyleSheet.create({
   summarySub: { color: "rgba(255,255,255,0.9)", marginTop: 2 },
   summaryDelta: { color: "#ffffff", fontWeight: "700" },
   summaryHint: { color: "rgba(255,255,255,0.85)" },
-  summaryAmountDark: { color: "#0f172a", fontSize: 24, fontWeight: "700" },
-  summaryHintDark: { color: "#64748b", fontSize: 12, marginTop: 4 },
+  summaryAmountDark: { color: "#e5e7eb", fontSize: 24, fontWeight: "700" },
+  summaryHintDark: { color: "#9ca3af", fontSize: 12, marginTop: 4 },
   statsRow: {
     flexDirection: "row",
     gap: 12,
@@ -1137,24 +1137,24 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#141c2a",
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#273244",
   },
-  statLabel: { fontSize: 11, color: "#64748b", marginBottom: 6 },
-  statValue: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  statHighlight: { fontSize: 16, fontWeight: "700", color: "#f97316" },
+  statLabel: { fontSize: 11, color: "#9ca3af", marginBottom: 6 },
+  statValue: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
+  statHighlight: { fontSize: 16, fontWeight: "700", color: "#b7f34d" },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#141c2a",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.05,
+    borderColor: "#273244",
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
@@ -1165,8 +1165,8 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  emptyText: { color: "#64748b", fontSize: 12 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
+  emptyText: { color: "#9ca3af", fontSize: 12 },
   chartRow: {
     flexDirection: "row",
     gap: 12,
@@ -1176,21 +1176,21 @@ const styles = StyleSheet.create({
   chartBar: {
     width: "100%",
     borderRadius: 10,
-    backgroundColor: "#0ea5e9",
+    backgroundColor: "#b7f34d",
   },
-  chartValue: { fontSize: 11, color: "#0f172a", marginTop: 6 },
-  chartLabel: { fontSize: 10, color: "#64748b", marginTop: 2 },
+  chartValue: { fontSize: 11, color: "#e5e7eb", marginTop: 6 },
+  chartLabel: { fontSize: 10, color: "#9ca3af", marginTop: 2 },
   budgetItem: { marginBottom: 12 },
   budgetRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  budgetLabel: { color: "#334155", fontWeight: "600" },
-  budgetValue: { color: "#0f172a", fontWeight: "600" },
+  budgetLabel: { color: "#e5e7eb", fontWeight: "600" },
+  budgetValue: { color: "#e5e7eb", fontWeight: "600" },
   budgetBar: {
     height: 8,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#273244",
     borderRadius: 999,
     overflow: "hidden",
   },
@@ -1200,52 +1200,52 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#273244",
     marginBottom: 10,
   },
-  breakdownTitle: { fontSize: 13, fontWeight: "600", color: "#0f172a" },
-  breakdownHint: { fontSize: 11, color: "#64748b", marginTop: 2 },
-  breakdownPositive: { color: "#16a34a", fontWeight: "700" },
+  breakdownTitle: { fontSize: 13, fontWeight: "600", color: "#e5e7eb" },
+  breakdownHint: { fontSize: 11, color: "#9ca3af", marginTop: 2 },
+  breakdownPositive: { color: "#b7f34d", fontWeight: "700" },
   breakdownNegative: { color: "#ef4444", fontWeight: "700" },
   breakdownTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  breakdownTotal: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
+  breakdownTotal: { fontSize: 14, fontWeight: "700", color: "#e5e7eb" },
   tipCard: {
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#bfdbfe",
+    borderColor: "#273244",
     marginBottom: 20,
   },
-  tipTitle: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
-  tipText: { color: "#334155", marginTop: 8, lineHeight: 18 },
+  tipTitle: { fontSize: 14, fontWeight: "700", color: "#e5e7eb" },
+  tipText: { color: "#9ca3af", marginTop: 8, lineHeight: 18 },
   tipRow: { flexDirection: "row", gap: 6, marginTop: 10 },
-  tipHint: { color: "#334155", fontSize: 12 },
+  tipHint: { color: "#9ca3af", fontSize: 12 },
   tipButton: {
     marginTop: 12,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#b7f34d",
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
   },
-  tipButtonText: { color: "#ffffff", fontWeight: "600" },
+  tipButtonText: { color: "#0b1220", fontWeight: "600" },
   disabledButton: { opacity: 0.6 },
   detailChip: {
     alignSelf: "flex-start",
     marginTop: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(183,243,77,0.2)",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
   },
-  detailChipText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
+  detailChipText: { color: "#b7f34d", fontSize: 12, fontWeight: "600" },
   detailChipDark: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#b7f34d",
   },
   detailChipTextDark: {
-    color: "#ffffff",
+    color: "#0b1220",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
   detailModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#141c2a",
     borderRadius: 16,
     padding: 16,
   },
@@ -1267,25 +1267,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: "#0f172a", fontWeight: "700" },
-  modalClose: { color: "#0ea5e9", fontWeight: "600", fontSize: 12 },
+  modalTitle: { color: "#e5e7eb", fontWeight: "700" },
+  modalClose: { color: "#b7f34d", fontWeight: "600", fontSize: 12 },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  detailLabel: { color: "#64748b", fontSize: 12 },
-  detailValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: "#9ca3af", fontSize: 12 },
+  detailValue: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
   breakdownBlock: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: "#273244",
     paddingTop: 12,
   },
   breakdownTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#e5e7eb",
     marginBottom: 6,
   },
   breakdownRow: {
@@ -1294,8 +1294,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 6,
   },
-  breakdownDate: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
-  breakdownSub: { color: "#64748b", fontSize: 11, marginTop: 2 },
-  breakdownAmount: { color: "#0f172a", fontSize: 12, fontWeight: "700" },
-  emptyText: { color: "#64748b", fontSize: 12, textAlign: "center" },
+  breakdownDate: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
+  breakdownSub: { color: "#9ca3af", fontSize: 11, marginTop: 2 },
+  breakdownAmount: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
+  emptyText: { color: "#9ca3af", fontSize: 12, textAlign: "center" },
 });

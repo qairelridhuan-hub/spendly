@@ -18,6 +18,7 @@ import {
   Sparkles,
   LogOut,
   ChevronRight,
+  ChevronDown,
   X,
 } from "lucide-react-native";
 import { router } from "expo-router";
@@ -146,6 +147,8 @@ export default function WorkerHomeScreen() {
   );
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showPastSalary, setShowPastSalary] = useState(false);
+  const [showSalaryMenu, setShowSalaryMenu] = useState(false);
+  const [salaryView, setSalaryView] = useState<"past" | "ongoing">("past");
   const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [pastSalaryPeriod, setPastSalaryPeriod] = useState<string | null>(null);
@@ -346,10 +349,35 @@ export default function WorkerHomeScreen() {
     selectedPeriod === currentPeriod
       ? "Earnings So Far (This Month)"
       : "Collected So Far";
-  const rightLabel =
-    selectedPeriod === currentPeriod ? "Projected End-of-Month" : "Finalized Total";
-  const rightValue =
-    selectedPeriod === currentPeriod ? projectedEarnings : collectedEarnings;
+  const paidPayrollForSelected = useMemo(
+    () =>
+      payrollRecords.find(
+        record =>
+          record.period === selectedPeriod && String(record.status ?? "") === "paid"
+      ) || null,
+    [payrollRecords, selectedPeriod]
+  );
+  const finalizedPayrollAmount =
+    paidPayrollForSelected && paidPayrollForSelected.totalEarnings != null
+      ? Number(paidPayrollForSelected.totalEarnings)
+      : null;
+  const displayCollectedEarnings =
+    isPastPeriod && finalizedPayrollAmount != null
+      ? finalizedPayrollAmount
+      : collectedEarnings;
+  const displayAmountLabel =
+    isPastPeriod && finalizedPayrollAmount != null
+      ? "Finalized Payroll"
+      : amountLabel;
+  const displayAmountHint =
+    isPastPeriod && finalizedPayrollAmount != null
+      ? "Based on paid payroll record"
+      : amountHint;
+  const displayAmountSummary = `${displayAmountLabel} • ${displayAmountHint}`;
+  const displayRightLabel =
+    selectedPeriod === currentPeriod ? "Projected End-of-Month" : "Finalized Payroll";
+  const displayRightValue =
+    selectedPeriod === currentPeriod ? projectedEarnings : displayCollectedEarnings;
 
   const selectablePeriods = useMemo(
     () => buildSelectablePeriods(shifts, attendanceLogs, payrollRecords),
@@ -357,15 +385,26 @@ export default function WorkerHomeScreen() {
   );
 
   const pastSalaryOptions = useMemo(() => {
+    if (salaryView === "ongoing") return [currentPeriod];
     const periods = payrollRecords
+      .filter(record => String(record.status ?? "") === "paid")
       .map(record => String(record.period ?? ""))
       .filter(Boolean);
     return Array.from(new Set(periods)).sort((a, b) => b.localeCompare(a));
-  }, [payrollRecords]);
+  }, [payrollRecords, currentPeriod, salaryView]);
 
-  const selectedPastPeriod = pastSalaryPeriod || pastSalaryOptions[0] || currentPeriod;
+  const selectedPastPeriod =
+    salaryView === "ongoing"
+      ? currentPeriod
+      : pastSalaryPeriod || pastSalaryOptions[0] || currentPeriod;
   const selectedPastPayroll =
-    payrollRecords.find(record => record.period === selectedPastPeriod) || null;
+    salaryView === "past"
+      ? payrollRecords.find(
+          record =>
+            record.period === selectedPastPeriod && String(record.status ?? "") === "paid"
+        ) || null
+      : null;
+  const isCurrentPastPeriod = salaryView === "ongoing";
   const pastShiftCount = approvedLogs.filter(log =>
     String(log.date ?? "").startsWith(selectedPastPeriod)
   ).length;
@@ -374,6 +413,9 @@ export default function WorkerHomeScreen() {
     if (!date.startsWith(selectedPastPeriod)) return sum;
     return sum + getLogHours(log);
   }, 0);
+  const currentPeriodShiftCount =
+    assignedHours > 0 ? assignedShiftCount : approvedShiftCount;
+  const currentPeriodHours = assignedHours > 0 ? assignedHours : approvedHoursSoFar;
 
   useEffect(() => {
     if (!selectablePeriods.length) return;
@@ -1038,10 +1080,7 @@ export default function WorkerHomeScreen() {
      UI
   ===================== */
   return (
-    <LinearGradient
-      colors={[colors.backgroundStart, colors.backgroundEnd]}
-      style={styles.screen}
-    >
+    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
       <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* 🔝 HEADER */}
@@ -1090,21 +1129,21 @@ export default function WorkerHomeScreen() {
                     },
                   ]}
                 />
-                <Gamepad2 size={22} color="#0f172a" />
+                <Gamepad2 size={22} color="#e5e7eb" />
               </Animated.View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push("/ai")}>
               <View style={styles.gameIconWrap}>
-                <Sparkles size={20} color="#0f172a" />
+                <Sparkles size={20} color="#b7f34d" />
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push("/notifications")}>
-              <Bell size={22} color="#0f172a" />
+              <Bell size={22} color="#e5e7eb" />
               <View style={styles.dot} />
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleLogout}>
-              <LogOut size={22} color="#0f172a" />
+              <LogOut size={22} color="#e5e7eb" />
             </TouchableOpacity>
           </View>
         </View>
@@ -1121,28 +1160,56 @@ export default function WorkerHomeScreen() {
           >
             {/* 💰 Earnings Summary */}
             <LinearGradient
-              colors={["#0ea5e9", "#22c55e"]}
+              colors={["#0f172a", "#1b2636"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.salarySummary}
             >
               <View style={styles.rowBetween}>
                 <Text style={styles.salaryTitle}>{titleText}</Text>
-                <TouchableOpacity
-                  style={styles.salaryPill}
-                  onPress={() => setShowMonthPicker(true)}
-                >
-                  <Text style={styles.salaryPillText}>
-                    {formatPeriodLabel(selectedPeriod)}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.salaryMenuAnchor}>
+                  <TouchableOpacity
+                    style={styles.salaryPill}
+                    onPress={() => setShowSalaryMenu(prev => !prev)}
+                  >
+                    <Text style={styles.salaryPillText}>Menu</Text>
+                    <ChevronDown size={14} color="#ffffff" />
+                  </TouchableOpacity>
+                  {showSalaryMenu ? (
+                    <View style={styles.salaryMenuTop}>
+                      <TouchableOpacity
+                        style={styles.salaryMenuItem}
+                        onPress={() => {
+                          setSalaryView("past");
+                          setPastSalaryPeriod(null);
+                          setShowSalaryMenu(false);
+                          setShowPastSalary(true);
+                        }}
+                      >
+                        <Text style={styles.salaryMenuText}>Past Salary</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.salaryMenuItem}
+                        onPress={() => {
+                          setShowSalaryMenu(false);
+                          setShowMonthPicker(true);
+                        }}
+                      >
+                        <Text style={styles.salaryMenuText}>
+                          {formatPeriodLabel(selectedPeriod)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                </View>
               </View>
 
               <Text style={styles.salaryAmount}>
-                RM {collectedEarnings.toFixed(2)}
+                RM {displayCollectedEarnings.toFixed(2)}
               </Text>
-              <Text style={styles.salarySubtitle}>{amountLabel}</Text>
-              <Text style={styles.salaryHint}>{amountHint}</Text>
+              <View style={styles.salaryMeta}>
+                <Text style={styles.salarySubtitle}>{displayAmountSummary}</Text>
+              </View>
 
               <View style={styles.row}>
                 {hasPending ? (
@@ -1175,28 +1242,21 @@ export default function WorkerHomeScreen() {
 
               <View style={styles.salaryDivider} />
 
-              <View style={styles.rowBetween}>
-                <View>
-                  <Text style={styles.salaryLabel}>{rightLabel}</Text>
+              <View style={styles.salaryFooterRow}>
+                <View style={styles.salaryFooterLeft}>
+                  <Text style={styles.salaryLabel}>{displayRightLabel}</Text>
                   <Text style={styles.salaryValue}>
-                    RM {rightValue.toFixed(2)}
+                    RM {displayRightValue.toFixed(2)}
                   </Text>
-                </View>
-
-                <View style={{ alignItems: "flex-end" }}>
                   <TouchableOpacity
-                    style={styles.salaryActionButton}
-                    onPress={() => setShowPastSalary(true)}
-                  >
-                    <Text style={styles.salaryActionText}>Past Salary</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.salaryActionButton, styles.salaryActionSecondary]}
+                    style={styles.salaryDetailsButton}
                     onPress={() => setShowEarningsBreakdown(true)}
                   >
                     <Text style={styles.salaryActionText}>View details</Text>
                   </TouchableOpacity>
                 </View>
+
+                <View />
               </View>
             </LinearGradient>
 
@@ -1216,7 +1276,7 @@ export default function WorkerHomeScreen() {
                     ],
                   }}
                 >
-                  <Clock size={20} color="#0ea5e9" />
+                  <Clock size={20} color="#b7f34d" />
                 </Animated.View>
               </View>
 
@@ -1318,7 +1378,7 @@ export default function WorkerHomeScreen() {
                       style={[styles.clockButton, styles.clockReset]}
                       onPress={handleResetAttendance}
                     >
-                      <Text style={styles.clockButtonText}>Reset</Text>
+                      <Text style={styles.clockResetText}>Reset</Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -1382,7 +1442,7 @@ export default function WorkerHomeScreen() {
                       style={[styles.clockButton, styles.clockReset]}
                       onPress={handleResetAttendance}
                     >
-                      <Text style={styles.clockButtonText}>Reset</Text>
+                      <Text style={styles.clockResetText}>Reset</Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -1411,7 +1471,7 @@ export default function WorkerHomeScreen() {
                       }}
                     >
                       <Text style={styles.detailButtonText}>View details</Text>
-                      <ChevronRight size={16} color="#0f172a" />
+                      <ChevronRight size={16} color="#e5e7eb" />
                     </TouchableOpacity>
                   </>
                 ) : (
@@ -1529,7 +1589,7 @@ export default function WorkerHomeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Shift details</Text>
               <TouchableOpacity onPress={() => setShowShiftDetails(false)}>
-                <X size={18} color="#64748b" />
+                <X size={18} color="#e5e7eb" />
               </TouchableOpacity>
             </View>
             {activeShift.type === "schedule" ? (
@@ -1599,11 +1659,11 @@ export default function WorkerHomeScreen() {
 
       {showMonthPicker ? (
         <View style={styles.overlay}>
-          <View style={styles.detailModal}>
+          <View style={styles.monthPickerModal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Month</Text>
+              <Text style={styles.monthPickerTitle}>Select Month</Text>
               <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
-                <X size={18} color="#64748b" />
+                <X size={18} color="#0f172a" />
               </TouchableOpacity>
             </View>
             <View style={styles.monthList}>
@@ -1611,8 +1671,8 @@ export default function WorkerHomeScreen() {
                 <TouchableOpacity
                   key={period}
                   style={[
-                    styles.monthButton,
-                    period === selectedPeriod && styles.monthButtonActive,
+                    styles.monthButtonLight,
+                    period === selectedPeriod && styles.monthButtonActiveLight,
                   ]}
                   onPress={() => {
                     setSelectedPeriod(period);
@@ -1621,8 +1681,8 @@ export default function WorkerHomeScreen() {
                 >
                   <Text
                     style={[
-                      styles.monthButtonText,
-                      period === selectedPeriod && styles.monthButtonTextActive,
+                      styles.monthButtonTextLight,
+                      period === selectedPeriod && styles.monthButtonTextActiveLight,
                     ]}
                   >
                     {formatPeriodLabel(period)}
@@ -1636,67 +1696,96 @@ export default function WorkerHomeScreen() {
 
       {showPastSalary ? (
         <View style={styles.overlay}>
-          <View style={styles.detailModal}>
+          <View style={styles.pastSalaryModal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Past Salary</Text>
+              <Text style={styles.pastSalaryTitle}>
+                {salaryView === "ongoing" ? "Ongoing Pay" : "Past Salary"}
+              </Text>
               <TouchableOpacity onPress={() => setShowPastSalary(false)}>
-                <X size={18} color="#64748b" />
+                <X size={18} color="#0f172a" />
               </TouchableOpacity>
             </View>
-            {pastSalaryOptions.length === 0 ? (
-              <Text style={styles.emptyText}>No finalized salaries yet.</Text>
+            {salaryView === "past" && pastSalaryOptions.length === 0 ? (
+              <Text style={styles.pastSalaryEmpty}>No finalized salaries yet.</Text>
             ) : (
               <>
-                <View style={styles.monthList}>
-                  {pastSalaryOptions.map(period => (
-                    <TouchableOpacity
-                      key={period}
-                      style={[
-                        styles.monthButton,
-                        period === selectedPastPeriod && styles.monthButtonActive,
-                      ]}
-                      onPress={() => setPastSalaryPeriod(period)}
-                    >
-                      <Text
+                {salaryView === "past" ? (
+                  <View style={styles.monthList}>
+                    {pastSalaryOptions.map(period => (
+                      <TouchableOpacity
+                        key={period}
                         style={[
-                          styles.monthButtonText,
-                          period === selectedPastPeriod && styles.monthButtonTextActive,
+                          styles.monthButtonLight,
+                          period === selectedPastPeriod && styles.monthButtonActiveLight,
                         ]}
+                        onPress={() => setPastSalaryPeriod(period)}
                       >
-                        {formatPeriodLabel(period)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                {selectedPastPayroll ? (
-                  <View style={styles.pastSalaryCard}>
+                        <Text
+                          style={[
+                            styles.monthButtonTextLight,
+                            period === selectedPastPeriod && styles.monthButtonTextActiveLight,
+                          ]}
+                        >
+                          {formatPeriodLabel(period)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+                {isCurrentPastPeriod ? (
+                  <View style={styles.pastSalaryCardLight}>
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Total Salary Paid</Text>
-                      <Text style={styles.detailValue}>
+                      <Text style={styles.pastSalaryLabel}>Total Salary Paid</Text>
+                      <Text style={styles.pastSalaryValue}>
+                        RM {projectedEarnings.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.pastSalaryLabel}>Payment Date</Text>
+                      <Text style={styles.pastSalaryValue}>
+                        {new Date().toLocaleDateString("en-GB")}
+                      </Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.pastSalaryLabel}>Total Shifts</Text>
+                      <Text style={styles.pastSalaryValue}>{currentPeriodShiftCount}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.pastSalaryLabel}>Total Hours</Text>
+                      <Text style={styles.pastSalaryValue}>
+                        {currentPeriodHours.toFixed(1)}h
+                      </Text>
+                    </View>
+                  </View>
+                ) : selectedPastPayroll ? (
+                  <View style={styles.pastSalaryCardLight}>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.pastSalaryLabel}>Total Salary Paid</Text>
+                      <Text style={styles.pastSalaryValue}>
                         RM {Number(selectedPastPayroll.totalEarnings ?? 0).toFixed(2)}
                       </Text>
                     </View>
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Payment Date</Text>
-                      <Text style={styles.detailValue}>
+                      <Text style={styles.pastSalaryLabel}>Payment Date</Text>
+                      <Text style={styles.pastSalaryValue}>
                         {selectedPastPayroll.updatedAt
                           ? new Date(selectedPastPayroll.updatedAt).toLocaleDateString("en-GB")
                           : "-"}
                       </Text>
                     </View>
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Total Shifts</Text>
-                      <Text style={styles.detailValue}>{pastShiftCount}</Text>
+                      <Text style={styles.pastSalaryLabel}>Total Shifts</Text>
+                      <Text style={styles.pastSalaryValue}>{pastShiftCount}</Text>
                     </View>
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Total Hours</Text>
-                      <Text style={styles.detailValue}>
+                      <Text style={styles.pastSalaryLabel}>Total Hours</Text>
+                      <Text style={styles.pastSalaryValue}>
                         {pastHours.toFixed(1)}h
                       </Text>
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.emptyText}>
+                  <Text style={styles.pastSalaryEmpty}>
                     No payroll data for this month.
                   </Text>
                 )}
@@ -1712,7 +1801,7 @@ export default function WorkerHomeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Earnings Details</Text>
               <TouchableOpacity onPress={() => setShowEarningsBreakdown(false)}>
-                <X size={18} color="#64748b" />
+                <X size={18} color="#e5e7eb" />
               </TouchableOpacity>
             </View>
             <View style={styles.detailRow}>
@@ -2288,7 +2377,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(14,165,233,0.12)",
+    backgroundColor: "rgba(183,243,77,0.14)",
     top: -80,
     right: -60,
   },
@@ -2297,7 +2386,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(249,115,22,0.12)",
+    backgroundColor: "rgba(15,23,42,0.6)",
     bottom: -120,
     left: -80,
   },
@@ -2321,13 +2410,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#141c2a",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: { fontSize: 18 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  greeting: { fontSize: 13, color: "#475569" },
+  appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
+  greeting: { fontSize: 13, color: "#9ca3af" },
   headerRight: { flexDirection: "row", gap: 16, alignItems: "center" },
   gameIconWrap: {
     width: 34,
@@ -2340,7 +2429,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#22c55e",
+    backgroundColor: "rgba(183,243,77,0.35)",
   },
   gameSplashOverlay: {
     position: "absolute",
@@ -2383,15 +2472,19 @@ const styles = StyleSheet.create({
   },
   salaryTitle: { color: "#e2e8f0", fontSize: 14 },
   salaryAmount: { color: "#ffffff", fontSize: 30, fontWeight: "700" },
-  salarySubtitle: { color: "#e2e8f0", fontSize: 12, marginTop: 4 },
-  salaryHint: { color: "#cbd5f5", fontSize: 11, marginTop: 2 },
+  salaryMeta: { marginTop: 8 },
+  salarySubtitle: { color: "#e2e8f0", fontSize: 12 },
   salaryPill: {
-    backgroundColor: "rgba(255,255,255,0.25)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   salaryPillText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
+  salaryMenuAnchor: { alignItems: "flex-end" },
   salaryStatusText: { color: "#e2e8f0", fontSize: 13 },
   statusDotPaid: {
     width: 8,
@@ -2417,50 +2510,97 @@ const styles = StyleSheet.create({
   salaryDivider: {
     height: 1,
     backgroundColor: "rgba(255,255,255,0.3)",
-    marginVertical: 12,
+    marginVertical: 16,
   },
   salaryLabel: { color: "#e2e8f0", fontSize: 12 },
   salaryValue: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
-  salaryActionButton: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+  salaryFooterRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  salaryFooterLeft: {
+    minWidth: 140,
+    flexShrink: 1,
+  },
+  salaryDetailsButton: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.12)",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
   },
-  salaryActionSecondary: { marginTop: 8 },
+  salaryMenu: {
+    marginTop: 6,
+    backgroundColor: "#141c2a",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#273244",
+    overflow: "hidden",
+    minWidth: 160,
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  salaryMenuTop: {
+    marginTop: 8,
+    backgroundColor: "#141c2a",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#273244",
+    overflow: "hidden",
+    minWidth: 180,
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  salaryMenuItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  salaryMenuText: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
   salaryActionText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
 
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#141c2a",
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.06,
+    shadowColor: "#000000",
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
+    borderWidth: 1,
+    borderColor: "#273244",
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  cardHint: { fontSize: 12, color: "#64748b", marginTop: 4 },
-  smallText: { fontSize: 12, color: "#64748b" },
-  emptyText: { fontSize: 12, color: "#64748b", textAlign: "center" },
-  shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6 },
-  shiftMeta: { fontSize: 12, color: "#64748b", marginTop: 4 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
+  cardHint: { fontSize: 12, color: "#9ca3af", marginTop: 4 },
+  smallText: { fontSize: 12, color: "#9ca3af" },
+  emptyText: { fontSize: 12, color: "#9ca3af", textAlign: "center" },
+  shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6, color: "#e5e7eb" },
+  shiftMeta: { fontSize: 12, color: "#9ca3af", marginTop: 4 },
 
   progressBarBg: {
     height: 6,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#273244",
     borderRadius: 6,
     marginVertical: 8,
     overflow: "hidden",
   },
   progressBarFill: {
     height: 6,
-    backgroundColor: "#0ea5e9",
+    backgroundColor: "#b7f34d",
     borderRadius: 6,
   },
-  progressBarFillComplete: { backgroundColor: "#22c55e" },
+  progressBarFillComplete: { backgroundColor: "#b7f34d" },
   statusRow: {
     marginTop: 8,
     flexDirection: "row",
@@ -2468,16 +2608,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
-  statusText: { fontSize: 12, color: "#64748b", fontWeight: "600" },
-  statusCompleted: { color: "#22c55e" },
+  statusText: { fontSize: 12, color: "#9ca3af", fontWeight: "600" },
+  statusCompleted: { color: "#b7f34d" },
   statusAbsent: { color: "#ef4444" },
   viewButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#1b2636",
   },
-  viewButtonText: { color: "#0f172a", fontSize: 11, fontWeight: "600" },
+  viewButtonText: { color: "#e5e7eb", fontSize: 11, fontWeight: "600" },
   detailButton: {
     marginTop: 8,
     alignSelf: "flex-start",
@@ -2487,9 +2627,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: "#e2e8f0",
+    backgroundColor: "#1b2636",
   },
-  detailButtonText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
+  detailButtonText: { color: "#e5e7eb", fontWeight: "600", fontSize: 12 },
   disabledButton: { opacity: 0.5 },
   clockRow: {
     flexDirection: "row",
@@ -2501,11 +2641,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#1b2636",
     marginRight: 8,
   },
-  clockLabel: { color: "#64748b", fontSize: 10 },
-  clockValue: { color: "#0f172a", fontWeight: "700", marginTop: 4, fontSize: 12 },
+  clockLabel: { color: "#9ca3af", fontSize: 10 },
+  clockValue: { color: "#e5e7eb", fontWeight: "700", marginTop: 4, fontSize: 12 },
   clockActions: { flexDirection: "row", gap: 8, marginTop: 10 },
   clockButton: {
     paddingVertical: 8,
@@ -2513,21 +2653,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-  clockPrimary: { backgroundColor: "#0ea5e9" },
-  clockGhost: { backgroundColor: "#e2e8f0" },
-  clockReset: { backgroundColor: "#fee2e2" },
-  clockButtonText: { color: "#0f172a", fontWeight: "700", fontSize: 12 },
-  clockButtonTextLight: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
+  clockPrimary: { backgroundColor: "#b7f34d" },
+  clockGhost: { backgroundColor: "#1b2636" },
+  clockReset: { backgroundColor: "#ef4444" },
+  clockButtonText: { color: "#e5e7eb", fontWeight: "700", fontSize: 12 },
+  clockButtonTextLight: { color: "#0b1220", fontWeight: "700", fontSize: 12 },
+  clockResetText: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
   upcomingRow: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: "#273244",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  upcomingLabel: { color: "#64748b", fontSize: 12, marginBottom: 4 },
+  upcomingLabel: { color: "#9ca3af", fontSize: 12, marginBottom: 4 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(15, 23, 42, 0.55)",
@@ -2538,7 +2679,7 @@ const styles = StyleSheet.create({
   detailModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#141c2a",
     borderRadius: 16,
     padding: 16,
   },
@@ -2548,51 +2689,86 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: "#0f172a", fontWeight: "700" },
+  modalTitle: { color: "#e5e7eb", fontWeight: "700" },
+  pastSalaryModal: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#f8fafc",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  pastSalaryTitle: { color: "#0f172a", fontWeight: "700" },
+  pastSalaryEmpty: { color: "#64748b", fontSize: 12 },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  detailLabel: { color: "#64748b", fontSize: 12 },
-  detailValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: "#9ca3af", fontSize: 12 },
+  detailValue: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
   monthList: {
     marginTop: 12,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
-  monthButton: {
+  monthButtonLight: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+  },
+  monthButtonActiveLight: {
+    backgroundColor: "#b7f34d",
+    borderColor: "#b7f34d",
+  },
+  monthButtonTextLight: { color: "#334155", fontSize: 12 },
+  monthButtonTextActiveLight: { color: "#0b1220", fontWeight: "700" },
+  monthButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#273244",
   },
   monthButtonActive: {
-    backgroundColor: "#0f172a",
-    borderColor: "#0f172a",
+    backgroundColor: "#b7f34d",
+    borderColor: "#b7f34d",
   },
-  monthButtonText: { color: "#64748b", fontSize: 12 },
-  monthButtonTextActive: { color: "#ffffff", fontWeight: "700" },
+  monthButtonText: { color: "#9ca3af", fontSize: 12 },
+  monthButtonTextActive: { color: "#0b1220", fontWeight: "700" },
   pastSalaryCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    borderColor: "#273244",
+    backgroundColor: "#101826",
   },
+  pastSalaryCardLight: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+  },
+  pastSalaryLabel: { color: "#64748b", fontSize: 12 },
+  pastSalaryValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
   breakdownBlock: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: "#273244",
     paddingTop: 12,
   },
   breakdownTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0f172a",
+    color: "#e5e7eb",
     marginBottom: 6,
   },
   breakdownRow: {
@@ -2601,18 +2777,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 6,
   },
-  breakdownDate: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
-  breakdownSub: { color: "#64748b", fontSize: 11, marginTop: 2 },
-  breakdownAmount: { color: "#0f172a", fontSize: 12, fontWeight: "700" },
+  breakdownDate: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
+  breakdownSub: { color: "#9ca3af", fontSize: 11, marginTop: 2 },
+  breakdownAmount: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
 
 
   chatBadge: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#b7f34d",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  chatBadgeText: { color: "#ffffff", fontSize: 11, fontWeight: "700" },
+  chatBadgeText: { color: "#0b1220", fontSize: 11, fontWeight: "700" },
   chatThread: {
     marginTop: 12,
     gap: 8,
@@ -2625,14 +2801,14 @@ const styles = StyleSheet.create({
   },
   chatBubbleUser: {
     alignSelf: "flex-end",
-    backgroundColor: "#0ea5e9",
+    backgroundColor: "#b7f34d",
   },
   chatBubbleAssistant: {
     alignSelf: "flex-start",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#1b2636",
   },
-  chatBubbleUserText: { color: "#ffffff", fontSize: 12 },
-  chatBubbleAssistantText: { color: "#0f172a", fontSize: 12 },
+  chatBubbleUserText: { color: "#0b1220", fontSize: 12, fontWeight: "700" },
+  chatBubbleAssistantText: { color: "#e5e7eb", fontSize: 12 },
   chatInputRow: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -2646,20 +2822,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#273244",
     borderRadius: 12,
     fontSize: 12,
-    color: "#0f172a",
-    backgroundColor: "#f8fafc",
+    color: "#e5e7eb",
+    backgroundColor: "#101826",
   },
   chatSendButton: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#b7f34d",
   },
   chatSendDisabled: { opacity: 0.6 },
-  chatSendText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
+  chatSendText: { color: "#0b1220", fontSize: 12, fontWeight: "700" },
   chatError: { marginTop: 6, color: "#ef4444", fontSize: 11 },
   chatDisclaimer: { marginTop: 8, fontSize: 10, color: "#94a3b8" },
 });

@@ -1,6 +1,6 @@
 import { ScrollView, Text, TextInput, View, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Calendar, Check, Clock, Edit2, Info, X } from "lucide-react-native";
+import { Calendar, Check, ChevronDown, Clock, Edit2, Info, X } from "lucide-react-native";
 import {
   addDoc,
   collection,
@@ -31,6 +31,8 @@ export default function AdminAttendance() {
   const [exceptionFilter, setExceptionFilter] = useState<
     "all" | "late" | "early" | "incomplete" | "no-show"
   >("all");
+  const [exceptionWorkerId, setExceptionWorkerId] = useState("all");
+  const [showWorkerMenu, setShowWorkerMenu] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
@@ -69,6 +71,7 @@ export default function AdminAttendance() {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
         refPath: docSnap.ref.path,
+        workerId: getOwnerId(docSnap),
         ...docSnap.data(),
       }));
       setLogs(list);
@@ -375,15 +378,29 @@ export default function AdminAttendance() {
   const sortedLogs = useMemo(() => sortLogsByDate(logs, sortOrder), [logs, sortOrder]);
   const breakMap = useMemo(() => buildBreakMap(breakLogs), [breakLogs]);
   const overtimeMap = useMemo(() => buildOvertimeMap(overtimeLogs), [overtimeLogs]);
+  const workerOptions = useMemo(() => {
+    const entries = Object.entries(workers).map(([id, info]) => ({
+      id,
+      name: info?.name || id,
+    }));
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    return [{ id: "all", name: "All workers" }, ...entries];
+  }, [workers]);
   const exceptions = useMemo(() => {
     return logs
       .map(log => ({ log, type: getExceptionType(log) }))
       .filter(item => item.type !== null);
   }, [logs]);
   const filteredExceptions = useMemo(() => {
-    if (exceptionFilter === "all") return exceptions;
-    return exceptions.filter(item => item.type === exceptionFilter);
-  }, [exceptions, exceptionFilter]);
+    let list = exceptions;
+    if (exceptionFilter !== "all") {
+      list = list.filter(item => item.type === exceptionFilter);
+    }
+    if (exceptionWorkerId !== "all") {
+      list = list.filter(item => item.log.workerId === exceptionWorkerId);
+    }
+    return [...list].sort((a, b) => toLogTimestamp(a.log) - toLogTimestamp(b.log)).reverse();
+  }, [exceptions, exceptionFilter, exceptionWorkerId]);
 
   return (
     <LinearGradient
@@ -464,7 +481,13 @@ export default function AdminAttendance() {
           </View>
         </View>
 
-        <View style={[tableCard, { marginTop: 16 }]}>
+        <View
+          style={[
+            tableCard,
+            { marginTop: 16 },
+            showWorkerMenu && { marginBottom: 180 },
+          ]}
+        >
           <View style={tableHeader}>
             <Text style={tableTitle}>Exceptions Inbox</Text>
             <View style={sortControls}>
@@ -491,6 +514,45 @@ export default function AdminAttendance() {
               )}
             </View>
           </View>
+          <View style={exceptionToolbar}>
+            <View style={{ position: "relative" }}>
+              <TouchableOpacity
+                style={workerButton}
+                onPress={() => setShowWorkerMenu(prev => !prev)}
+              >
+                <Text style={workerButtonText}>
+                  {workerOptions.find(option => option.id === exceptionWorkerId)?.name ||
+                    "All workers"}
+                </Text>
+                <ChevronDown size={14} color={adminPalette.textMuted} />
+              </TouchableOpacity>
+              {showWorkerMenu ? (
+                <View style={workerMenu}>
+                  {workerOptions.map(option => (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={workerMenuItem}
+                      onPress={() => {
+                        setExceptionWorkerId(option.id);
+                        setShowWorkerMenu(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          workerMenuText,
+                          exceptionWorkerId === option.id && workerMenuTextActive,
+                        ]}
+                      >
+                        {option.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+            <Text style={exceptionHint}>Sorted by latest</Text>
+          </View>
+          {showWorkerMenu ? <View style={menuSpacer} /> : null}
           {filteredExceptions.length === 0 ? (
             <View style={{ padding: 20 }}>
               <Text style={emptyText}>No exceptions found.</Text>
@@ -847,7 +909,7 @@ const tableCard = {
   borderRadius: 16,
   borderWidth: 1,
   borderColor: adminPalette.border,
-  overflow: "hidden" as const,
+  overflow: "visible" as const,
 };
 
 const tableHeader = {
@@ -915,6 +977,54 @@ const sortButtonActive = {
 };
 const sortButtonText = { color: adminPalette.textMuted, fontSize: 11 };
 const sortButtonTextActive = { color: adminPalette.accent, fontWeight: "700" };
+const exceptionToolbar = {
+  paddingHorizontal: 20,
+  paddingVertical: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: adminPalette.border,
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  justifyContent: "space-between" as const,
+  position: "relative" as const,
+  zIndex: 2,
+};
+const exceptionHint = { color: adminPalette.textMuted, fontSize: 12 };
+const workerButton = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: adminPalette.border,
+  backgroundColor: adminPalette.surfaceAlt,
+};
+const workerButtonText = { color: adminPalette.text, fontSize: 12, fontWeight: "600" };
+const workerMenu = {
+  position: "absolute" as const,
+  top: 42,
+  left: 0,
+  minWidth: 180,
+  backgroundColor: adminPalette.surface,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: adminPalette.border,
+  paddingVertical: 6,
+  zIndex: 10,
+  elevation: 6,
+  shadowColor: "#000",
+  shadowOpacity: 0.3,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 6 },
+};
+const workerMenuItem = {
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+};
+const workerMenuText = { color: adminPalette.textMuted, fontSize: 12 };
+const workerMenuTextActive = { color: adminPalette.accent, fontWeight: "700" };
+const menuSpacer = { height: 160 };
 
 const toLogTimestamp = (log: any) => {
   const date = String(log.date ?? "");

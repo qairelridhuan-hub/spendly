@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Award, FileText, Mail, Settings, Sparkles, Target, User } from "lucide-react-native";
+import { Award, FileText, Mail, Sparkles, Target, User } from "lucide-react-native";
 import { onAuthStateChanged, signOut, updateEmail, updateProfile } from "firebase/auth";
 import {
   collection,
@@ -13,7 +13,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -68,7 +67,7 @@ function getLogHours(log: any) {
  
 
 export default function ProfileScreen() {
-  const { mode, toggleTheme, colors } = useTheme();
+  const { colors } = useTheme();
   const [displayName, setDisplayName] = useState("User");
   const [email, setEmail] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -575,25 +574,6 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View
-              style={[
-                styles.settingRow,
-                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-              ]}
-            >
-              <View style={styles.settingLeft}>
-                <Settings size={18} color={colors.textMuted} />
-                <Text style={[styles.settingText, { color: colors.text }]}>
-                  Preferences
-                </Text>
-              </View>
-              <Switch
-                value={mode === "dark"}
-                onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor="#ffffff"
-              />
-            </View>
             <TouchableOpacity
               style={[
                 styles.settingRow,
@@ -767,7 +747,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(14,165,233,0.12)",
+    backgroundColor: "rgba(183,243,77,0.14)",
     top: -80,
     right: -60,
   },
@@ -776,7 +756,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(249,115,22,0.12)",
+    backgroundColor: "rgba(15,23,42,0.6)",
     bottom: -120,
     left: -80,
   },

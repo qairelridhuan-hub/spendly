@@ -43,15 +43,15 @@ const themes: Record<ThemeMode, ThemeColors> = {
     warning: "#f97316",
   },
   dark: {
-    backgroundStart: "#0b1120",
+    backgroundStart: "#0b1220",
     backgroundEnd: "#111827",
-    surface: "#111827",
-    surfaceAlt: "#1f2937",
-    text: "#f8fafc",
-    textMuted: "#94a3b8",
-    border: "#1f2937",
-    accent: "#38bdf8",
-    accentStrong: "#22c55e",
+    surface: "#141c2a",
+    surfaceAlt: "#1b2636",
+    text: "#e5e7eb",
+    textMuted: "#9ca3af",
+    border: "#273244",
+    accent: "#b7f34d",
+    accentStrong: "#9ae642",
     success: "#22c55e",
     danger: "#ef4444",
     warning: "#f59e0b",
@@ -61,7 +61,7 @@ const themes: Record<ThemeMode, ThemeColors> = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>("light");
+  const [mode, setMode] = useState<ThemeMode>("dark");
 
   useEffect(() => {
     const loadTheme = async () => {
