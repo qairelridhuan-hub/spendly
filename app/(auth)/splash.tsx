@@ -190,6 +190,28 @@ export default function SplashScreen() {
             ],
           }}
         />
+        <View
+          style={{
+            position: "absolute",
+            width: 520,
+            height: 520,
+            borderRadius: 260,
+            backgroundColor: "rgba(183,243,77,0.08)",
+            top: -260,
+            left: -220,
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            width: 360,
+            height: 360,
+            borderRadius: 180,
+            backgroundColor: "rgba(183,243,77,0.12)",
+            top: -180,
+            left: -120,
+          }}
+        />
         <Svg
           width="140%"
           height={240}
@@ -320,7 +342,7 @@ export default function SplashScreen() {
               borderWidth: 1,
               borderColor: "rgba(183,243,77,0.18)",
               backgroundColor: "rgba(15, 23, 42, 0.38)",
-              top: 360,
+              top: 470,
               right: -26,
               opacity: 0.5,
               transform: [
