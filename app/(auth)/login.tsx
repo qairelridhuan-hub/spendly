@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { auth } from "@/lib/firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthWaveBackground } from "@/components/AuthWaveBackground";
 
 const LAST_EMAIL_KEY = "spendly:lastEmail";
 
@@ -92,7 +93,7 @@ export default function Login() {
       } catch {
         // ignore storage errors
       }
-      router.replace("/(tabs)");
+      router.replace("/(auth)/splash");
     } catch (err: any) {
       const code = err?.code || "";
       if (code === "auth/invalid-credential" || code === "auth/user-not-found") {
@@ -108,23 +109,34 @@ export default function Login() {
   };
 
   return (
-    <LinearGradient colors={["#EEF2FF", "#E0E7FF"]} style={{ flex: 1 }}>
+    <LinearGradient colors={["#0b1220", "#0f1a1a", "#0b0f12"]} style={{ flex: 1 }}>
+      <AuthWaveBackground />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1, justifyContent: "center", padding: 24 }}
       >
-        <View style={{ backgroundColor: "#fff", borderRadius: 24, padding: 28 }}>
+        <View
+          style={{
+            backgroundColor: "rgba(15,23,42,0.9)",
+            borderRadius: 24,
+            padding: 28,
+            borderWidth: 1,
+            borderColor: "rgba(148,163,184,0.2)",
+          }}
+        >
           {/* LOGO */}
           <View
             style={{
               width: 72,
               height: 72,
               borderRadius: 36,
-              backgroundColor: "#4B2BFF",
+              backgroundColor: "rgba(183,243,77,0.2)",
               alignItems: "center",
               justifyContent: "center",
               alignSelf: "center",
               marginBottom: 16,
+              borderWidth: 1,
+              borderColor: "rgba(183,243,77,0.6)",
             }}
           >
             <Text style={{ fontSize: 28, color: "#fff" }}>💰</Text>
@@ -136,7 +148,7 @@ export default function Login() {
               fontWeight: "700",
               textAlign: "center",
               marginBottom: 6,
-              color: "#4B2BFF",
+              color: "#e2e8f0",
             }}
           >
             Spendly
@@ -145,7 +157,7 @@ export default function Login() {
           <Text
             style={{
               textAlign: "center",
-              color: "#6B7280",
+              color: "#94a3b8",
               marginBottom: 24,
             }}
           >
@@ -156,7 +168,7 @@ export default function Login() {
           <View style={{ position: "relative", marginBottom: 12 }}>
             <Mail
               size={20}
-              color="#9CA3AF"
+              color="#94a3b8"
               style={{ position: "absolute", left: 14, top: 16 }}
             />
             <TextInput
@@ -172,11 +184,14 @@ export default function Login() {
               onSubmitEditing={() => passwordRef.current?.focus()}
               style={{
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: "rgba(148,163,184,0.3)",
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
+                color: "#e2e8f0",
+                backgroundColor: "rgba(15,23,42,0.6)",
               }}
+              placeholderTextColor="#94a3b8"
             />
           </View>
 
@@ -184,7 +199,7 @@ export default function Login() {
           <View style={{ position: "relative", marginBottom: 12 }}>
             <Lock
               size={20}
-              color="#9CA3AF"
+              color="#94a3b8"
               style={{ position: "absolute", left: 14, top: 16 }}
             />
             <TextInput
@@ -198,12 +213,15 @@ export default function Login() {
               importantForAutofill="yes"
               style={{
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: "rgba(148,163,184,0.3)",
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
                 paddingRight: 44,
+                color: "#e2e8f0",
+                backgroundColor: "rgba(15,23,42,0.6)",
               }}
+              placeholderTextColor="#94a3b8"
             />
 
             <TouchableOpacity
@@ -211,9 +229,9 @@ export default function Login() {
               style={{ position: "absolute", right: 14, top: 16 }}
             >
               {showPassword ? (
-                <Eye size={20} color="#9CA3AF" />
+                <Eye size={20} color="#94a3b8" />
               ) : (
-                <EyeOff size={20} color="#9CA3AF" />
+                <EyeOff size={20} color="#94a3b8" />
               )}
             </TouchableOpacity>
           </View>
@@ -230,7 +248,7 @@ export default function Login() {
             onPress={handleLogin}
             disabled={loading}
             style={{
-              backgroundColor: "#4B2BFF",
+              backgroundColor: "#B7F34D",
               padding: 16,
               borderRadius: 14,
               marginBottom: 16,
@@ -239,7 +257,7 @@ export default function Login() {
           >
             <Text
               style={{
-                color: "#fff",
+                color: "#0b0f12",
                 textAlign: "center",
                 fontSize: 16,
                 fontWeight: "600",
@@ -255,7 +273,7 @@ export default function Login() {
               <Text
                 style={{
                   textAlign: "center",
-                  color: "#4B2BFF",
+                  color: "#B7F34D",
                   marginBottom: 10,
                 }}
               >
@@ -269,7 +287,7 @@ export default function Login() {
               <Text
                 style={{
                   textAlign: "center",
-                  color: "#4B2BFF",
+                  color: "#e2e8f0",
                   fontWeight: "600",
                 }}
               >

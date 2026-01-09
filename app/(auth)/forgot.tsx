@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { auth } from "@/lib/firebase";
+import { AuthWaveBackground } from "@/components/AuthWaveBackground";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -57,18 +58,21 @@ export default function ForgotPassword() {
 
   return (
     <LinearGradient
-      colors={["rgba(0,0,0,0.45)", "rgba(0,0,0,0.45)"]}
+      colors={["#0b1220", "#0f1a1a", "#0b0f12"]}
       style={{ flex: 1 }}
     >
+      <AuthWaveBackground />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1, justifyContent: "center", padding: 24 }}
       >
         <View
           style={{
-            backgroundColor: "#fff",
+            backgroundColor: "rgba(15,23,42,0.9)",
             borderRadius: 24,
             padding: 28,
+            borderWidth: 1,
+            borderColor: "rgba(148,163,184,0.2)",
           }}
         >
           {/* BACK */}
@@ -76,7 +80,7 @@ export default function ForgotPassword() {
             onPress={() => router.back()}
             style={{ marginBottom: 12 }}
           >
-            <Text style={{ color: "#4B2BFF" }}>← Back to Login</Text>
+            <Text style={{ color: "#B7F34D" }}>← Back to Login</Text>
           </TouchableOpacity>
 
           {/* CLOSE */}
@@ -84,7 +88,7 @@ export default function ForgotPassword() {
             onPress={() => router.back()}
             style={{ position: "absolute", top: 16, right: 16 }}
           >
-            <X size={22} color="#6B7280" />
+            <X size={22} color="#94a3b8" />
           </TouchableOpacity>
 
           <Text
@@ -92,6 +96,7 @@ export default function ForgotPassword() {
               fontSize: 22,
               fontWeight: "700",
               marginBottom: 8,
+              color: "#e2e8f0",
             }}
           >
             Reset Password
@@ -99,7 +104,7 @@ export default function ForgotPassword() {
 
           <Text
             style={{
-              color: "#6B7280",
+              color: "#94a3b8",
               marginBottom: 24,
               lineHeight: 20,
             }}
@@ -112,7 +117,7 @@ export default function ForgotPassword() {
           <View style={{ position: "relative", marginBottom: 12 }}>
             <Mail
               size={20}
-              color="#9CA3AF"
+              color="#94a3b8"
               style={{ position: "absolute", left: 14, top: 16 }}
             />
             <TextInput
@@ -123,11 +128,14 @@ export default function ForgotPassword() {
               keyboardType="email-address"
               style={{
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: "rgba(148,163,184,0.3)",
                 borderRadius: 12,
                 padding: 14,
                 paddingLeft: 44,
+                color: "#e2e8f0",
+                backgroundColor: "rgba(15,23,42,0.6)",
               }}
+              placeholderTextColor="#94a3b8"
             />
           </View>
 
@@ -161,7 +169,7 @@ export default function ForgotPassword() {
             onPress={handleReset}
             disabled={loading}
             style={{
-              backgroundColor: "#4B2BFF",
+              backgroundColor: "#B7F34D",
               padding: 16,
               borderRadius: 14,
               opacity: loading ? 0.7 : 1,
@@ -169,7 +177,7 @@ export default function ForgotPassword() {
           >
             <Text
               style={{
-                color: "#fff",
+                color: "#0b0f12",
                 textAlign: "center",
                 fontSize: 16,
                 fontWeight: "600",
