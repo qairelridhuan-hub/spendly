@@ -95,11 +95,11 @@ export default function CalendarScreen() {
   const totalCells = Math.ceil((startDay + daysInMonth) / 7) * 7;
   const shiftsForSelectedDate = getShiftsForDate(selectedDate);
   const nextShift = getNextShift(shifts, attendanceMap);
-  const selectedDateLabel = getSelectedDateLabel(selectedDate, todayKey);
   const pad = (value: number) => String(value).padStart(2, "0");
   const todayKey = `${today.getFullYear()}-${padValue(today.getMonth() + 1)}-${padValue(
     today.getDate()
   )}`;
+  const selectedDateLabel = getSelectedDateLabel(selectedDate, todayKey);
   const primaryShift = nextShift ?? shiftsForSelectedDate[0] ?? null;
   const primaryDetailTarget = primaryShift
     ? {
@@ -263,40 +263,44 @@ export default function CalendarScreen() {
         {/* =====================
            CALENDAR CARD
         ===================== */}
-        <View style={styles.card}>
+        <View style={[styles.card, styles.calendarCard]}>
           <View style={styles.monthHeader}>
             <View style={styles.captionGroup}>
               <TouchableOpacity
-                style={styles.captionButton}
+                style={[styles.captionButton, styles.calendarCaptionButton]}
                 onPress={() => {
                   setShowMonthPicker(prev => !prev);
                   setShowYearPicker(false);
                 }}
               >
-                <Text style={styles.captionText}>{monthNames[month]}</Text>
+                <Text style={[styles.captionText, styles.calendarCaptionText]}>
+                  {monthNames[month]}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.captionButton}
+                style={[styles.captionButton, styles.calendarCaptionButton]}
                 onPress={() => {
                   setShowYearPicker(prev => !prev);
                   setShowMonthPicker(false);
                 }}
               >
-                <Text style={styles.captionText}>{year}</Text>
+                <Text style={[styles.captionText, styles.calendarCaptionText]}>
+                  {year}
+                </Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.navIcons}>
               <TouchableOpacity onPress={prevMonth}>
-                <ChevronLeft size={20} color="#e5e7eb" />
+                <ChevronLeft size={20} color="#0f172a" />
               </TouchableOpacity>
               <TouchableOpacity onPress={nextMonth}>
-                <ChevronRight size={20} color="#e5e7eb" />
+                <ChevronRight size={20} color="#0f172a" />
               </TouchableOpacity>
             </View>
           </View>
           {showMonthPicker ? (
-            <View style={styles.dropdown}>
+            <View style={[styles.dropdown, styles.calendarDropdown]}>
               {monthNames.map((name, idx) => (
                 <TouchableOpacity
                   key={name}
@@ -319,7 +323,7 @@ export default function CalendarScreen() {
             </View>
           ) : null}
           {showYearPicker ? (
-            <View style={styles.dropdown}>
+            <View style={[styles.dropdown, styles.calendarDropdown]}>
               {yearOptions.map(value => (
                 <TouchableOpacity
                   key={value}
@@ -347,7 +351,7 @@ export default function CalendarScreen() {
             {["S","M","T","W","T","F","S"].map((d, i) => (
               <Text
                 key={i}
-                style={[styles.weekText, { width: CELL_WIDTH }]}
+                style={[styles.weekText, styles.calendarWeekText, { width: CELL_WIDTH }]}
               >
                 {d}
               </Text>
@@ -362,7 +366,10 @@ export default function CalendarScreen() {
 
               if (!valid) {
                 return (
-                  <View key={`empty-${index}`} style={styles.dayCell} />
+                  <View
+                    key={`empty-${index}`}
+                    style={[styles.dayCell, styles.calendarDayCell]}
+                  />
                 );
               }
 
@@ -374,6 +381,7 @@ export default function CalendarScreen() {
                   key={day}
                   style={[
                     styles.dayCell,
+                    styles.calendarDayCell,
                     isToday && styles.todayCell,
                     selectedDay === day && styles.selectedDay,
                   ]}
@@ -386,6 +394,7 @@ export default function CalendarScreen() {
                   <Text
                     style={[
                       styles.dayText,
+                      styles.calendarDayText,
                       isToday && styles.todayText,
                       selectedDay === day && styles.selectedDayText,
                     ]}
@@ -468,11 +477,7 @@ export default function CalendarScreen() {
             {formatDateLabel(selectedDate)} • {shiftsForSelectedDate.length} shift
             {shiftsForSelectedDate.length === 1 ? "" : "s"}
           </Text>
-          {schedule ? (
-            <Text style={styles.subText}>
-              {schedule.name} • {schedule.startTime} - {schedule.endTime}
-            </Text>
-          ) : null}
+
 
           {shiftsForSelectedDate.length === 0 ? (
             <View style={styles.emptyBox}>
@@ -532,8 +537,8 @@ export default function CalendarScreen() {
         {/* =====================
             STATUS CARD
         ===================== */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Status</Text> 
+        <View style={[styles.card, styles.calendarCard]}>
+          <Text style={[styles.cardTitle, styles.calendarCardTitle]}>Status</Text> 
 
           <View style={styles.legendRow}>
             <Legend color="#b7f34d" label="Scheduled" />
@@ -629,7 +634,7 @@ function Legend({ color, label }: { color: string; label: string }) {
   return (
     <View style={styles.legendItem}>
       <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text>{label}</Text>
+      <Text style={styles.legendText}>{label}</Text>
     </View>
   );
 }
@@ -752,7 +757,7 @@ const getShiftStatusLabel = (shift: any, attendanceStatus?: string) => {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
-  container: { padding: 16, paddingBottom: 120 },
+  container: { padding: 16, paddingTop: 20, paddingBottom: 120 },
   bgBlob: {
     position: "absolute",
     width: 240,
@@ -775,20 +780,21 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: "#141c2a",
     alignItems: "center",
     justifyContent: "center",
   },
   appName: { fontWeight: "700", fontSize: 16, color: "#e5e7eb" },
   subText: { color: "#9ca3af" },
-  headerRight: { flexDirection: "row", gap: 16 },
+  headerRight: { flexDirection: "row", gap: 16, alignItems: "center" },
 
   card: {
     backgroundColor: "#141c2a",
@@ -803,12 +809,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#273244",
   },
+  calendarCard: {
+    backgroundColor: "#ffffff",
+    borderColor: "#e2e8f0",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
+  },
 
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
     color: "#e5e7eb",
+  },
+  calendarCardTitle: {
+    color: "#0f172a",
   },
 
   monthHeader: {
@@ -827,6 +845,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#101826",
   },
   captionText: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
+  calendarCaptionButton: {
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
+  calendarCaptionText: { color: "#0f172a" },
   navIcons: { flexDirection: "row", gap: 8 },
   dropdown: {
     marginBottom: 12,
@@ -836,16 +859,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#101826",
     overflow: "hidden",
   },
+  calendarDropdown: {
+    borderColor: "#e2e8f0",
+    backgroundColor: "#ffffff",
+  },
   dropdownRow: {
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#273244",
+    borderBottomColor: "#e2e8f0",
   },
   dropdownRowActive: {
     backgroundColor: "#b7f34d",
   },
-  dropdownText: { color: "#e5e7eb", fontWeight: "600", fontSize: 12 },
+  dropdownText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
   dropdownTextActive: { color: "#0b1220" },
 
   weekRow: { flexDirection: "row", marginBottom: 8 },
@@ -855,6 +882,7 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     fontSize: 12,
   },
+  calendarWeekText: { color: "#64748b" },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
 
@@ -869,16 +897,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#141c2a",
     position: "relative",
   },
+  calendarDayCell: {
+    borderColor: "#e2e8f0",
+    backgroundColor: "#f8fafc",
+  },
 
   selectedDay: {
     borderColor: "#b7f34d",
-    backgroundColor: "#1b2636",
+    backgroundColor: "#f1f5f9",
   },
   todayCell: {
     borderColor: "#b7f34d",
   },
 
   dayText: { color: "#e5e7eb", fontWeight: "600" },
+  calendarDayText: { color: "#0f172a" },
   todayText: { color: "#b7f34d", fontWeight: "700" },
   selectedDayText: {
     color: "#b7f34d",
@@ -970,6 +1003,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  legendText: { color: "#0f172a" },
 
   dot: {
     width: 10,

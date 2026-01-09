@@ -379,107 +379,110 @@ export default function EarningsScreen() {
 
             <View style={styles.headerRight}>
               <TouchableOpacity onPress={() => router.push("/notifications")}>
-              <Bell size={22} color="#e5e7eb" />
+                <Bell size={22} color="#e5e7eb" />
                 <View style={styles.notifDot} />
               </TouchableOpacity>
 
               <TouchableOpacity onPress={confirmLogout}>
-              <LogOut size={22} color="#e5e7eb" />
+                <LogOut size={22} color="#e5e7eb" />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* ===== Collected Summary ===== */}
+          {/* ===== HERO CARD ===== */}
           <LinearGradient
-            colors={["#0f172a", "#1b2636"]}
-            style={styles.summaryCard}
+            colors={["#0f172a", "#111827"]}
+            style={styles.heroCard}
           >
-            <View style={styles.summaryRow}>
-              <View style={styles.summaryTag}>
-                <DollarSign size={16} color="#b7f34d" />
-                <Text style={styles.summaryMonth}>
+            <View style={styles.heroAccent} />
+            <View style={styles.heroTopRow}>
+              <View>
+                <Text style={styles.heroLabel}>Total Earnings</Text>
+                <Text style={styles.heroAmount}>
+                  RM {totalMonthly.toFixed(2)}
+                </Text>
+                <Text style={styles.heroSub}>
                   {formatPeriodLabel(currentPeriod)}
                 </Text>
               </View>
-              <View style={styles.verifiedChip}>
-                <Text style={styles.verifiedText}>This Month</Text>
+              <View style={styles.heroIconWrap}>
+                <DollarSign size={20} color="#0f172a" />
               </View>
             </View>
 
-            <Text style={styles.summaryAmount}>
-              RM {totalMonthly.toFixed(2)}
-            </Text>
-            <Text style={styles.summarySub}>Estimated So Far (This Month)</Text>
-
-            <Text style={styles.summaryHint}>
+            <Text style={styles.heroHint}>
               Based on assigned shifts so far
             </Text>
-            <Text style={styles.summaryHint}>
+            <Text style={styles.heroHint}>
               {pendingCount > 0
                 ? `Awaiting approval for ${pendingCount} shift${pendingCount === 1 ? "" : "s"}`
                 : usesAssigned
-                ? "Includes scheduled shifts up to today"
-                : "All shifts approved so far"}
+                  ? "Includes scheduled shifts up to today"
+                  : "All shifts approved so far"}
             </Text>
-          </LinearGradient>
 
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <TrendingUp size={18} color="#b7f34d" />
-              <Text style={styles.cardTitle}>Projected End-of-Month</Text>
+            <View style={styles.heroBottomRow}>
+              <View style={styles.heroPill}>
+                <Text style={styles.heroPillLabel}>Approved</Text>
+                <Text style={styles.heroPillValue}>
+                  RM {approvedMonthly.toFixed(2)}
+                </Text>
+              </View>
+              <View style={[styles.heroPill, styles.heroPillAlt]}>
+                <Text style={styles.heroPillLabel}>Projected</Text>
+                <Text style={styles.heroPillValue}>
+                  RM {projectedEarnings.toFixed(2)}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.summaryAmountDark}>
-              RM {projectedEarnings.toFixed(2)}
-            </Text>
-            <Text style={styles.summaryHintDark}>
-              Assumes all remaining scheduled shifts are completed
-            </Text>
-          </View>
 
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <DollarSign size={18} color="#b7f34d" />
-              <Text style={styles.cardTitle}>Collected (Approved Shifts)</Text>
-            </View>
-            <Text style={styles.summaryAmountDark}>
-              RM {approvedMonthly.toFixed(2)}
-            </Text>
-            <Text style={styles.summaryHintDark}>
-              Based on approved shifts so far
-            </Text>
             <TouchableOpacity
-              style={[styles.detailChip, styles.detailChipDark]}
+              style={styles.heroDetailButton}
               onPress={() => setShowApprovedDetails(true)}
             >
-              <Text style={[styles.detailChipText, styles.detailChipTextDark]}>
-                View details
-              </Text>
+              <Text style={styles.heroDetailText}>View approved details</Text>
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
-          {/* ===== Quick Stats ===== */}
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Days Worked</Text>
-              <Text style={styles.statValue}>{daysWorked}</Text>
+          {/* ===== QUICK STATS GRID ===== */}
+          <View style={styles.quickGrid}>
+            <View style={styles.quickTile}>
+              <View style={styles.quickIcon}>
+                <Calendar size={16} color="#0f172a" />
+              </View>
+              <Text style={styles.quickLabel}>Days Worked</Text>
+              <Text style={styles.quickValue}>{daysWorked}</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Total Hours</Text>
-              <Text style={styles.statValue}>
+            <View style={styles.quickTile}>
+              <View style={styles.quickIcon}>
+                <BarChart3 size={16} color="#0f172a" />
+              </View>
+              <Text style={styles.quickLabel}>Total Hours</Text>
+              <Text style={styles.quickValue}>
                 {Math.round(totalHoursWithOvertime)}h
               </Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>Overtime</Text>
-              <Text style={styles.statHighlight}>{overtimeHours}h</Text>
+            <View style={styles.quickTile}>
+              <View style={styles.quickIcon}>
+                <TrendingUp size={16} color="#0f172a" />
+              </View>
+              <Text style={styles.quickLabel}>Overtime</Text>
+              <Text style={styles.quickValue}>{overtimeHours}h</Text>
+            </View>
+            <View style={styles.quickTile}>
+              <View style={styles.quickIcon}>
+                <Bell size={16} color="#0f172a" />
+              </View>
+              <Text style={styles.quickLabel}>Pending</Text>
+              <Text style={styles.quickValue}>{pendingCount}</Text>
             </View>
           </View>
 
           {/* ===== Weekly Earnings ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <TrendingUp size={18} color="#b7f34d" />
-            <Text style={styles.cardTitle}>Approved Earnings (Weekly)</Text>
+              <TrendingUp size={18} color="#0f172a" />
+              <Text style={styles.cardTitle}>Approved Earnings (Weekly)</Text>
             </View>
 
             {weeklyData.length === 0 ? (
@@ -508,7 +511,7 @@ export default function EarningsScreen() {
           {/* ===== Budget Allocation ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <PieChart size={18} color="#b7f34d" />
+              <PieChart size={18} color="#0f172a" />
               <Text style={styles.cardTitle}>Budget Allocation</Text>
             </View>
 
@@ -544,7 +547,7 @@ export default function EarningsScreen() {
           {/* ===== Salary Breakdown ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <BarChart3 size={18} color="#b7f34d" />
+              <BarChart3 size={18} color="#0f172a" />
               <Text style={styles.cardTitle}>Salary Breakdown</Text>
             </View>
 
@@ -589,13 +592,13 @@ export default function EarningsScreen() {
 
           {/* ===== Smart Suggestion ===== */}
           <LinearGradient
-            colors={["#e0f2fe", "#e0e7ff"]}
+            colors={["#fff7ed", "#fef3c7"]}
             style={styles.tipCard}
           >
             <Text style={styles.tipTitle}>💡 Smart Suggestion</Text>
             <Text style={styles.tipText}>{suggestion.title}</Text>
             <View style={styles.tipRow}>
-              <Calendar size={14} color="#b7f34d" />
+              <Calendar size={14} color="#b45309" />
               <Text style={styles.tipHint}>{suggestion.subtitle}</Text>
             </View>
             {suggestion.action ? (
@@ -635,22 +638,22 @@ export default function EarningsScreen() {
               </Text>
             </View>
             <View style={styles.breakdownBlock}>
-              <Text style={styles.breakdownTitle}>Approved shift breakdown</Text>
+              <Text style={styles.detailBreakdownTitle}>Approved shift breakdown</Text>
               {approvedBreakdownRows.length === 0 ? (
                 <Text style={styles.emptyText}>No approved shifts yet.</Text>
               ) : (
                 approvedBreakdownRows.map((row, index) => (
                   <View
                     key={`${row.date}-${index}`}
-                    style={styles.breakdownRow}
+                    style={styles.detailBreakdownRow}
                   >
                     <View>
-                      <Text style={styles.breakdownDate}>{row.date}</Text>
-                      <Text style={styles.breakdownSub}>
+                      <Text style={styles.detailBreakdownDate}>{row.date}</Text>
+                      <Text style={styles.detailBreakdownSub}>
                         {row.hours.toFixed(1)}h × RM {hourlyRate.toFixed(2)}
                       </Text>
                     </View>
-                    <Text style={styles.breakdownAmount}>
+                    <Text style={styles.detailBreakdownAmount}>
                       RM {row.amount.toFixed(2)}
                     </Text>
                   </View>
@@ -1061,9 +1064,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   logoText: { fontSize: 18 },
   appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
@@ -1100,64 +1105,105 @@ const styles = StyleSheet.create({
     bottom: -120,
     left: -80,
   },
-  summaryCard: {
-    borderRadius: 20,
+  heroCard: {
+    borderRadius: 22,
     padding: 18,
     marginBottom: 16,
+    overflow: "hidden",
   },
-  summaryRow: {
+  heroAccent: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "#f59e0b",
+    right: -80,
+    top: -60,
+    transform: [{ rotate: "-18deg" }],
+    opacity: 0.9,
+  },
+  heroTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
+    alignItems: "flex-start",
+    marginBottom: 10,
   },
-  summaryTag: {
+  heroLabel: { color: "#f8fafc", fontSize: 12, letterSpacing: 0.6 },
+  heroAmount: { color: "#ffffff", fontSize: 28, fontWeight: "700" },
+  heroSub: { color: "rgba(248,250,252,0.8)", marginTop: 2, fontSize: 12 },
+  heroIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#fbbf24",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroHint: { color: "rgba(226,232,240,0.9)", fontSize: 12 },
+  heroBottomRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    gap: 10,
+    marginTop: 14,
   },
-  summaryMonth: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
-  verifiedChip: {
-    backgroundColor: "rgba(255,255,255,0.25)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  heroPill: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+  },
+  heroPillAlt: {
+    backgroundColor: "rgba(253, 186, 116, 0.25)",
+  },
+  heroPillLabel: { color: "#e2e8f0", fontSize: 11 },
+  heroPillValue: { color: "#ffffff", fontWeight: "700", marginTop: 4 },
+  heroDetailButton: {
+    alignSelf: "flex-start",
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#ffffff",
     borderRadius: 999,
   },
-  verifiedText: { color: "#ffffff", fontSize: 11, fontWeight: "600" },
-  summaryAmount: { color: "#ffffff", fontSize: 28, fontWeight: "700" },
-  summarySub: { color: "rgba(255,255,255,0.9)", marginTop: 2 },
-  summaryDelta: { color: "#ffffff", fontWeight: "700" },
-  summaryHint: { color: "rgba(255,255,255,0.85)" },
-  summaryAmountDark: { color: "#e5e7eb", fontSize: 24, fontWeight: "700" },
-  summaryHintDark: { color: "#9ca3af", fontSize: 12, marginTop: 4 },
-  statsRow: {
+  heroDetailText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
+  quickGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     gap: 12,
     marginBottom: 16,
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: "#141c2a",
+  quickTile: {
+    width: "48%",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e2e8f0",
   },
-  statLabel: { fontSize: 11, color: "#9ca3af", marginBottom: 6 },
-  statValue: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  statHighlight: { fontSize: 16, fontWeight: "700", color: "#b7f34d" },
+  quickIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: "#fef3c7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  quickLabel: { fontSize: 11, color: "#64748b" },
+  quickValue: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   card: {
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#273244",
-    shadowColor: "#000000",
-    shadowOpacity: 0.3,
+    borderColor: "#e2e8f0",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1165,8 +1211,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  emptyText: { color: "#9ca3af", fontSize: 12 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
   chartRow: {
     flexDirection: "row",
     gap: 12,
@@ -1176,21 +1221,21 @@ const styles = StyleSheet.create({
   chartBar: {
     width: "100%",
     borderRadius: 10,
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#f59e0b",
   },
-  chartValue: { fontSize: 11, color: "#e5e7eb", marginTop: 6 },
-  chartLabel: { fontSize: 10, color: "#9ca3af", marginTop: 2 },
+  chartValue: { fontSize: 11, color: "#0f172a", marginTop: 6 },
+  chartLabel: { fontSize: 10, color: "#64748b", marginTop: 2 },
   budgetItem: { marginBottom: 12 },
   budgetRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  budgetLabel: { color: "#e5e7eb", fontWeight: "600" },
-  budgetValue: { color: "#e5e7eb", fontWeight: "600" },
+  budgetLabel: { color: "#0f172a", fontWeight: "600" },
+  budgetValue: { color: "#0f172a", fontWeight: "600" },
   budgetBar: {
     height: 8,
-    backgroundColor: "#273244",
+    backgroundColor: "#e2e8f0",
     borderRadius: 999,
     overflow: "hidden",
   },
@@ -1200,56 +1245,41 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#273244",
+    borderBottomColor: "#e2e8f0",
     marginBottom: 10,
   },
-  breakdownTitle: { fontSize: 13, fontWeight: "600", color: "#e5e7eb" },
-  breakdownHint: { fontSize: 11, color: "#9ca3af", marginTop: 2 },
-  breakdownPositive: { color: "#b7f34d", fontWeight: "700" },
-  breakdownNegative: { color: "#ef4444", fontWeight: "700" },
+  breakdownTitle: { fontSize: 13, fontWeight: "600", color: "#0f172a" },
+  breakdownHint: { fontSize: 11, color: "#64748b", marginTop: 2 },
+  breakdownPositive: { color: "#16a34a", fontWeight: "700" },
+  breakdownNegative: { color: "#dc2626", fontWeight: "700" },
   breakdownTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  breakdownTotal: { fontSize: 14, fontWeight: "700", color: "#e5e7eb" },
+  breakdownTotal: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
   tipCard: {
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#fde68a",
     marginBottom: 20,
   },
-  tipTitle: { fontSize: 14, fontWeight: "700", color: "#e5e7eb" },
-  tipText: { color: "#9ca3af", marginTop: 8, lineHeight: 18 },
+  tipTitle: { fontSize: 14, fontWeight: "700", color: "#7c2d12" },
+  tipText: { color: "#9a3412", marginTop: 8, lineHeight: 18 },
   tipRow: { flexDirection: "row", gap: 6, marginTop: 10 },
-  tipHint: { color: "#9ca3af", fontSize: 12 },
+  tipHint: { color: "#92400e", fontSize: 12 },
   tipButton: {
     marginTop: 12,
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#fb923c",
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
   },
-  tipButtonText: { color: "#0b1220", fontWeight: "600" },
+  tipButtonText: { color: "#1f1300", fontWeight: "600" },
   disabledButton: { opacity: 0.6 },
-  detailChip: {
-    alignSelf: "flex-start",
-    marginTop: 10,
-    backgroundColor: "rgba(183,243,77,0.2)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  detailChipText: { color: "#b7f34d", fontSize: 12, fontWeight: "600" },
-  detailChipDark: {
-    backgroundColor: "#b7f34d",
-  },
-  detailChipTextDark: {
-    color: "#0b1220",
-  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.55)",
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -1257,7 +1287,7 @@ const styles = StyleSheet.create({
   detailModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
   },
@@ -1267,35 +1297,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: "#e5e7eb", fontWeight: "700" },
-  modalClose: { color: "#b7f34d", fontWeight: "600", fontSize: 12 },
+  modalTitle: { color: "#0f172a", fontWeight: "700" },
+  modalClose: { color: "#f97316", fontWeight: "600", fontSize: 12 },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  detailLabel: { color: "#9ca3af", fontSize: 12 },
-  detailValue: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: "#64748b", fontSize: 12 },
+  detailValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
   breakdownBlock: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#273244",
+    borderTopColor: "#e2e8f0",
     paddingTop: 12,
   },
-  breakdownTitle: {
+  detailBreakdownTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#e5e7eb",
+    color: "#0f172a",
     marginBottom: 6,
   },
-  breakdownRow: {
+  detailBreakdownRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 6,
   },
-  breakdownDate: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
-  breakdownSub: { color: "#9ca3af", fontSize: 11, marginTop: 2 },
-  breakdownAmount: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
-  emptyText: { color: "#9ca3af", fontSize: 12, textAlign: "center" },
+  detailBreakdownDate: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  detailBreakdownSub: { color: "#64748b", fontSize: 11, marginTop: 2 },
+  detailBreakdownAmount: { color: "#0f172a", fontSize: 12, fontWeight: "700" },
+  emptyText: { color: "#94a3b8", fontSize: 12, textAlign: "center" },
 });

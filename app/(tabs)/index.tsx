@@ -378,6 +378,10 @@ export default function WorkerHomeScreen() {
     selectedPeriod === currentPeriod ? "Projected End-of-Month" : "Finalized Payroll";
   const displayRightValue =
     selectedPeriod === currentPeriod ? projectedEarnings : displayCollectedEarnings;
+  const approvedEarnings =
+    approvedHoursSoFar * hourlyRate + overtimeHoursSoFar * workConfig.overtimeRate;
+  const approvedDisplayValue =
+    isPastPeriod && finalizedPayrollAmount != null ? displayCollectedEarnings : approvedEarnings;
 
   const selectablePeriods = useMemo(
     () => buildSelectablePeriods(shifts, attendanceLogs, payrollRecords),
@@ -1165,52 +1169,60 @@ export default function WorkerHomeScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.salarySummary}
             >
-              <View style={styles.rowBetween}>
-                <Text style={styles.salaryTitle}>{titleText}</Text>
-                <View style={styles.salaryMenuAnchor}>
-                  <TouchableOpacity
-                    style={styles.salaryPill}
-                    onPress={() => setShowSalaryMenu(prev => !prev)}
-                  >
-                    <Text style={styles.salaryPillText}>Menu</Text>
-                    <ChevronDown size={14} color="#ffffff" />
-                  </TouchableOpacity>
-                  {showSalaryMenu ? (
-                    <View style={styles.salaryMenuTop}>
-                      <TouchableOpacity
-                        style={styles.salaryMenuItem}
-                        onPress={() => {
-                          setSalaryView("past");
-                          setPastSalaryPeriod(null);
-                          setShowSalaryMenu(false);
-                          setShowPastSalary(true);
-                        }}
-                      >
-                        <Text style={styles.salaryMenuText}>Past Salary</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.salaryMenuItem}
-                        onPress={() => {
-                          setShowSalaryMenu(false);
-                          setShowMonthPicker(true);
-                        }}
-                      >
-                        <Text style={styles.salaryMenuText}>
-                          {formatPeriodLabel(selectedPeriod)}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : null}
+              <View style={styles.salaryAccent} />
+              <View style={styles.salaryTopRow}>
+                <View>
+                  <Text style={styles.salaryTitle}>{titleText}</Text>
+                  <Text style={styles.salaryAmount}>
+                    RM {displayCollectedEarnings.toFixed(2)}
+                  </Text>
+                  <Text style={styles.salarySub}>
+                    {formatPeriodLabel(selectedPeriod)}
+                  </Text>
+                </View>
+                <View style={styles.salaryTopRight}>
+                  <View style={styles.salaryMenuAnchor}>
+                    <TouchableOpacity
+                      style={styles.salaryMenuButton}
+                      onPress={() => setShowSalaryMenu(prev => !prev)}
+                    >
+                      <Text style={styles.salaryMenuButtonText}>Menu</Text>
+                      <ChevronDown size={14} color="#0f172a" />
+                    </TouchableOpacity>
+                    {showSalaryMenu ? (
+                      <View style={styles.salaryMenuTop}>
+                        <TouchableOpacity
+                          style={styles.salaryMenuItem}
+                          onPress={() => {
+                            setSalaryView("past");
+                            setPastSalaryPeriod(null);
+                            setShowSalaryMenu(false);
+                            setShowPastSalary(true);
+                          }}
+                        >
+                          <Text style={styles.salaryMenuText}>Past Salary</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.salaryMenuItem}
+                          onPress={() => {
+                            setShowSalaryMenu(false);
+                            setShowMonthPicker(true);
+                          }}
+                        >
+                          <Text style={styles.salaryMenuText}>
+                            {formatPeriodLabel(selectedPeriod)}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={styles.salaryIconWrap}>
+                    <DollarSign size={20} color="#0f172a" />
+                  </View>
                 </View>
               </View>
 
-              <Text style={styles.salaryAmount}>
-                RM {displayCollectedEarnings.toFixed(2)}
-              </Text>
-              <View style={styles.salaryMeta}>
-                <Text style={styles.salarySubtitle}>{displayAmountSummary}</Text>
-              </View>
-
+              <Text style={styles.salaryHint}>{displayAmountSummary}</Text>
               <View style={styles.row}>
                 {hasPending ? (
                   <View style={styles.loaderTrack}>
@@ -1240,24 +1252,27 @@ export default function WorkerHomeScreen() {
                 </Text>
               </View>
 
-              <View style={styles.salaryDivider} />
-
-              <View style={styles.salaryFooterRow}>
-                <View style={styles.salaryFooterLeft}>
-                  <Text style={styles.salaryLabel}>{displayRightLabel}</Text>
-                  <Text style={styles.salaryValue}>
+              <View style={styles.salaryPillRow}>
+                <View style={styles.salaryMetricCard}>
+                  <Text style={styles.salaryMetricLabel}>Approved</Text>
+                  <Text style={styles.salaryMetricValue}>
+                    RM {approvedDisplayValue.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={[styles.salaryMetricCard, styles.salaryMetricCardAlt]}>
+                  <Text style={styles.salaryMetricLabel}>{displayRightLabel}</Text>
+                  <Text style={styles.salaryMetricValue}>
                     RM {displayRightValue.toFixed(2)}
                   </Text>
-                  <TouchableOpacity
-                    style={styles.salaryDetailsButton}
-                    onPress={() => setShowEarningsBreakdown(true)}
-                  >
-                    <Text style={styles.salaryActionText}>View details</Text>
-                  </TouchableOpacity>
                 </View>
-
-                <View />
               </View>
+
+              <TouchableOpacity
+                style={styles.salaryDetailsButton}
+                onPress={() => setShowEarningsBreakdown(true)}
+              >
+                <Text style={styles.salaryDetailsText}>View details</Text>
+              </TouchableOpacity>
             </LinearGradient>
 
             {/* ⏰ Today Shift */}
@@ -2410,9 +2425,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   avatarText: { fontSize: 18 },
   appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
@@ -2469,22 +2486,51 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 18,
     marginBottom: 12,
+    overflow: "hidden",
+  },
+  salaryAccent: {
+    position: "absolute",
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: "#f59e0b",
+    right: -90,
+    top: -70,
+    transform: [{ rotate: "-15deg" }],
+  },
+  salaryTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+  salaryTopRight: {
+    alignItems: "flex-end",
+    gap: 10,
   },
   salaryTitle: { color: "#e2e8f0", fontSize: 14 },
   salaryAmount: { color: "#ffffff", fontSize: 30, fontWeight: "700" },
-  salaryMeta: { marginTop: 8 },
-  salarySubtitle: { color: "#e2e8f0", fontSize: 12 },
-  salaryPill: {
-    backgroundColor: "rgba(255,255,255,0.18)",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  salarySub: { color: "rgba(226,232,240,0.8)", fontSize: 12, marginTop: 4 },
+  salaryHint: { color: "rgba(226,232,240,0.9)", fontSize: 12 },
+  salaryMenuButton: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  salaryPillText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
+  salaryMenuButtonText: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
   salaryMenuAnchor: { alignItems: "flex-end" },
+  salaryIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: "#fbbf24",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   salaryStatusText: { color: "#e2e8f0", fontSize: 13 },
   statusDotPaid: {
     width: 8,
@@ -2507,32 +2553,32 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#ffffff",
   },
-  salaryDivider: {
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    marginVertical: 16,
-  },
-  salaryLabel: { color: "#e2e8f0", fontSize: 12 },
-  salaryValue: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
-  salaryFooterRow: {
+  salaryPillRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
     gap: 12,
+    marginTop: 14,
   },
-  salaryFooterLeft: {
-    minWidth: 140,
-    flexShrink: 1,
-  },
-  salaryDetailsButton: {
-    marginTop: 8,
-    alignSelf: "flex-start",
+  salaryMetricCard: {
+    flex: 1,
     backgroundColor: "rgba(255,255,255,0.12)",
+    paddingVertical: 10,
     paddingHorizontal: 12,
+    borderRadius: 16,
+  },
+  salaryMetricCardAlt: {
+    backgroundColor: "rgba(253, 186, 116, 0.25)",
+  },
+  salaryMetricLabel: { color: "#e2e8f0", fontSize: 11 },
+  salaryMetricValue: { color: "#ffffff", fontWeight: "700", marginTop: 4 },
+  salaryDetailsButton: {
+    alignSelf: "flex-start",
+    marginTop: 12,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
   },
+  salaryDetailsText: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
   salaryMenu: {
     marginTop: 6,
     backgroundColor: "#141c2a",
@@ -2566,7 +2612,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   salaryMenuText: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
-  salaryActionText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
 
   card: {
     backgroundColor: "#141c2a",
