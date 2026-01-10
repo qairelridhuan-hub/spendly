@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Animated,
   Alert,
+  PanResponder,
 } from "react-native";
 import {
   Bell,
@@ -35,6 +36,7 @@ import {
 } from "firebase/firestore";
 import { auth, db, firebaseProjectId } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFonts } from "expo-font";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar, useTheme } from "@/lib/context";
 
@@ -76,11 +78,21 @@ const CHAT_HISTORY_LIMIT = 6;
 
 export default function WorkerHomeScreen() {
   const { colors } = useTheme();
+  const [pixelFontLoaded] = useFonts({
+    PressStart2P: require("../../assets/fonts/PressStart2P-Regular.ttf"),
+  });
   const [displayName, setDisplayName] = useState("User");
   const [userId, setUserId] = useState<string | null>(null);
   const [showGameSplash, setShowGameSplash] = useState(false);
+  const [showGameGate, setShowGameGate] = useState(false);
+  const [sliderTrackWidth, setSliderTrackWidth] = useState(0);
   const gameGlow = useRef(new Animated.Value(0)).current;
   const gameSpin = useRef(new Animated.Value(0)).current;
+  const gameFloat = useRef(new Animated.Value(0)).current;
+  const sliderX = useRef(new Animated.Value(0)).current;
+  const sliderStart = useRef(0);
+  const sliderValue = useRef(0);
+  const gameSplashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const lastLogoTap = useRef(0);
   const logoTapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -135,6 +147,18 @@ export default function WorkerHomeScreen() {
     weekendMultiplier: 1.25,
     holidayMultiplier: 2,
     holidays: [] as string[],
+  });
+
+  const sliderKnobSize = 40;
+  const sliderPadding = 6;
+  const sliderMax = Math.max(
+    0,
+    sliderTrackWidth - sliderKnobSize - sliderPadding * 2
+  );
+  const sliderFillWidth = Animated.add(sliderX, sliderKnobSize);
+  const floatY = gameFloat.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-6, 6],
   });
   /* =====================
      STATE
@@ -521,6 +545,42 @@ export default function WorkerHomeScreen() {
   }, [gameSpin, showGameSplash]);
 
   useEffect(() => {
+    if (!showGameGate) return;
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gameFloat, {
+          toValue: 1,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(gameFloat, {
+          toValue: 0,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    floatAnimation.start();
+    return () => floatAnimation.stop();
+  }, [gameFloat, showGameGate]);
+
+  useEffect(() => {
+    if (!showGameGate) return;
+    sliderX.setValue(0);
+    sliderStart.current = 0;
+    sliderValue.current = 0;
+  }, [showGameGate, sliderX]);
+
+  useEffect(() => {
+    return () => {
+      if (gameSplashTimer.current) {
+        clearTimeout(gameSplashTimer.current);
+        gameSplashTimer.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const spinAnimation = Animated.loop(
       Animated.timing(tickAnim, {
         toValue: 1,
@@ -555,6 +615,55 @@ export default function WorkerHomeScreen() {
     });
     return unsub;
   }, [scheduleId]);
+
+  const handleEnterGame = useCallback(() => {
+    setShowGameGate(false);
+    setShowGameSplash(true);
+    if (gameSplashTimer.current) {
+      clearTimeout(gameSplashTimer.current);
+    }
+    gameSplashTimer.current = setTimeout(() => {
+      setShowGameSplash(false);
+      router.push("/game");
+    }, 700);
+  }, [router]);
+
+  const sliderPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          sliderStart.current = sliderValue.current;
+        },
+        onPanResponderMove: (_, gesture) => {
+          if (sliderMax <= 0) return;
+          const nextValue = Math.max(
+            0,
+            Math.min(sliderStart.current + gesture.dx, sliderMax)
+          );
+          sliderValue.current = nextValue;
+          sliderX.setValue(nextValue);
+        },
+        onPanResponderRelease: () => {
+          if (sliderMax <= 0) return;
+          const shouldEnter = sliderValue.current >= sliderMax * 0.85;
+          const targetValue = shouldEnter ? sliderMax : 0;
+          Animated.timing(sliderX, {
+            toValue: targetValue,
+            duration: 180,
+            useNativeDriver: false,
+          }).start(() => {
+            sliderValue.current = targetValue;
+            sliderStart.current = targetValue;
+            if (shouldEnter) {
+              handleEnterGame();
+            }
+          });
+        },
+      }),
+    [handleEnterGame, sliderMax, sliderX]
+  );
 
   /* =====================
      HELPERS
@@ -1138,11 +1247,8 @@ export default function WorkerHomeScreen() {
           <View style={styles.headerRight}>
             <TouchableOpacity
               onPress={() => {
-                setShowGameSplash(true);
-                setTimeout(() => {
-                  setShowGameSplash(false);
-                  router.push("/game");
-                }, 700);
+                setShowGameSplash(false);
+                setShowGameGate(true);
               }}
             >
               <Animated.View style={styles.gameIconWrap}>
@@ -1607,6 +1713,69 @@ export default function WorkerHomeScreen() {
             </View>
           </Animated.View>
         </ScrollView>
+
+        {showGameGate ? (
+          <View style={styles.gameGateOverlay}>
+            <View style={styles.gameGateCard}>
+              <TouchableOpacity
+                style={styles.gameGateCloseButton}
+                onPress={() => setShowGameGate(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <View style={styles.gameGateCloseGlow} />
+                <X size={16} color="#ffffff" />
+              </TouchableOpacity>
+              <Animated.View
+                style={[
+                  styles.gameGateTitleRow,
+                  { transform: [{ translateY: floatY }] },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.gameGateTitle,
+                    { fontFamily: pixelFontLoaded ? "PressStart2P" : undefined },
+                  ]}
+                >
+                  GAME
+                </Text>
+                <Text
+                  style={[
+                    styles.gameGateTitle,
+                    styles.gameGateTitleTight,
+                    { fontFamily: pixelFontLoaded ? "PressStart2P" : undefined },
+                  ]}
+                >
+                  ON
+                </Text>
+              </Animated.View>
+              <Text style={styles.gameGateSubtitle}>Slide to enter the arcade</Text>
+              <View
+                style={styles.gameGateSlider}
+                onLayout={event =>
+                  setSliderTrackWidth(event.nativeEvent.layout.width)
+                }
+              >
+                <Animated.View
+                  style={[
+                    styles.gameGateSliderFill,
+                    { width: sliderTrackWidth > 0 ? sliderFillWidth : 0 },
+                  ]}
+                />
+                <Text style={styles.gameGateSliderText}>Slide to enter</Text>
+                <Animated.View
+                  style={[
+                    styles.gameGateSliderKnob,
+                    { transform: [{ translateX: sliderX }] },
+                  ]}
+                  {...sliderPanResponder.panHandlers}
+                >
+                  <Gamepad2 size={18} color="#0f172a" />
+                </Animated.View>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         {showGameSplash ? (
           <View style={styles.gameSplashOverlay}>
@@ -2481,6 +2650,109 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
     backgroundColor: "rgba(183,243,77,0.35)",
+  },
+  gameGateOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(2, 6, 23, 0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  gameGateCard: {
+    width: "100%",
+    maxWidth: 360,
+    padding: 20,
+    borderRadius: 22,
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.35)",
+    alignItems: "center",
+  },
+  gameGateCloseButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ef4444",
+    shadowColor: "#ef4444",
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  gameGateCloseGlow: {
+    position: "absolute",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(239, 68, 68, 0.4)",
+  },
+  gameGateTitle: {
+    fontSize: 26,
+    color: "#facc15",
+    letterSpacing: 0,
+    textShadowColor: "#8b3f00",
+    textShadowOffset: { width: 3, height: 3 },
+    textShadowRadius: 0,
+  },
+  gameGateTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gameGateTitleTight: { marginLeft: 6 },
+  gameGateSubtitle: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 6,
+    marginBottom: 18,
+  },
+  gameGateSlider: {
+    width: "100%",
+    height: 52,
+    borderRadius: 999,
+    backgroundColor: "#0b1220",
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+    justifyContent: "center",
+    overflow: "hidden",
+    padding: 6,
+  },
+  gameGateSliderFill: {
+    position: "absolute",
+    left: 6,
+    top: 6,
+    bottom: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(34, 197, 94, 0.6)",
+  },
+  gameGateSliderText: {
+    textAlign: "center",
+    fontSize: 12,
+    color: "#94a3b8",
+    fontWeight: "600",
+  },
+  gameGateSliderKnob: {
+    position: "absolute",
+    left: 6,
+    top: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#22c55e",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#22c55e",
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   gameSplashOverlay: {
     position: "absolute",
