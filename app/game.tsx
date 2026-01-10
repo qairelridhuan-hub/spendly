@@ -1831,11 +1831,23 @@ export default function GameScreen() {
               </View>
               <View style={styles.spinRow}>
                 <View style={styles.spinWheel}>
+                  <View style={styles.spinWheelRing} />
                   <View style={styles.spinWheelInner}>
-                    <Coins size={18} color="#facc15" />
-                    <Gem size={18} color="#38bdf8" />
-                    <Zap size={18} color="#fb923c" />
-                    <Gift size={18} color="#f472b6" />
+                    <View style={[styles.spinWheelIcon, styles.spinWheelIconTop]}>
+                      <Coins size={14} color="#facc15" />
+                    </View>
+                    <View style={[styles.spinWheelIcon, styles.spinWheelIconRight]}>
+                      <Gem size={14} color="#38bdf8" />
+                    </View>
+                    <View style={[styles.spinWheelIcon, styles.spinWheelIconBottom]}>
+                      <Zap size={14} color="#fb923c" />
+                    </View>
+                    <View style={[styles.spinWheelIcon, styles.spinWheelIconLeft]}>
+                      <Gift size={14} color="#f472b6" />
+                    </View>
+                    <View style={styles.spinWheelCenter}>
+                      <Sparkles size={14} color="#e2e8f0" />
+                    </View>
                   </View>
                   <View style={styles.spinPointer} />
                 </View>
@@ -2306,23 +2318,70 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 2,
-    borderColor: "#ec4899",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#0f0820",
+    borderWidth: 1,
+    borderColor: "rgba(236, 72, 153, 0.3)",
+  },
+  spinWheelRing: {
+    position: "absolute",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    borderColor: "#ec4899",
   },
   spinWheelInner: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     borderWidth: 1,
     borderColor: "#7c3aed",
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
+    backgroundColor: "#0b1020",
+  },
+  spinWheelIcon: {
+    position: "absolute",
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.95)",
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+  },
+  spinWheelIconTop: {
+    top: -8,
+    left: "50%",
+    transform: [{ translateX: -13 }],
+  },
+  spinWheelIconRight: {
+    right: -8,
+    top: "50%",
+    transform: [{ translateY: -13 }],
+  },
+  spinWheelIconBottom: {
+    bottom: -8,
+    left: "50%",
+    transform: [{ translateX: -13 }],
+  },
+  spinWheelIconLeft: {
+    left: -8,
+    top: "50%",
+    transform: [{ translateY: -13 }],
+  },
+  spinWheelCenter: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0f0820",
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.4)",
   },
   spinPointer: {
     position: "absolute",
@@ -2365,7 +2424,8 @@ const styles = StyleSheet.create({
   },
   spinRewardTile: {
     flex: 1,
-    padding: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(234, 179, 8, 0.3)",
