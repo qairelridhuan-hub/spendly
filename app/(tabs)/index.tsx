@@ -82,6 +82,8 @@ export default function WorkerHomeScreen() {
   const gameGlow = useRef(new Animated.Value(0)).current;
   const gameSpin = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+  const lastLogoTap = useRef(0);
+  const logoTapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [goalsCount, setGoalsCount] = useState(0);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const [userHourlyRate, setUserHourlyRate] = useState(0);
@@ -149,6 +151,28 @@ export default function WorkerHomeScreen() {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, [])
   );
+
+  const handleLogoPress = () => {
+    const now = Date.now();
+    const isDoubleTap = now - lastLogoTap.current < 300;
+
+    if (isDoubleTap) {
+      if (logoTapTimeout.current) {
+        clearTimeout(logoTapTimeout.current);
+        logoTapTimeout.current = null;
+      }
+      lastLogoTap.current = 0;
+      router.push("/about");
+      return;
+    }
+
+    lastLogoTap.current = now;
+    logoTapTimeout.current = setTimeout(() => {
+      router.push("/(tabs)/profile");
+      lastLogoTap.current = 0;
+      logoTapTimeout.current = null;
+    }, 300);
+  };
 
   const [selectedPeriod, setSelectedPeriod] = useState(
     getCurrentPeriodKey(new Date())
@@ -1100,7 +1124,7 @@ export default function WorkerHomeScreen() {
           <View style={styles.headerLeft}>
             <TouchableOpacity
               style={styles.avatar}
-              onPress={() => router.push("/(tabs)/profile")}
+              onPress={handleLogoPress}
             >
               <Text style={styles.avatarText}>💰</Text>
             </TouchableOpacity>

@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  Keyboard,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,6 +43,9 @@ type Worker = {
 
 export default function AdminWorkers() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
+  const searchAnim = useRef(new Animated.Value(0)).current;
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [status, setStatus] = useState("");
   const [scheduleMap, setScheduleMap] = useState<Record<string, any>>({});
@@ -58,6 +63,21 @@ export default function AdminWorkers() {
 
   const isValidEmail = (value: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  useEffect(() => {
+    Animated.timing(searchAnim, {
+      toValue: searchOpen ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+
+    if (searchOpen) {
+      const focusTimer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 220);
+      return () => clearTimeout(focusTimer);
+    }
+  }, [searchAnim, searchOpen]);
 
   const getWorkerFormError = () => {
     if (!formData.name.trim()) return "Name is required.";
@@ -303,18 +323,59 @@ export default function AdminWorkers() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 24, paddingBottom: 80 }}
+        onScrollBeginDrag={() => {
+          if (searchOpen) {
+            setSearchOpen(false);
+            Keyboard.dismiss();
+          }
+        }}
+      >
         <View style={headerRow}>
           <View style={{ flex: 1, maxWidth: 420 }}>
-            <View style={{ position: "relative" }}>
-              <Search size={18} color={adminPalette.textMuted} style={searchIcon} />
-              <TextInput
-                placeholder="Search workers..."
-                placeholderTextColor={adminPalette.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={searchInput}
-              />
+            <View style={searchRow}>
+              <TouchableOpacity
+                style={searchIconButton}
+                onPress={() => setSearchOpen(true)}
+              >
+                <Search size={18} color={adminPalette.textMuted} />
+              </TouchableOpacity>
+              <Animated.View
+                pointerEvents={searchOpen ? "auto" : "none"}
+                style={[
+                  searchFieldWrap,
+                  {
+                    width: searchAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 260],
+                    }),
+                    opacity: searchAnim,
+                    transform: [
+                      {
+                        translateX: searchAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-8, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={{ position: "relative" }}>
+                  <Search size={18} color={adminPalette.textMuted} style={searchIcon} />
+                  <TextInput
+                    ref={searchInputRef}
+                    placeholder="Search workers..."
+                    placeholderTextColor={adminPalette.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    style={searchInput}
+                    onBlur={() => setSearchOpen(false)}
+                    autoFocus={searchOpen}
+                  />
+                </View>
+              </Animated.View>
             </View>
           </View>
           <TouchableOpacity
@@ -812,10 +873,31 @@ const headerRow = {
   gap: 16,
 };
 
+const searchRow = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 10,
+};
+
 const searchIcon = {
   position: "absolute" as const,
   left: 12,
   top: 12,
+};
+
+const searchIconButton = {
+  width: 40,
+  height: 40,
+  borderRadius: 10,
+  alignItems: "center" as const,
+  justifyContent: "center" as const,
+  borderWidth: 1,
+  borderColor: adminPalette.border,
+  backgroundColor: adminPalette.surface,
+};
+
+const searchFieldWrap = {
+  overflow: "hidden" as const,
 };
 
 const searchInput = {
@@ -827,6 +909,7 @@ const searchInput = {
   paddingRight: 12,
   backgroundColor: adminPalette.surface,
   color: adminPalette.text,
+  width: 260,
 };
 
 const addButton = {

@@ -29,6 +29,7 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  setDoc,
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
@@ -106,7 +107,11 @@ export default function GoalsScreen() {
   useFocusEffect(
     useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [])
+      if (userId) {
+        const arcadeRef = doc(db, "users", userId, "arcade", "state");
+        setDoc(arcadeRef, { lastGoalsReviewAt: serverTimestamp() }, { merge: true });
+      }
+    }, [userId])
   );
 
   // Modal inputs
