@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react-native";
 import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
@@ -80,6 +81,7 @@ export default function WorkerHomeScreen() {
   const [showGameSplash, setShowGameSplash] = useState(false);
   const gameGlow = useRef(new Animated.Value(0)).current;
   const gameSpin = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef<ScrollView>(null);
   const [goalsCount, setGoalsCount] = useState(0);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const [userHourlyRate, setUserHourlyRate] = useState(0);
@@ -141,6 +143,12 @@ export default function WorkerHomeScreen() {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const spinLoop = useRef<Animated.CompositeAnimation | null>(null);
   const tickAnim = useRef(new Animated.Value(0)).current;
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
 
   const [selectedPeriod, setSelectedPeriod] = useState(
     getCurrentPeriodKey(new Date())
@@ -1153,6 +1161,7 @@ export default function WorkerHomeScreen() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -2412,6 +2421,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 12,
     marginBottom: 8,
     backgroundColor: "transparent",

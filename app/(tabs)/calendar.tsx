@@ -8,7 +8,7 @@ import {
 } from "lucide-react-native";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, doc, onSnapshot } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   ScrollView,
@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "@/lib/firebase";
 import { useCalendar, useTheme } from "@/lib/context";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
@@ -38,6 +39,7 @@ const CELL_WIDTH = (SCREEN_WIDTH - 32 - GAP * 6) / 7;
 
 export default function CalendarScreen() {
   const [displayName, setDisplayName] = useState("User");
+  const scrollRef = useRef<ScrollView>(null);
   const [showShiftDetails, setShowShiftDetails] = useState(false);
   const [activeShift, setActiveShift] = useState<any | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -62,6 +64,12 @@ export default function CalendarScreen() {
   const [activeTooltipDate, setActiveTooltipDate] = useState<string | null>(null);
   const { selectedDate, setSelectedDate, getShiftsForDate, shifts } =
     useCalendar();
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
 
   const confirmLogout = () => {
     Alert.alert("Logout?", "Are you sure you want to log out?", [
@@ -233,7 +241,7 @@ export default function CalendarScreen() {
     <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
       <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
 
         {/* ===== HEADER ===== */}
         <View style={styles.header}>
@@ -788,7 +796,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
   },

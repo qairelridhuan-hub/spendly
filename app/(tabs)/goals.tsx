@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   LogOut,
@@ -37,6 +37,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar } from "@/lib/context";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useFocusEffect } from "@react-navigation/native";
 
 type GoalPriority = "high" | "medium" | "low";
 
@@ -93,12 +94,19 @@ export default function GoalsScreen() {
   const [paceMenuFor, setPaceMenuFor] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("User");
+  const scrollRef = useRef<ScrollView>(null);
   const [hourlyRate, setHourlyRate] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const { shifts } = useCalendar();
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
   );
 
   // Modal inputs
@@ -517,7 +525,7 @@ export default function GoalsScreen() {
         </View>
 
         {/* ===== CONTENT ===== */}
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
         {/* TITLE */}
         <View style={styles.titleRow}>
           <View>
@@ -1072,6 +1080,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "transparent",
     paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 12,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1086,7 +1095,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
   },

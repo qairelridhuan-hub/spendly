@@ -21,9 +21,10 @@ import { router } from "expo-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar } from "@/lib/context";
+import { useFocusEffect } from "@react-navigation/native";
 
 type WeeklyEntry = { week: string; earnings: number };
 type BudgetItem = {
@@ -50,6 +51,7 @@ type OvertimeEntry = {
 
 export default function EarningsScreen() {
   const [displayName, setDisplayName] = useState("User");
+  const scrollRef = useRef<ScrollView>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
   const [userHourlyRate, setUserHourlyRate] = useState(0);
@@ -83,6 +85,12 @@ export default function EarningsScreen() {
   const breakMinutesByDate = useMemo(
     () => buildBreakMinutesMap(breakLogs),
     [breakLogs]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
   );
   const overtimeHoursByDate = useMemo(
     () => buildOvertimeHoursMap(overtimeLogs),
@@ -361,7 +369,7 @@ export default function EarningsScreen() {
     <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
       <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
           {/* ===== HEADER ===== */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>

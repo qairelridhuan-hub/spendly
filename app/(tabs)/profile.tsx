@@ -10,7 +10,7 @@ import {
   onSnapshot,
   updateDoc,
 } from "firebase/firestore";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ScrollView,
   Text,
@@ -22,6 +22,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "@/lib/firebase";
 import { useTheme } from "@/lib/context";
 import { buildWorkerReportHtml, getPeriodKey } from "@/lib/reports/report";
@@ -69,6 +70,7 @@ function getLogHours(log: any) {
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const [displayName, setDisplayName] = useState("User");
+  const scrollRef = useRef<ScrollView>(null);
   const [email, setEmail] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
   const [editOpen, setEditOpen] = useState(false);
@@ -92,6 +94,12 @@ export default function ProfileScreen() {
     goalsCount: 0,
     overtimeHours: 0,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [])
+  );
 
   const confirmLogout = () => {
     Alert.alert("Logout?", "Are you sure you want to log out?", [
@@ -372,7 +380,7 @@ export default function ProfileScreen() {
     >
       <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
         {/* Profile Header */}
         <View
           style={[
