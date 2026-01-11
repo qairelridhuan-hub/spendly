@@ -68,10 +68,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored === "light" || stored === "dark") {
-          setMode(stored);
+          setMode("dark");
+          return;
         }
+        setMode("dark");
       } catch {
         // ignore storage errors
+        setMode("dark");
       }
     };
     loadTheme();

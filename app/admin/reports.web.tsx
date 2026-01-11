@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -160,6 +162,18 @@ export default function AdminReportsWeb() {
   const monthlyEarningsData = useMemo(
     () =>
       buildMonthlyEarnings(
+        approvedLogs,
+        workers,
+        config.hourlyRate,
+        config.overtimeRate,
+        breakMinutesByKey,
+        overtimeHoursByKey
+      ),
+    [approvedLogs, workers, config.hourlyRate, config.overtimeRate, breakMinutesByKey, overtimeHoursByKey]
+  );
+  const hoursVsEarningsData = useMemo(
+    () =>
+      buildMonthlyHoursVsEarnings(
         approvedLogs,
         workers,
         config.hourlyRate,
@@ -398,6 +412,50 @@ export default function AdminReportsWeb() {
           </CardContent>
         </Card>
       </div>
+
+      <div style={styles.fullWidthSection}>
+        <Card>
+          <CardHeader
+            title="Hours vs Earnings"
+            subtitle="Total hours vs total earnings (last 6 months)"
+          />
+          <CardContent>
+            <ChartContainer height={280}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={hoursVsEarningsData}>
+                  <defs>
+                    <linearGradient id="fillHours" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColors.success} stopOpacity={0.7} />
+                      <stop offset="95%" stopColor={chartColors.success} stopOpacity={0.1} />
+                    </linearGradient>
+                    <linearGradient id="fillEarnings" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColors.secondary} stopOpacity={0.7} />
+                      <stop offset="95%" stopColor={chartColors.secondary} stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="hours"
+                    stroke={chartColors.success}
+                    fill="url(#fillHours)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="earnings"
+                    stroke={chartColors.secondary}
+                    fill="url(#fillEarnings)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -443,6 +501,50 @@ function buildMonthlyEarnings(
   return months.map(item => ({
     month: item.label,
     earnings: Math.round(totals[item.period] || 0),
+  }));
+}
+
+function buildMonthlyHoursVsEarnings(
+  logs: AttendanceLog[],
+  workers: WorkerMap,
+  defaultRate: number,
+  overtimeRate: number,
+  breakMinutesByKey: Record<string, number>,
+  overtimeHoursByKey: Record<string, number>
+) {
+  const months = lastSixMonths();
+  const totals: Record<string, { hours: number; earnings: number }> = {};
+  logs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (date.length < 7) return;
+    const period = date.slice(0, 7);
+    const workerId = String(log.workerId ?? "");
+    const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
+    const hours = getLogHours(log, breakMinutesByKey);
+    totals[period] = totals[period] || { hours: 0, earnings: 0 };
+    totals[period].hours += hours;
+    totals[period].earnings += getLogEarnings(
+      log,
+      rate,
+      overtimeRate,
+      breakMinutesByKey
+    );
+  });
+
+  Object.entries(overtimeHoursByKey).forEach(([key, hours]) => {
+    const [workerId, date] = key.split(":");
+    if (!date || date.length < 7) return;
+    const period = date.slice(0, 7);
+    const rate = Number(workers[workerId]?.hourlyRate ?? defaultRate);
+    totals[period] = totals[period] || { hours: 0, earnings: 0 };
+    totals[period].hours += hours;
+    totals[period].earnings += hours * (overtimeRate || rate * 1.5);
+  });
+
+  return months.map(item => ({
+    month: item.label,
+    hours: Math.round(totals[item.period]?.hours || 0),
+    earnings: Math.round(totals[item.period]?.earnings || 0),
   }));
 }
 
@@ -856,6 +958,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: 20,
+  },
+  fullWidthSection: {
+    marginTop: 20,
+    width: "100%",
   },
   summaryGrid: {
     display: "grid",

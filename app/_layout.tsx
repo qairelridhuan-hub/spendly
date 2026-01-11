@@ -1,6 +1,7 @@
 import { Stack, usePathname } from "expo-router";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LogBox } from "react-native";
 import { ThemeProvider } from "@/lib/context";
 
 export default function RootLayout() {
@@ -18,6 +19,13 @@ export default function RootLayout() {
     };
     persistRoute();
   }, [pathname]);
+
+  useEffect(() => {
+    LogBox.ignoreLogs([
+      "Could not reach Cloud Firestore backend",
+      "Connection failed 1 times",
+    ]);
+  }, []);
 
   return (
     <ThemeProvider>

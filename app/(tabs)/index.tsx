@@ -2021,94 +2021,99 @@ export default function WorkerHomeScreen() {
                 <X size={18} color="#e5e7eb" />
               </TouchableOpacity>
             </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Month</Text>
-              <Text style={styles.detailValue}>
-                {formatPeriodLabel(selectedPeriod)}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Collected so far</Text>
-              <Text style={styles.detailValue}>
-                RM {collectedEarnings.toFixed(2)}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Approved hours</Text>
-              <Text style={styles.detailValue}>{approvedHoursSoFar.toFixed(1)}h</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Assigned hours</Text>
-              <Text style={styles.detailValue}>{assignedHours.toFixed(1)}h</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Overtime hours</Text>
-              <Text style={styles.detailValue}>{overtimeHoursSoFar.toFixed(1)}h</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Break minutes</Text>
-              <Text style={styles.detailValue}>{Math.round(breakMinutesSoFar)} min</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Hourly rate</Text>
-              <Text style={styles.detailValue}>RM {hourlyRate.toFixed(2)}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Calculation</Text>
-              <Text style={styles.detailValue}>
-                {baseHours.toFixed(1)}h × RM {hourlyRate.toFixed(2)}
-                {overtimeHoursSoFar > 0
-                  ? ` + ${overtimeHoursSoFar.toFixed(1)}h × RM ${workConfig.overtimeRate.toFixed(2)}`
-                  : ""}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Collected total</Text>
-              <Text style={styles.detailValue}>
-                RM {collectedEarnings.toFixed(2)}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Projected end-of-month</Text>
-              <Text style={styles.detailValue}>
-                RM {projectedEarnings.toFixed(2)}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Shifts approved</Text>
-              <Text style={styles.detailValue}>{approvedShiftCount}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Shifts assigned</Text>
-              <Text style={styles.detailValue}>{assignedShiftCount}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Pending approval</Text>
-              <Text style={styles.detailValue}>{pendingCount}</Text>
-            </View>
-            <View style={styles.breakdownBlock}>
-              <Text style={styles.breakdownTitle}>Shift breakdown</Text>
-              {earningsBreakdownRows.length === 0 ? (
-                <Text style={styles.emptyText}>No shifts in this month.</Text>
-              ) : (
-                earningsBreakdownRows.map((row, index) => (
-                  <View
-                    key={`${row.date}-${row.source}-${index}`}
-                    style={styles.breakdownRow}
-                  >
-                    <View>
-                      <Text style={styles.breakdownDate}>{row.date}</Text>
-                      <Text style={styles.breakdownSub}>
-                        {row.source} • {row.hours.toFixed(1)}h
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.detailScrollContent}
+            >
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Month</Text>
+                <Text style={styles.detailValue}>
+                  {formatPeriodLabel(selectedPeriod)}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Collected so far</Text>
+                <Text style={styles.detailValue}>
+                  RM {collectedEarnings.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Approved hours</Text>
+                <Text style={styles.detailValue}>{approvedHoursSoFar.toFixed(1)}h</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Assigned hours</Text>
+                <Text style={styles.detailValue}>{assignedHours.toFixed(1)}h</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Overtime hours</Text>
+                <Text style={styles.detailValue}>{overtimeHoursSoFar.toFixed(1)}h</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Break minutes</Text>
+                <Text style={styles.detailValue}>{Math.round(breakMinutesSoFar)} min</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Hourly rate</Text>
+                <Text style={styles.detailValue}>RM {hourlyRate.toFixed(2)}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Calculation</Text>
+                <Text style={styles.detailValue}>
+                  {baseHours.toFixed(1)}h × RM {hourlyRate.toFixed(2)}
+                  {overtimeHoursSoFar > 0
+                    ? ` + ${overtimeHoursSoFar.toFixed(1)}h × RM ${workConfig.overtimeRate.toFixed(2)}`
+                    : ""}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Collected total</Text>
+                <Text style={styles.detailValue}>
+                  RM {collectedEarnings.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Projected end-of-month</Text>
+                <Text style={styles.detailValue}>
+                  RM {projectedEarnings.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Shifts approved</Text>
+                <Text style={styles.detailValue}>{approvedShiftCount}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Shifts assigned</Text>
+                <Text style={styles.detailValue}>{assignedShiftCount}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Pending approval</Text>
+                <Text style={styles.detailValue}>{pendingCount}</Text>
+              </View>
+              <View style={styles.breakdownBlock}>
+                <Text style={styles.breakdownTitle}>Shift breakdown</Text>
+                {earningsBreakdownRows.length === 0 ? (
+                  <Text style={styles.emptyText}>No shifts in this month.</Text>
+                ) : (
+                  earningsBreakdownRows.map((row, index) => (
+                    <View
+                      key={`${row.date}-${row.source}-${index}`}
+                      style={styles.breakdownRow}
+                    >
+                      <View>
+                        <Text style={styles.breakdownDate}>{row.date}</Text>
+                        <Text style={styles.breakdownSub}>
+                          {row.source} • {row.hours.toFixed(1)}h
+                        </Text>
+                      </View>
+                      <Text style={styles.breakdownAmount}>
+                        RM {row.amount.toFixed(2)}
                       </Text>
                     </View>
-                    <Text style={styles.breakdownAmount}>
-                      RM {row.amount.toFixed(2)}
-                    </Text>
-                  </View>
-                ))
-              )}
-            </View>
+                  ))
+                )}
+              </View>
+            </ScrollView>
           </View>
         </View>
       ) : null}
@@ -3030,6 +3035,7 @@ const styles = StyleSheet.create({
   detailModal: {
     width: "100%",
     maxWidth: 360,
+    maxHeight: "85%",
     backgroundColor: "#141c2a",
     borderRadius: 16,
     padding: 16,
@@ -3041,6 +3047,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: { color: "#e5e7eb", fontWeight: "700" },
+  detailScrollContent: {
+    paddingBottom: 8,
+  },
   monthPickerModal: {
     width: "100%",
     maxWidth: 360,

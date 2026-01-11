@@ -28,6 +28,12 @@ import { useTheme } from "@/lib/context";
 import { buildWorkerReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
+import {
+  getBaseXp,
+  getConsecutiveStreakDays,
+  getLevelProgress,
+  getTotalXp,
+} from "@/lib/game/stats";
 
 type Stats = {
   totalDays: number;
@@ -83,6 +89,7 @@ export default function ProfileScreen() {
   const [userHourlyRate, setUserHourlyRate] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
+  const [arcadeState, setArcadeState] = useState<{ totalXp?: number; bonusXp?: number } | null>(null);
   const [challengeCount, setChallengeCount] = useState(0);
   const [completedChallengeCount, setCompletedChallengeCount] = useState(0);
   const [config, setConfig] = useState({ overtimeRate: 0 });
@@ -125,6 +132,7 @@ export default function ProfileScreen() {
         setEmail("");
         setPhotoUrl("");
         setUserId(null);
+        setArcadeState(null);
         return;
       }
 
@@ -171,6 +179,18 @@ export default function ProfileScreen() {
         const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
         setOvertimeLogs(logs);
       });
+      const arcadeRef = doc(db, "users", user.uid, "arcade", "state");
+      const unsubArcade = onSnapshot(arcadeRef, snap => {
+        if (!snap.exists()) {
+          setArcadeState(null);
+          return;
+        }
+        const data = snap.data() as any;
+        setArcadeState({
+          totalXp: Number(data.totalXp ?? 0),
+          bonusXp: Number(data.bonusXp ?? 0),
+        });
+      });
       const configRef = doc(db, "config", "system");
       const unsubConfig = onSnapshot(configRef, snap => {
         const data = snap.data() as any;
@@ -185,6 +205,7 @@ export default function ProfileScreen() {
         unsubAttendance();
         unsubChallenges();
         unsubOvertime();
+        unsubArcade();
         unsubConfig();
       };
     });
@@ -362,15 +383,29 @@ export default function ProfileScreen() {
     { label: "Goals Completed", value: String(stats.goalsCompleted) },
     { label: "Challenges Completed", value: String(completedChallengeCount) },
   ];
-  const xp = useMemo(() => {
-    const approvedLogs = attendanceLogs.filter(log => log.status === "approved");
-    const base =
-      approvedLogs.length * 10 +
-      stats.goalsCount * 20 +
-      stats.goalsCompleted * 50 +
-      completedChallengeCount * 30;
-    return Math.max(0, base);
-  }, [attendanceLogs, completedChallengeCount, stats.goalsCompleted, stats.goalsCount]);
+  const approvedLogsCount = useMemo(
+    () => attendanceLogs.filter(log => log.status === "approved").length,
+    [attendanceLogs]
+  );
+  const baseXp = useMemo(
+    () =>
+      getBaseXp({
+        approvedLogsCount,
+        goalsCount: stats.goalsCount,
+        completedGoalsCount: stats.goalsCompleted,
+        completedChallengesCount: completedChallengeCount,
+      }),
+    [approvedLogsCount, completedChallengeCount, stats.goalsCompleted, stats.goalsCount]
+  );
+  const xp = useMemo(
+    () =>
+      getTotalXp({
+        baseXp,
+        bonusXp: arcadeState?.bonusXp ?? 0,
+        storedTotalXp: arcadeState?.totalXp,
+      }),
+    [arcadeState?.bonusXp, arcadeState?.totalXp, baseXp]
+  );
   const { level, nextXp, progress } = useMemo(() => getLevelProgress(xp), [xp]);
 
   return (
@@ -881,39 +916,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 });
-
-const getConsecutiveStreakDays = (logs: any[]) => {
-  if (!logs.length) return 0;
-  const dates = new Set(
-    logs
-      .filter(log => log?.date)
-      .map(log => String(log.date).slice(0, 10))
-  );
-  let streak = 0;
-  const today = new Date();
-  for (let i = 0; i < 365; i += 1) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    if (!dates.has(d.toISOString().slice(0, 10))) break;
-    streak += 1;
-  }
-  return streak;
-};
-
-const getLevelProgress = (xp: number) => {
-  const levels = [0, 100, 250, 450, 700, 1000, 1400, 1900];
-  let level = 1;
-  for (let i = 0; i < levels.length; i += 1) {
-    if (xp >= levels[i]) level = i + 1;
-  }
-  const currentFloor = levels[level - 1] ?? 0;
-  const nextXp = levels[level] ?? (currentFloor + 600);
-  const progress = Math.min(
-    100,
-    Math.round(((xp - currentFloor) / (nextXp - currentFloor)) * 100)
-  );
-  return { level, nextXp, progress };
-};
 
 const buildBadgeList = ({
   goalsCompleted,

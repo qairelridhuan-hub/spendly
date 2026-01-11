@@ -17,6 +17,7 @@ import {
   Lock,
   Medal,
   Menu,
+  ShoppingBag,
   AlertCircle,
   ChevronRight,
   Home,
@@ -34,6 +35,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -56,6 +58,12 @@ import {
 } from "firebase/firestore";
 import { AnimatedBlobs } from "../components/AnimatedBlobs";
 import { auth, db } from "../lib/firebase";
+import {
+  getBaseXp,
+  getConsecutiveStreakDays,
+  getLevelProgress,
+  getTotalXp,
+} from "../lib/game/stats";
 
 type Challenge = {
   id: string;
@@ -71,6 +79,7 @@ type Challenge = {
   completed: boolean;
   claimed?: boolean;
   meta?: Record<string, any>;
+  pending?: boolean;
 };
 
 type Badge = {
@@ -121,6 +130,7 @@ type ArcadeState = {
     weekKey: string;
     challengeClaims: Record<string, boolean>;
   };
+  shopBadges?: Record<string, boolean>;
 };
 
 type DashboardPanel =
@@ -129,7 +139,8 @@ type DashboardPanel =
   | "achievements"
   | "lucky-spin"
   | "badges"
-  | "challenges";
+  | "challenges"
+  | "shop";
 
 export default function GameScreen() {
   const neon = {
@@ -148,6 +159,9 @@ export default function GameScreen() {
   const [activePanel, setActivePanel] = useState<DashboardPanel>("main");
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopError, setShopError] = useState<string | null>(null);
+  const spinRotation = useRef(new Animated.Value(0)).current;
+  const spinTurns = useRef(0);
+  const lastAwardedLevelRef = useRef<number | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [budgetAllocation, setBudgetAllocation] = useState<
@@ -345,6 +359,7 @@ export default function GameScreen() {
     if (!userId) {
       setArcadeState(null);
       setArcadeReady(false);
+      lastAwardedLevelRef.current = null;
       return;
     }
     const arcadeRef = doc(db, "users", userId, "arcade", "state");
@@ -359,6 +374,12 @@ export default function GameScreen() {
     });
     return unsub;
   }, [userId]);
+
+  useEffect(() => {
+    if (arcadeState?.lastLevel != null) {
+      lastAwardedLevelRef.current = arcadeState.lastLevel;
+    }
+  }, [arcadeState?.lastLevel]);
 
   useEffect(() => {
     if (!userId || arcadeState || !arcadeReady) return;
@@ -396,6 +417,7 @@ export default function GameScreen() {
           weekKey,
           challengeClaims: {},
         },
+        shopBadges: {},
         createdAt: serverTimestamp(),
       },
       { merge: true }
@@ -489,35 +511,88 @@ export default function GameScreen() {
 
   const displayChallenges =
     challenges.length > 0 ? mergeProgress(challenges, generatedChallenges) : generatedChallenges;
+  const currentWeekKey = useMemo(() => getWeekKey(new Date()), [todayKey]);
+  const currentWeekChallenges = useMemo(
+    () =>
+      displayChallenges.filter(
+        challenge => challenge.startDate === currentWeekKey
+      ),
+    [currentWeekKey, displayChallenges]
+  );
+  const nextWeekChallenges = useMemo(() => {
+    const nextWeekDate = new Date();
+    nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+    return buildChallenges(
+      {
+        goals,
+        activeGoals,
+        streakDays: 0,
+        weeklyShiftCount: 0,
+      },
+      nextWeekDate
+    ).map(challenge => ({
+      ...challenge,
+      progress: 0,
+      completed: false,
+      claimed: false,
+      pending: true,
+    }));
+  }, [activeGoals, goals, todayKey]);
+  const activeChallenges = useMemo(
+    () => currentWeekChallenges.filter(challenge => !challenge.claimed),
+    [currentWeekChallenges]
+  );
+  const claimedChallenges = useMemo(
+    () => currentWeekChallenges.filter(challenge => challenge.claimed),
+    [currentWeekChallenges]
+  );
+  const claimedHistory = useMemo(
+    () =>
+      challenges.filter(
+        challenge =>
+          challenge.startDate &&
+          challenge.startDate <= currentWeekKey &&
+          challenge.claimed
+      ),
+    [challenges, currentWeekKey]
+  );
   const upcomingChallenges = useMemo(
-    () => displayChallenges.filter(challenge => !challenge.completed),
-    [displayChallenges]
+    () => activeChallenges.filter(challenge => !challenge.completed),
+    [activeChallenges]
   );
   const completedChallenges = useMemo(
-    () => displayChallenges.filter(challenge => challenge.completed),
-    [displayChallenges]
+    () => activeChallenges.filter(challenge => challenge.completed),
+    [activeChallenges]
   );
 
   useEffect(() => {
     if (!userId) return;
     displayChallenges.forEach(({ meta, ...challenge }) => {
       const payload = meta ? { ...challenge, meta } : challenge;
+      const { claimed, pending, ...rest } = payload;
+      const safePayload =
+        claimed === true ? { ...rest, claimed: true } : rest;
       const ref = doc(db, "users", userId, "challenges", challenge.id);
-      setDoc(ref, { ...payload, claimed: challenge.claimed ?? false }, { merge: true });
+      setDoc(ref, safePayload, { merge: true });
     });
   }, [userId, displayChallenges]);
 
-  const baseXp = useMemo(() => {
-    const base =
-      approvedLogs.length * 10 +
-      goals.length * 20 +
-      completedGoals.length * 50 +
-      displayChallenges.filter(ch => ch.completed).length * 30;
-    return Math.max(0, base);
-  }, [approvedLogs.length, completedGoals.length, displayChallenges, goals.length]);
+  const baseXp = useMemo(
+    () =>
+      getBaseXp({
+        approvedLogsCount: approvedLogs.length,
+        goalsCount: goals.length,
+        completedGoalsCount: completedGoals.length,
+        completedChallengesCount: displayChallenges.filter(ch => ch.completed).length,
+      }),
+    [approvedLogs.length, completedGoals.length, displayChallenges, goals.length]
+  );
 
   const bonusXp = arcadeState?.bonusXp ?? 0;
-  const totalXp = baseXp + bonusXp;
+  const totalXp = useMemo(
+    () => getTotalXp({ baseXp, bonusXp }),
+    [baseXp, bonusXp]
+  );
   const { level, nextXp, progress } = useMemo(
     () => getLevelProgress(totalXp),
     [totalXp]
@@ -539,6 +614,7 @@ export default function GameScreen() {
   }, [progress, xpProgressAnim]);
   const coins = arcadeState?.coins ?? 0;
   const gems = arcadeState?.gems ?? 0;
+  const xpWallet = Math.max(0, arcadeState?.bonusXp ?? 0);
   const spinsLeft = arcadeState?.spinsLeft ?? 0;
   const powerUps = arcadeState?.powerUps ?? {
     xpBoost: 0,
@@ -854,20 +930,16 @@ export default function GameScreen() {
 
   useEffect(() => {
     if (!arcadeRef || !arcadeState) return;
-    const lastLevel = arcadeState.lastLevel ?? 1;
+    const lastLevel = lastAwardedLevelRef.current ?? arcadeState.lastLevel ?? 1;
     if (level <= lastLevel) return;
-    runTransaction(db, async transaction => {
-      const snap = await transaction.get(arcadeRef);
-      if (!snap.exists()) return;
-      const data = snap.data() as ArcadeState;
-      const recordedLevel = data.lastLevel ?? 1;
-      if (level <= recordedLevel) return;
-      const diff = level - recordedLevel;
-      transaction.update(arcadeRef, {
-        coins: increment(50 * diff),
-        gems: increment(5 * diff),
-        lastLevel: level,
-      });
+    const diff = level - lastLevel;
+    lastAwardedLevelRef.current = level;
+    updateDoc(arcadeRef, {
+      coins: increment(50 * diff),
+      gems: increment(5 * diff),
+      lastLevel: level,
+    }).catch(() => {
+      // Ignore transient errors; state will resync from Firestore.
     });
   }, [arcadeRef, arcadeState, level]);
 
@@ -981,6 +1053,14 @@ export default function GameScreen() {
     if (!arcadeRef || isSpinning || spinsLeft <= 0) return;
     setIsSpinning(true);
     setLastSpinReward(null);
+    const extraTurns = 3 + Math.random() * 2;
+    spinTurns.current += extraTurns;
+    Animated.timing(spinRotation, {
+      toValue: spinTurns.current,
+      duration: 1600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
     const rewards = [
       { type: "coins" as const, min: 100, max: 500 },
       { type: "gems" as const, min: 5, max: 25 },
@@ -1078,9 +1158,71 @@ export default function GameScreen() {
             ? "Badge Collection"
             : activePanel === "challenges"
               ? "Weekly Challenges"
-              : "";
+              : activePanel === "shop"
+                ? "XP Exchange Shop"
+                : "";
 
-  const renderChallengeCard = (challenge: Challenge) => {
+  const shopCatalog = [
+    {
+      id: "coins-pack",
+      title: "Coin Pack",
+      description: "Trade XP or gems for coins",
+      reward: { type: "coins" as const, amount: 200 },
+      offers: [
+        { currency: "xp" as const, cost: 80 },
+        { currency: "gems" as const, cost: 5 },
+      ],
+    },
+    {
+      id: "gems-pack",
+      title: "Gem Pack",
+      description: "Trade coins or XP for gems",
+      reward: { type: "gems" as const, amount: 5 },
+      offers: [
+        { currency: "coins" as const, cost: 250 },
+        { currency: "xp" as const, cost: 120 },
+      ],
+    },
+    {
+      id: "xp-pack",
+      title: "XP Booster",
+      description: "Trade coins or gems for XP",
+      reward: { type: "xp" as const, amount: 150 },
+      offers: [
+        { currency: "coins" as const, cost: 100 },
+        { currency: "gems" as const, cost: 4 },
+      ],
+    },
+    {
+      id: "badge-goal",
+      title: "Goal Keeper Badge",
+      description: "A rare badge for goal chasers",
+      reward: { type: "badge" as const, badgeId: "badge-goal" },
+      offers: [
+        { currency: "xp" as const, cost: 180 },
+        { currency: "coins" as const, cost: 300 },
+        { currency: "gems" as const, cost: 8 },
+      ],
+    },
+    {
+      id: "badge-streak",
+      title: "Streak Legend Badge",
+      description: "Celebrate your consistency",
+      reward: { type: "badge" as const, badgeId: "badge-streak" },
+      offers: [
+        { currency: "xp" as const, cost: 220 },
+        { currency: "coins" as const, cost: 360 },
+        { currency: "gems" as const, cost: 10 },
+      ],
+    },
+  ];
+
+  const renderChallengeCard = (
+    challenge: Challenge,
+    options?: { isUpcoming?: boolean; isPast?: boolean }
+  ) => {
+    const isUpcoming = options?.isUpcoming;
+    const isPast = options?.isPast;
     const percent =
       challenge.target === 0
         ? 0
@@ -1119,9 +1261,13 @@ export default function GameScreen() {
           <View style={styles.challengeMetaItem}>
             <Clock size={12} color="#9ca3af" />
             <Text style={styles.challengeMetaText}>
-              {challenge.completed
-                ? "Completed"
-                : getTimeLeftLabel(challenge.endDate)}
+              {isUpcoming
+                ? "Starts next week"
+                : isPast
+                  ? "Finished"
+                  : challenge.completed
+                    ? "Completed"
+                    : getTimeLeftLabel(challenge.endDate)}
             </Text>
           </View>
           <View style={styles.challengeRewardPill}>
@@ -1142,7 +1288,13 @@ export default function GameScreen() {
           <Text style={styles.challengeProgressText}>
             {challenge.progress} / {challenge.target} {challenge.unit}
           </Text>
-          {challenge.completed ? (
+          {isUpcoming ? (
+            <Text style={styles.pendingText}>Pending</Text>
+          ) : isPast ? (
+            <Text style={styles.claimedText}>
+              {challenge.claimed ? "Claimed" : "Missed"}
+            </Text>
+          ) : challenge.completed ? (
             challenge.claimed ? (
               <Text style={styles.claimedText}>Claimed</Text>
             ) : (
@@ -1163,6 +1315,114 @@ export default function GameScreen() {
           )}
         </View>
       </View>
+    );
+  };
+
+  const handleQuestPress = useCallback(
+    (questId: string) => {
+      if (questId === "track-expenses" || questId === "stay-under-budget") {
+        router.push("/(tabs)");
+        return;
+      }
+      if (questId === "review-goals") {
+        router.push("/(tabs)/goals");
+        return;
+      }
+      if (questId === "login-minutes") {
+        Alert.alert(
+          "Stay active",
+          "Keep this screen open for 5 minutes to complete the quest."
+        );
+      }
+    },
+    []
+  );
+
+  const handleShopPurchase = async (
+    item: (typeof shopCatalog)[number],
+    offer: { currency: "coins" | "gems" | "xp"; cost: number }
+  ) => {
+    if (!arcadeRef) return;
+    if (
+      item.reward.type === "badge" &&
+      item.reward.badgeId &&
+      arcadeState?.shopBadges?.[item.reward.badgeId]
+    ) {
+      setShopError("You already own this badge.");
+      return;
+    }
+    const wallet =
+      offer.currency === "coins"
+        ? coins
+        : offer.currency === "gems"
+          ? gems
+          : xpWallet;
+    if (wallet < offer.cost) {
+      const shortage = Math.max(0, offer.cost - wallet);
+      setShopError(
+        `Not enough ${offer.currency}. You need ${shortage} more to trade.`
+      );
+      return;
+    }
+    setShopError(null);
+    await runTransaction(db, async transaction => {
+      const snap = await transaction.get(arcadeRef);
+      if (!snap.exists()) return;
+      const data = snap.data() as ArcadeState;
+      const wallet =
+        offer.currency === "coins"
+          ? data.coins ?? 0
+          : offer.currency === "gems"
+            ? data.gems ?? 0
+            : Math.max(0, data.bonusXp ?? 0);
+      if (wallet < offer.cost) return;
+
+      const updates: Record<string, any> = {};
+      if (offer.currency === "xp") {
+        updates.bonusXp = increment(-offer.cost);
+      } else {
+        updates[offer.currency] = increment(-offer.cost);
+      }
+
+      if (item.reward.type === "xp" && item.reward.amount) {
+        updates.bonusXp = increment(item.reward.amount);
+      } else if (item.reward.type === "coins" && item.reward.amount) {
+        updates.coins = increment(item.reward.amount);
+      } else if (item.reward.type === "gems" && item.reward.amount) {
+        updates.gems = increment(item.reward.amount);
+      } else if (item.reward.type === "badge" && item.reward.badgeId) {
+        updates[`shopBadges.${item.reward.badgeId}`] = true;
+      }
+
+      transaction.update(arcadeRef, updates);
+    });
+  };
+
+  const handleResetWeeklyClaims = () => {
+    if (!userId) return;
+    Alert.alert(
+      "Reset weekly claims?",
+      "This will allow you to claim current week rewards again.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: async () => {
+            const resetTargets = currentWeekChallenges.filter(
+              challenge => challenge.claimed
+            );
+            await Promise.all(
+              resetTargets.map(challenge =>
+                updateDoc(
+                  doc(db, "users", userId, "challenges", challenge.id),
+                  { claimed: false }
+                )
+              )
+            );
+          },
+        },
+      ]
     );
   };
 
@@ -1232,13 +1492,25 @@ export default function GameScreen() {
       </Modal>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() =>
+              activePanel === "main" ? router.back() : setActivePanel("main")
+            }
+          >
             <ArrowLeft size={20} color="#e5e7eb" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Budget Arcade</Text>
             <Text style={styles.headerSubtitle}>Your Financial Game</Text>
           </View>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setActivePanel("shop")}
+            accessibilityLabel="Open shop"
+          >
+            <ShoppingBag size={20} color="#e5e7eb" />
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setMenuOpen(true)}
@@ -1254,12 +1526,7 @@ export default function GameScreen() {
         >
           {!isMainPanel ? (
             <View style={styles.panelHeader}>
-              <TouchableOpacity
-                style={styles.panelBack}
-                onPress={() => setActivePanel("main")}
-              >
-                <ArrowLeft size={18} color="#e5e7eb" />
-              </TouchableOpacity>
+              <View style={styles.panelSpacer} />
               <Text style={styles.panelTitle}>{panelTitle}</Text>
               <View style={styles.panelSpacer} />
             </View>
@@ -1344,6 +1611,31 @@ export default function GameScreen() {
 
               <View style={styles.sectionCard}>
                 <View style={styles.sectionHeaderRow}>
+                  <View style={styles.sectionTitleRow}>
+                    <Target size={18} color="#34d399" />
+                    <Text style={styles.sectionTitle}>Weekly Challenges</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.sectionLink}
+                    onPress={() => setActivePanel("challenges")}
+                  >
+                    <Text style={styles.sectionLinkText}>All</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.challengeList}>
+                  {(activeChallenges.length > 0
+                    ? activeChallenges.slice(0, 2)
+                    : nextWeekChallenges.slice(0, 2)
+                  ).map(challenge =>
+                    renderChallengeCard(challenge, {
+                      isUpcoming: activeChallenges.length === 0,
+                    })
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionHeaderRow}>
                   <View>
                     <View style={styles.sectionTitleRow}>
                       <Gift size={18} color="#facc15" />
@@ -1363,12 +1655,15 @@ export default function GameScreen() {
 
                 <View style={styles.questList}>
                   {dailyQuests.map(quest => (
-                    <View
+                    <TouchableOpacity
                       key={quest.id}
                       style={[
                         styles.questRow,
                         quest.completed && styles.questRowDone,
                       ]}
+                      onPress={() => handleQuestPress(quest.id)}
+                      disabled={quest.completed}
+                      activeOpacity={0.8}
                     >
                       {quest.completed ? (
                         <CheckCircle2 size={20} color="#22c55e" />
@@ -1402,7 +1697,7 @@ export default function GameScreen() {
                           +{quest.reward}
                         </Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
 
@@ -1624,30 +1919,8 @@ export default function GameScreen() {
                     })
                   )}
                 </View>
-                <TouchableOpacity style={styles.leaderboardButton}>
-                  <Text style={styles.leaderboardButtonText}>
-                    View Full Leaderboard
-                  </Text>
-                </TouchableOpacity>
               </View>
 
-              <View style={styles.sectionCard}>
-                <View style={styles.sectionHeaderRow}>
-                  <View style={styles.sectionTitleRow}>
-                    <Target size={18} color="#34d399" />
-                    <Text style={styles.sectionTitle}>Weekly Challenges</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.sectionLink}
-                    onPress={() => setActivePanel("challenges")}
-                  >
-                    <Text style={styles.sectionLinkText}>All -></Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.challengeList}>
-                  {displayChallenges.slice(0, 2).map(renderChallengeCard)}
-                </View>
-              </View>
             </>
           ) : activePanel === "profile" ? (
             <View style={styles.sectionCard}>
@@ -1830,7 +2103,21 @@ export default function GameScreen() {
                 </View>
               </View>
               <View style={styles.spinRow}>
-                <View style={styles.spinWheel}>
+                <Animated.View
+                  style={[
+                    styles.spinWheel,
+                    {
+                      transform: [
+                        {
+                          rotate: spinRotation.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ["0deg", "360deg"],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
                   <View style={styles.spinWheelRing} />
                   <View style={styles.spinWheelInner}>
                     <View style={[styles.spinWheelIcon, styles.spinWheelIconTop]}>
@@ -1850,7 +2137,7 @@ export default function GameScreen() {
                     </View>
                   </View>
                   <View style={styles.spinPointer} />
-                </View>
+                </Animated.View>
                 <View style={styles.spinInfo}>
                   {lastSpinReward ? (
                     <View style={styles.spinRewardCard}>
@@ -1979,6 +2266,111 @@ export default function GameScreen() {
                 })}
               </View>
             </View>
+          ) : activePanel === "shop" ? (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleRow}>
+                  <ShoppingBag size={18} color="#38bdf8" />
+                  <Text style={styles.sectionTitle}>XP Exchange</Text>
+                </View>
+                <View style={styles.sectionBadge}>
+                  <Text style={styles.sectionBadgeText}>
+                    {Math.max(0, nextXp - totalXp)} XP to level up
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                Trade coins, gems, or XP for rewards. XP trades use bonus XP only.
+              </Text>
+              <View style={styles.shopWalletRow}>
+                <View style={styles.shopWalletPill}>
+                  <Coins size={14} color="#facc15" />
+                  <Text style={styles.shopWalletText}>{coins}</Text>
+                </View>
+                <View style={styles.shopWalletPill}>
+                  <Gem size={14} color="#38bdf8" />
+                  <Text style={styles.shopWalletText}>{gems}</Text>
+                </View>
+                <View style={styles.shopWalletPill}>
+                  <Zap size={14} color="#fb923c" />
+                  <Text style={styles.shopWalletText}>{xpWallet} XP</Text>
+                </View>
+              </View>
+              {shopError ? (
+                <View style={styles.validationBanner}>
+                  <AlertCircle size={14} color="#f87171" />
+                  <Text style={styles.validationText}>{shopError}</Text>
+                </View>
+              ) : null}
+              <View style={styles.shopGrid}>
+                {shopCatalog.map(item => {
+                  const badgeOwned =
+                    item.reward.type === "badge" && item.reward.badgeId
+                      ? Boolean(arcadeState?.shopBadges?.[item.reward.badgeId])
+                      : false;
+                  return (
+                    <View key={item.id} style={styles.shopCard}>
+                      <View style={styles.shopCardHeader}>
+                        <Text style={styles.shopCardTitle}>{item.title}</Text>
+                        <View style={styles.shopPill}>
+                          {item.reward.type === "coins" ? (
+                            <Coins size={12} color="#facc15" />
+                          ) : item.reward.type === "gems" ? (
+                            <Gem size={12} color="#38bdf8" />
+                          ) : item.reward.type === "xp" ? (
+                            <Zap size={12} color="#fb923c" />
+                          ) : (
+                            <Award size={12} color="#f472b6" />
+                          )}
+                          <Text style={styles.shopPillText}>
+                            {item.reward.type === "badge"
+                              ? "Badge"
+                              : `+${item.reward.amount}`}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.shopCardDesc}>{item.description}</Text>
+                      {badgeOwned ? (
+                        <Text style={styles.shopOwnedText}>Owned</Text>
+                      ) : null}
+                      <View style={styles.shopFooter}>
+                        <View style={styles.shopOfferList}>
+                          {item.offers.map(offer => {
+                            const canAfford =
+                              offer.currency === "coins"
+                                ? coins >= offer.cost
+                                : offer.currency === "gems"
+                                  ? gems >= offer.cost
+                                  : xpWallet >= offer.cost;
+                            const disabled = badgeOwned || !canAfford;
+                            return (
+                              <TouchableOpacity
+                                key={`${item.id}-${offer.currency}-${offer.cost}`}
+                                style={[
+                                  styles.shopBuyButton,
+                                  disabled && styles.shopBuyButtonDisabled,
+                                ]}
+                                onPress={() => handleShopPurchase(item, offer)}
+                                disabled={disabled}
+                              >
+                                <Text style={styles.shopBuyText}>
+                                  {offer.cost}{" "}
+                                  {offer.currency === "xp"
+                                    ? "XP"
+                                    : offer.currency === "coins"
+                                      ? "Coins"
+                                      : "Gems"}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
           ) : (
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
@@ -1987,23 +2379,49 @@ export default function GameScreen() {
                   <Text style={styles.sectionTitle}>Weekly Challenges</Text>
                 </View>
               </View>
-              <Text style={styles.subsectionTitle}>Upcoming</Text>
+              <Text style={styles.subsectionTitle}>Current Week</Text>
               <View style={styles.challengeList}>
-                {upcomingChallenges.length > 0 ? (
-                  upcomingChallenges.map(renderChallengeCard)
+                {currentWeekChallenges.length > 0 ? (
+                  currentWeekChallenges.map(challenge =>
+                    renderChallengeCard(challenge)
+                  )
                 ) : (
                   <Text style={styles.emptyStateText}>
-                    No upcoming challenges right now.
+                    No active challenges this week.
                   </Text>
                 )}
               </View>
-              <Text style={styles.subsectionTitle}>Completed</Text>
+              {currentWeekChallenges.some(challenge => challenge.claimed) ? (
+                <TouchableOpacity
+                  style={styles.resetClaimsButton}
+                  onPress={handleResetWeeklyClaims}
+                >
+                  <Text style={styles.resetClaimsText}>
+                    Reset this week claims
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+              <Text style={styles.subsectionTitle}>Upcoming Next Week</Text>
               <View style={styles.challengeList}>
-                {completedChallenges.length > 0 ? (
-                  completedChallenges.map(renderChallengeCard)
+                {nextWeekChallenges.length > 0 ? (
+                  nextWeekChallenges.map(challenge =>
+                    renderChallengeCard(challenge, { isUpcoming: true })
+                  )
                 ) : (
                   <Text style={styles.emptyStateText}>
-                    No completed challenges yet.
+                    No upcoming challenges yet.
+                  </Text>
+                )}
+              </View>
+              <Text style={styles.subsectionTitle}>Past Weeks</Text>
+              <View style={styles.challengeList}>
+                {claimedHistory.length > 0 ? (
+                  claimedHistory.map(challenge =>
+                    renderChallengeCard(challenge, { isPast: true })
+                  )
+                ) : (
+                  <Text style={styles.emptyStateText}>
+                    No past challenges yet.
                   </Text>
                 )}
               </View>
@@ -2090,6 +2508,14 @@ const styles = StyleSheet.create({
   currencyPillAlt: { backgroundColor: "rgba(59, 130, 246, 0.85)" },
   currencyValue: { fontSize: 14, fontWeight: "700", color: "#111827" },
   currencyValueAlt: { color: "#ffffff" },
+  shopButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
+  },
   xpRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -2268,6 +2694,79 @@ const styles = StyleSheet.create({
     borderColor: "rgba(248, 113, 113, 0.35)",
   },
   validationText: { fontSize: 11, color: "#fecaca", flex: 1 },
+  shopGrid: {
+    marginTop: 12,
+    gap: 12,
+  },
+  shopWalletRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  shopWalletPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+  },
+  shopWalletText: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
+  shopCard: {
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.25)",
+  },
+  shopCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  shopCardTitle: { color: "#e5e7eb", fontSize: 14, fontWeight: "700" },
+  shopCardDesc: { color: "#94a3b8", fontSize: 12, marginTop: 6 },
+  shopOwnedText: { color: "#4ade80", fontSize: 11, marginTop: 8, fontWeight: "700" },
+  shopPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(251, 146, 60, 0.2)",
+  },
+  shopPillText: { color: "#fdba74", fontSize: 12, fontWeight: "700" },
+  shopFooter: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  shopOfferList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "flex-end",
+  },
+  shopCost: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shopCostText: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
+  shopBuyButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#38bdf8",
+  },
+  shopBuyButtonDisabled: { backgroundColor: "rgba(148, 163, 184, 0.35)" },
+  shopBuyText: { color: "#0b1220", fontSize: 12, fontWeight: "700" },
   powerGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   powerCard: {
     width: "48%",
@@ -2483,8 +2982,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   leaderboardButtonText: { fontSize: 13, fontWeight: "700", color: "#ffffff" },
-  sectionLink: { paddingHorizontal: 8, paddingVertical: 4 },
-  sectionLinkText: { fontSize: 12, color: "#38bdf8", fontWeight: "600" },
+  sectionLink: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(56, 189, 248, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(56, 189, 248, 0.4)",
+  },
+  sectionLinkText: { fontSize: 12, color: "#38bdf8", fontWeight: "700" },
   subsectionTitle: {
     fontSize: 12,
     fontWeight: "700",
@@ -2600,6 +3106,18 @@ const styles = StyleSheet.create({
   },
   claimButtonText: { fontSize: 11, fontWeight: "700", color: "#ffffff" },
   claimedText: { fontSize: 11, fontWeight: "700", color: "#4ade80" },
+  pendingText: { fontSize: 11, fontWeight: "700", color: "#60a5fa" },
+  resetClaimsButton: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(248, 113, 113, 0.5)",
+    backgroundColor: "rgba(248, 113, 113, 0.12)",
+  },
+  resetClaimsText: { fontSize: 11, fontWeight: "700", color: "#fca5a5" },
   milestoneTrack: { gap: 12, position: "relative" },
   milestoneLine: {
     position: "absolute",
@@ -3054,23 +3572,6 @@ const getDaysInMonth = (date: Date) =>
 const getMonthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
-const getConsecutiveStreakDays = (logs: any[]) => {
-  if (!logs.length) return 0;
-  const dates = new Set(
-    logs
-      .filter(log => log?.date)
-      .map(log => String(log.date).slice(0, 10))
-  );
-  let streak = 0;
-  const today = new Date();
-  for (let i = 0; i < 365; i += 1) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    if (!dates.has(getDateKey(d))) break;
-    streak += 1;
-  }
-  return streak;
-};
 
 const getStartOfWeek = (date: Date) => {
   const d = new Date(date);
@@ -3138,18 +3639,25 @@ const getMonthlyEarnings = (logs: any[], hourlyRate: number) => {
   }, 0);
 };
 
-const buildChallenges = ({
-  goals,
-  activeGoals,
-  streakDays,
-  weeklyShiftCount,
-}: {
-  goals: Goal[];
-  activeGoals: Goal[];
-  streakDays: number;
-  weeklyShiftCount: number;
-}): Challenge[] => {
-  const weekStart = getStartOfWeek(new Date());
+const buildChallenges = (
+  {
+    goals,
+    activeGoals,
+    streakDays,
+    weeklyShiftCount,
+  }: {
+    goals: Goal[];
+    activeGoals: Goal[];
+    streakDays: number;
+    weeklyShiftCount: number;
+  },
+  weekStartDate?: Date
+): Challenge[] => {
+  const weekStart = getStartOfWeek(weekStartDate ?? new Date());
+  const weekSeed = Math.floor(
+    weekStart.getTime() / (1000 * 60 * 60 * 24 * 7)
+  );
+  const variant = Math.abs(weekSeed) % 3;
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
   const startDate = getDateKey(weekStart);
@@ -3163,48 +3671,59 @@ const buildChallenges = ({
     : 20;
   const saveProgress = primaryGoal ? Math.max(0, primaryGoal.savedAmount) : 0;
 
+  const saveBonus = variant === 0 ? 0 : variant === 1 ? 10 : 20;
+  const shiftTarget = variant === 0 ? 4 : variant === 1 ? 5 : 3;
+  const streakTarget = variant === 0 ? 3 : variant === 1 ? 4 : 2;
+  const saveTitle =
+    variant === 2
+      ? `Boost RM ${saveTarget + saveBonus} this week`
+      : primaryGoal
+        ? `Save RM ${saveTarget + saveBonus} this week`
+        : `Start saving RM ${20 + saveBonus}`;
+
   return [
     {
       id: "weekly-save",
-      title: primaryGoal ? `Save RM ${saveTarget} this week` : "Start saving RM 20",
+      title: saveTitle,
       description: primaryGoal
         ? `Boost your goal: ${primaryGoal.name}`
         : "Kickstart your savings habit",
       unit: "RM",
-      target: saveTarget,
-      progress: primaryGoal ? Math.min(saveProgress, saveTarget) : 0,
-      rewardXp: 60,
-      rewardCoins: 12,
+      target: saveTarget + saveBonus,
+      progress: primaryGoal ? Math.min(saveProgress, saveTarget + saveBonus) : 0,
+      rewardXp: variant === 1 ? 70 : variant === 2 ? 80 : 60,
+      rewardCoins: variant === 1 ? 14 : variant === 2 ? 16 : 12,
       startDate,
       endDate,
-      completed: primaryGoal ? saveProgress >= saveTarget : false,
+      completed: primaryGoal ? saveProgress >= saveTarget + saveBonus : false,
       meta: primaryGoal ? { goalId: primaryGoal.id } : undefined,
     },
     {
       id: "weekly-shifts",
-      title: "Log 4 shifts this week",
-      description: "Stay consistent with work logs",
+      title: `Log ${shiftTarget} shifts this week`,
+      description:
+        variant === 2 ? "Push for a flexible week" : "Stay consistent with work logs",
       unit: "shifts",
-      target: 4,
+      target: shiftTarget,
       progress: weeklyShiftCount,
-      rewardXp: 40,
-      rewardCoins: 10,
+      rewardXp: shiftTarget === 5 ? 50 : shiftTarget === 3 ? 30 : 40,
+      rewardCoins: shiftTarget === 5 ? 12 : shiftTarget === 3 ? 6 : 10,
       startDate,
       endDate,
-      completed: weeklyShiftCount >= 4,
+      completed: weeklyShiftCount >= shiftTarget,
     },
     {
       id: "streak-mini",
-      title: "Keep a 3-day streak",
-      description: "Log shifts 3 days in a row",
+      title: `Keep a ${streakTarget}-day streak`,
+      description: `Log shifts ${streakTarget} days in a row`,
       unit: "days",
-      target: 3,
+      target: streakTarget,
       progress: streakDays,
-      rewardXp: 30,
-      rewardCoins: 8,
+      rewardXp: streakTarget === 4 ? 45 : streakTarget === 2 ? 20 : 30,
+      rewardCoins: streakTarget === 4 ? 12 : streakTarget === 2 ? 6 : 8,
       startDate,
       endDate,
-      completed: streakDays >= 3,
+      completed: streakDays >= streakTarget,
     },
   ];
 };
@@ -3236,17 +3755,6 @@ const mergeProgress = (stored: Challenge[], generated: Challenge[]) => {
   });
 };
 
-const getLevelProgress = (xp: number) => {
-  const levels = [0, 100, 250, 450, 700, 1000, 1400, 1900];
-  let level = 1;
-  for (let i = 0; i < levels.length; i += 1) {
-    if (xp >= levels[i]) level = i + 1;
-  }
-  const currentFloor = levels[level - 1] ?? 0;
-  const nextXp = levels[level] ?? (currentFloor + 600);
-  const progress = Math.min(100, Math.round(((xp - currentFloor) / (nextXp - currentFloor)) * 100));
-  return { level, nextXp, progress };
-};
 
 const getTimeLeftLabel = (endDate: string) => {
   if (!endDate) return "";

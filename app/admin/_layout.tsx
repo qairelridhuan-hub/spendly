@@ -277,7 +277,12 @@ export default function AdminLayout() {
           </View>
         </View>
 
-        <View style={{ flex: 1 }}>
+        <View
+          style={{
+            flex: 1,
+            ...(Platform.OS === "web" ? { overflowY: "auto" } : null),
+          }}
+        >
           <View
             style={{
               paddingHorizontal: 24,
