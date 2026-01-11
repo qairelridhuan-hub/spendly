@@ -13,21 +13,19 @@ import {
   View,
 } from "react-native";
 import { auth, db } from "@/lib/firebase";
-import { useTheme } from "@/lib/context";
 
 export default function AdminLogin() {
-  const { colors } = useTheme();
   const adminUi = {
-    background: ["#070b14", "#0f172a", "#111827"],
-    card: "#0b1220",
-    cardBorder: "#1f2937",
-    text: "#f8fafc",
-    textMuted: "#94a3b8",
-    accent: "#ef4444",
-    accentStrong: "#dc2626",
-    inputBg: "#0f172a",
-    inputBorder: "#334155",
-    danger: "#f97316",
+    background: ["#f8fafc", "#f1f5f9", "#e2e8f0"],
+    card: "#ffffff",
+    cardBorder: "#e2e8f0",
+    text: "#0f172a",
+    textMuted: "#64748b",
+    accent: "#0ea5e9",
+    accentStrong: "#0284c7",
+    inputBg: "#f8fafc",
+    inputBorder: "#cbd5e1",
+    danger: "#ef4444",
   };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -85,7 +83,7 @@ export default function AdminLogin() {
           width: 380,
           height: 380,
           borderRadius: 190,
-          backgroundColor: "rgba(239,68,68,0.16)",
+          backgroundColor: "rgba(14,165,233,0.16)",
           top: -160,
           right: -160,
         }}
@@ -96,7 +94,7 @@ export default function AdminLogin() {
           width: 520,
           height: 520,
           borderRadius: 260,
-          backgroundColor: "rgba(14,116,144,0.2)",
+          backgroundColor: "rgba(2,132,199,0.18)",
           bottom: -240,
           left: -220,
         }}
@@ -158,9 +156,9 @@ export default function AdminLogin() {
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 999,
-              backgroundColor: "rgba(239,68,68,0.14)",
+              backgroundColor: "rgba(14,165,233,0.14)",
               borderWidth: 1,
-              borderColor: "rgba(239,68,68,0.4)",
+              borderColor: "rgba(14,165,233,0.4)",
               marginBottom: 12,
             }}
           >
@@ -191,7 +189,7 @@ export default function AdminLogin() {
           <View style={{ position: "relative", marginBottom: 12 }}>
             <Mail
               size={20}
-              color={colors.textMuted}
+              color={adminUi.textMuted}
               style={{ position: "absolute", left: 14, top: 16 }}
             />
             <TextInput

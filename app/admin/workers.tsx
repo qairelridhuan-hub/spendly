@@ -12,7 +12,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Edit, Search, Trash2, UserPlus, Users, X } from "lucide-react-native";
 import {
-  addDoc,
   collection,
   collectionGroup,
   deleteDoc,
@@ -24,7 +23,8 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "@/lib/firebase";
 import { adminPalette } from "@/lib/admin/palette";
 import { getPeriodKey } from "@/lib/reports/report";
 
@@ -32,13 +32,12 @@ type Worker = {
   id: string;
   name: string;
   email: string;
+  authUid?: string;
   workerCode?: string;
   phone?: string;
   position?: string;
   hourlyRate?: number;
   status?: string;
-  scheduleId?: string;
-  scheduleName?: string;
 };
 
 export default function AdminWorkers() {
@@ -48,18 +47,17 @@ export default function AdminWorkers() {
   const searchAnim = useRef(new Animated.Value(0)).current;
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [status, setStatus] = useState("");
-  const [scheduleMap, setScheduleMap] = useState<Record<string, any>>({});
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
-  const [assignWorkerId, setAssignWorkerId] = useState<string | null>(null);
-  const [assignScheduleId, setAssignScheduleId] = useState<string | null>(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState<any | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null);
   const [formError, setFormError] = useState("");
+  const createWorkerAuth = useMemo(
+    () => httpsCallable(functions, "createWorkerAuth"),
+    []
+  );
 
   const isValidEmail = (value: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -114,25 +112,15 @@ export default function AdminWorkers() {
           id: docSnap.id,
           name: data.fullName || data.displayName || "Worker",
           email: data.email || "",
+          authUid: data.authUid || "",
           workerCode: data.workerCode || "",
           phone: data.phone || "",
           position: data.position || "",
           hourlyRate: Number(data.hourlyRate ?? 0),
           status: data.status || "active",
-          scheduleId: data.scheduleId || "",
-          scheduleName: data.scheduleName || "",
         };
       });
       setWorkers(list);
-    });
-
-    const schedulesQuery = collection(db, "workSchedules");
-    const unsubSchedules = onSnapshot(schedulesQuery, snapshot => {
-      const map: Record<string, any> = {};
-      snapshot.forEach(docSnap => {
-        map[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
-      });
-      setScheduleMap(map);
     });
 
     const attendanceQuery = collectionGroup(db, "attendance");
@@ -143,7 +131,6 @@ export default function AdminWorkers() {
 
     return () => {
       unsubWorkers();
-      unsubSchedules();
       unsubAttendance();
     };
   }, []);
@@ -211,9 +198,20 @@ export default function AdminWorkers() {
       setFormError(error);
       return;
     }
+    const normalizedEmail = formData.email.trim().toLowerCase();
+    const uidOverride = formData.uid.trim();
+    const emailConflict = workers.find(
+      worker =>
+        worker.email?.trim().toLowerCase() === normalizedEmail &&
+        worker.id !== uidOverride
+    );
+    if (emailConflict) {
+      setFormError("Email is already assigned to another worker.");
+      return;
+    }
     const payload = {
       fullName: formData.name.trim(),
-      email: formData.email.trim(),
+      email: normalizedEmail,
       workerCode: formData.workerCode || getNextWorkerCode(),
       phone: formData.phone.trim(),
       position: formData.position.trim(),
@@ -224,19 +222,38 @@ export default function AdminWorkers() {
       updatedAt: serverTimestamp(),
     };
     try {
-      if (formData.uid.trim()) {
-        await setDoc(doc(db, "users", formData.uid.trim()), payload, { merge: true });
-      } else {
-        await addDoc(collection(db, "users"), {
-          ...payload,
-          createdAt: serverTimestamp(),
-        });
-        setStatus("Worker profile created. Link to Auth UID when available.");
+      const authResult = await createWorkerAuth({
+        email: normalizedEmail,
+        displayName: formData.name.trim(),
+        uid: uidOverride || undefined,
+      });
+      const authUid = String(authResult.data?.uid || "");
+      const resetLink = String(authResult.data?.resetLink || "");
+      const created = Boolean(authResult.data?.created);
+      if (!authUid) {
+        setFormError("Failed to create Auth account.");
+        return;
       }
+
+      await setDoc(
+        doc(db, "users", authUid),
+        {
+          ...payload,
+          authUid,
+          ...(uidOverride ? {} : { createdAt: serverTimestamp() }),
+        },
+        { merge: true }
+      );
+      setStatus(
+        created
+          ? `Worker created in Auth. Reset link: ${resetLink}`
+          : `Auth account already exists. Reset link: ${resetLink}`
+      );
       resetForm();
       setShowAddModal(false);
-    } catch {
-      setFormError("Failed to add worker.");
+    } catch (err: any) {
+      const message = err?.message || "Failed to add worker.";
+      setFormError(message);
     }
   };
 
@@ -294,28 +311,6 @@ export default function AdminWorkers() {
       status: (worker.status as "active" | "inactive") || "active",
     });
     setShowEditModal(true);
-  };
-
-  const handleAssignSchedule = async () => {
-    if (!assignWorkerId || !assignScheduleId) {
-      setStatus("Select a worker and schedule first.");
-      return;
-    }
-    try {
-      const schedule = scheduleMap[assignScheduleId];
-      if (!schedule) {
-        setStatus("Selected schedule not found.");
-        return;
-      }
-      await updateDoc(doc(db, "users", assignWorkerId), {
-        scheduleId: assignScheduleId,
-        scheduleName: schedule.name || "",
-        updatedAt: serverTimestamp(),
-      });
-      setStatus("Schedule assigned to worker.");
-    } catch {
-      setStatus("Failed to assign schedule.");
-    }
   };
 
   return (
@@ -390,66 +385,6 @@ export default function AdminWorkers() {
           </TouchableOpacity>
         </View>
 
-        <View style={assignCard}>
-          <Text style={assignTitle}>Assign Schedule</Text>
-          <Text style={assignSubtitle}>
-            Select a worker and schedule to link them.
-          </Text>
-          <View style={assignRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={inputLabel}>Worker</Text>
-              <View style={chipRow}>
-                {workers.map(worker => (
-                  <TouchableOpacity
-                    key={worker.id}
-                    style={[
-                      chip,
-                      assignWorkerId === worker.id && chipActive,
-                    ]}
-                    onPress={() => setAssignWorkerId(worker.id)}
-                  >
-                    <Text
-                      style={[
-                        chipText,
-                        assignWorkerId === worker.id && chipTextActive,
-                      ]}
-                    >
-                      {worker.name} {worker.workerCode ? `(${worker.workerCode})` : ""}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={inputLabel}>Schedule</Text>
-              <View style={chipRow}>
-                {Object.values(scheduleMap).map((schedule: any) => (
-                  <TouchableOpacity
-                    key={schedule.id}
-                    style={[
-                      chip,
-                      assignScheduleId === schedule.id && chipActive,
-                    ]}
-                    onPress={() => setAssignScheduleId(schedule.id)}
-                  >
-                    <Text
-                      style={[
-                        chipText,
-                        assignScheduleId === schedule.id && chipTextActive,
-                      ]}
-                    >
-                      {schedule.name || "Schedule"}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-          <TouchableOpacity style={assignButton} onPress={handleAssignSchedule}>
-            <Text style={assignButtonText}>Assign</Text>
-          </TouchableOpacity>
-        </View>
-
         {filteredWorkers.length === 0 ? (
           <View style={emptyCard}>
             <Users size={44} color={adminPalette.textMuted} />
@@ -469,7 +404,6 @@ export default function AdminWorkers() {
                 "Total Hours",
                 "Earnings",
                 "Status",
-                "Schedule",
                 "Actions",
               ].map(label => (
                 <Text
@@ -478,7 +412,6 @@ export default function AdminWorkers() {
                     tableHeaderText,
                     label === "Worker" && { minWidth: 220 },
                     label === "Status" && { minWidth: 140 },
-                    label === "Schedule" && { minWidth: 120 },
                   ]}
                 >
                   {label}
@@ -524,26 +457,6 @@ export default function AdminWorkers() {
                     >
                       {worker.status === "active" ? "Active" : "Inactive"}
                     </Text>
-                  </View>
-                  <View style={[tableCell, { minWidth: 120 }]}>
-                    {worker.scheduleId ? (
-                      <TouchableOpacity
-                        style={scheduleChip}
-                        onPress={() => {
-                          const schedule = scheduleMap[worker.scheduleId];
-                          if (schedule) {
-                            setSelectedSchedule(schedule);
-                            setShowScheduleModal(true);
-                          }
-                        }}
-                      >
-                        <Text style={scheduleChipText}>
-                          {worker.scheduleName || "View schedule"}
-                        </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <Text style={tableCellMuted}>Not assigned</Text>
-                    )}
                   </View>
                   <View style={tableCell}>
                     <View style={{ flexDirection: "row", gap: 8 }}>
@@ -598,8 +511,7 @@ export default function AdminWorkers() {
                 style={input}
               />
               <Text style={inputHint}>
-                If you leave this empty, a worker profile will be created but it won’t
-                auto-link to login until you set the UID.
+                Leave this empty to auto-create an Auth account and show a reset link.
               </Text>
 
               <Text style={inputLabel}>Worker Code</Text>
@@ -817,51 +729,6 @@ export default function AdminWorkers() {
         </View>
       ) : null}
 
-      {showScheduleModal && selectedSchedule ? (
-        <View style={overlay}>
-          <View style={modal}>
-            <View style={modalHeader}>
-              <Text style={modalTitle}>Schedule Details</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowScheduleModal(false);
-                  setSelectedSchedule(null);
-                }}
-                style={iconButton}
-              >
-                <X size={16} color={adminPalette.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <View style={modalBody}>
-              <Text style={inputLabel}>Schedule Name</Text>
-              <Text style={valueText}>
-                {selectedSchedule.name || "Schedule"}
-              </Text>
-              <Text style={inputLabel}>Working Days</Text>
-              <Text style={valueText}>
-                {Array.isArray(selectedSchedule.days)
-                  ? selectedSchedule.days.join(", ")
-                  : "-"}
-              </Text>
-              <Text style={inputLabel}>Time</Text>
-              <Text style={valueText}>
-                {selectedSchedule.startTime || "--:--"} -{" "}
-                {selectedSchedule.endTime || "--:--"}
-              </Text>
-              <Text style={inputLabel}>Hourly Rate</Text>
-              <Text style={valueText}>
-                RM {Number(selectedSchedule.hourlyRate ?? 0).toFixed(2)}
-              </Text>
-              {selectedSchedule.description ? (
-                <>
-                  <Text style={inputLabel}>Description</Text>
-                  <Text style={valueText}>{selectedSchedule.description}</Text>
-                </>
-              ) : null}
-            </View>
-          </View>
-        </View>
-      ) : null}
     </LinearGradient>
   );
 }
@@ -1017,54 +884,6 @@ const iconButton = {
   borderRadius: 10,
   backgroundColor: adminPalette.surfaceAlt,
 };
-
-const assignCard = {
-  marginTop: 16,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  padding: 16,
-};
-
-const assignTitle = { color: adminPalette.text, fontWeight: "600", fontSize: 14 };
-const assignSubtitle = { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 };
-const assignRow = { flexDirection: "row" as const, gap: 12, marginTop: 12 };
-const chipRow = { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 6, marginTop: 6 };
-const chip = {
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  backgroundColor: adminPalette.surfaceAlt,
-};
-const chipActive = {
-  borderColor: adminPalette.accent,
-  backgroundColor: adminPalette.infoSoft,
-};
-const chipText = { color: adminPalette.textMuted, fontSize: 11 };
-const chipTextActive = { color: adminPalette.accent, fontWeight: "600" as const };
-const assignButton = {
-  marginTop: 12,
-  alignSelf: "flex-start" as const,
-  paddingHorizontal: 14,
-  paddingVertical: 8,
-  borderRadius: 10,
-  backgroundColor: adminPalette.brand,
-};
-const assignButtonText = { color: "#fff", fontSize: 12, fontWeight: "600" as const };
-
-const scheduleChip = {
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 999,
-  backgroundColor: adminPalette.infoSoft,
-  borderWidth: 1,
-  borderColor: adminPalette.accent,
-};
-
-const scheduleChipText = { color: adminPalette.accent, fontSize: 11 };
 
 const overlay = {
   ...StyleSheet.absoluteFillObject,

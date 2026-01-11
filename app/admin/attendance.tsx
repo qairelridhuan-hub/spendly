@@ -33,6 +33,8 @@ export default function AdminAttendance() {
   >("all");
   const [exceptionWorkerId, setExceptionWorkerId] = useState("all");
   const [showWorkerMenu, setShowWorkerMenu] = useState(false);
+  const [attendanceWorkerId, setAttendanceWorkerId] = useState("all");
+  const [showAttendanceWorkerMenu, setShowAttendanceWorkerMenu] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
@@ -375,7 +377,14 @@ export default function AdminAttendance() {
   }, [logs, todayKey, weeklyStart, weeklyEnd, overtimeLogs]);
 
   const totalWorkers = useMemo(() => Object.keys(workers).length, [workers]);
-  const sortedLogs = useMemo(() => sortLogsByDate(logs, sortOrder), [logs, sortOrder]);
+  const filteredLogs = useMemo(() => {
+    if (attendanceWorkerId === "all") return logs;
+    return logs.filter(log => log.workerId === attendanceWorkerId);
+  }, [attendanceWorkerId, logs]);
+  const sortedLogs = useMemo(
+    () => sortLogsByDate(filteredLogs, sortOrder),
+    [filteredLogs, sortOrder]
+  );
   const breakMap = useMemo(() => buildBreakMap(breakLogs), [breakLogs]);
   const overtimeMap = useMemo(() => buildOvertimeMap(overtimeLogs), [overtimeLogs]);
   const workerOptions = useMemo(() => {
@@ -595,36 +604,78 @@ export default function AdminAttendance() {
         <View style={tableCard}>
           <View style={tableHeader}>
             <Text style={tableTitle}>Attendance Records</Text>
-            <View style={sortControls}>
-              <TouchableOpacity
-                style={[sortButton, sortOrder === "latest" && sortButtonActive]}
-                onPress={() => setSortOrder("latest")}
-              >
-                <Text
-                  style={[
-                    sortButtonText,
-                    sortOrder === "latest" && sortButtonTextActive,
-                  ]}
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <View style={{ position: "relative" }}>
+                <TouchableOpacity
+                  style={workerButton}
+                  onPress={() => {
+                    setShowAttendanceWorkerMenu(prev => !prev);
+                    if (showWorkerMenu) setShowWorkerMenu(false);
+                  }}
                 >
-                  Latest First
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[sortButton, sortOrder === "oldest" && sortButtonActive]}
-                onPress={() => setSortOrder("oldest")}
-              >
-                <Text
-                  style={[
-                    sortButtonText,
-                    sortOrder === "oldest" && sortButtonTextActive,
-                  ]}
+                  <Text style={workerButtonText}>
+                    {workerOptions.find(option => option.id === attendanceWorkerId)?.name ||
+                      "All workers"}
+                  </Text>
+                  <ChevronDown size={14} color={adminPalette.textMuted} />
+                </TouchableOpacity>
+                {showAttendanceWorkerMenu ? (
+                  <View style={workerMenu}>
+                    {workerOptions.map(option => (
+                      <TouchableOpacity
+                        key={option.id}
+                        style={workerMenuItem}
+                        onPress={() => {
+                          setAttendanceWorkerId(option.id);
+                          setShowAttendanceWorkerMenu(false);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            workerMenuText,
+                            attendanceWorkerId === option.id &&
+                              workerMenuTextActive,
+                          ]}
+                        >
+                          {option.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+              <View style={sortControls}>
+                <TouchableOpacity
+                  style={[sortButton, sortOrder === "latest" && sortButtonActive]}
+                  onPress={() => setSortOrder("latest")}
                 >
-                  Oldest First
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[
+                      sortButtonText,
+                      sortOrder === "latest" && sortButtonTextActive,
+                    ]}
+                  >
+                    Latest First
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[sortButton, sortOrder === "oldest" && sortButtonActive]}
+                  onPress={() => setSortOrder("oldest")}
+                >
+                  <Text
+                    style={[
+                      sortButtonText,
+                      sortOrder === "oldest" && sortButtonTextActive,
+                    ]}
+                  >
+                    Oldest First
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
+          {showAttendanceWorkerMenu ? <View style={menuSpacer} /> : null}
           {sortedLogs.length === 0 ? (
             <View style={{ padding: 20 }}>
               <Text style={emptyText}>No attendance records yet.</Text>
@@ -920,6 +971,9 @@ const tableHeader = {
   flexDirection: "row" as const,
   alignItems: "center" as const,
   justifyContent: "space-between" as const,
+  position: "relative" as const,
+  zIndex: 3,
+  overflow: "visible" as const,
 };
 
 const tableTitle = { color: adminPalette.text, fontWeight: "600" };
@@ -1011,8 +1065,8 @@ const workerMenu = {
   borderWidth: 1,
   borderColor: adminPalette.border,
   paddingVertical: 6,
-  zIndex: 10,
-  elevation: 6,
+  zIndex: 20,
+  elevation: 10,
   shadowColor: "#000",
   shadowOpacity: 0.3,
   shadowRadius: 10,

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Clock, Edit, Plus, Trash2, X } from "lucide-react-native";
+import { ChevronDown, Clock, Edit, Plus, Trash2, X } from "lucide-react-native";
 import {
   addDoc,
   collection,
@@ -34,6 +36,7 @@ type Schedule = {
   endTime: string;
   hourlyRate: number;
   description?: string;
+  location?: string;
 };
 
 const dayOptions = [
@@ -44,6 +47,29 @@ const dayOptions = [
   "Friday",
   "Saturday",
   "Sunday",
+];
+
+const padDatePart = (value: number) => String(value).padStart(2, "0");
+const formatLocalDate = (date: Date) =>
+  `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(
+    date.getDate()
+  )}`;
+
+const baseRoleOptions = [
+  "Cashier",
+  "Barista",
+  "Server",
+  "Kitchen Staff",
+  "Cleaner",
+  "Supervisor",
+];
+
+const baseLocationOptions = [
+  "Main Branch",
+  "Cafe A",
+  "Cafe B",
+  "Kiosk 1",
+  "Kiosk 2",
 ];
 
 export default function AdminSetup() {
@@ -57,10 +83,37 @@ export default function AdminSetup() {
     "latest"
   );
   const [formError, setFormError] = useState("");
-  const [workers, setWorkers] = useState<{ id: string; name: string; scheduleId?: string }[]>([]);
+  const [workers, setWorkers] = useState<
+    { id: string; name: string; scheduleId?: string; position?: string; location?: string }[]
+  >([]);
   const [workerMap, setWorkerMap] = useState<Record<string, { name: string; code?: string }>>({});
-  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [assignStatus, setAssignStatus] = useState("");
+  const [shiftAssignStatus, setShiftAssignStatus] = useState("");
+  const [shiftFormError, setShiftFormError] = useState("");
+  const [showShiftAssign, setShowShiftAssign] = useState(false);
+  const [showShiftDatePicker, setShowShiftDatePicker] = useState(false);
+  const [draftShiftDate, setDraftShiftDate] = useState(new Date());
+  const [shiftDateConfirmed, setShiftDateConfirmed] = useState(false);
+  const [shiftWorkerIds, setShiftWorkerIds] = useState<string[]>([]);
+  const [activeRoleMenuWorkerId, setActiveRoleMenuWorkerId] = useState<string | null>(
+    null
+  );
+  const [activeLocationMenuWorkerId, setActiveLocationMenuWorkerId] = useState<
+    string | null
+  >(null);
+  const [showStartTimeMenu, setShowStartTimeMenu] = useState(false);
+  const [showEndTimeMenu, setShowEndTimeMenu] = useState(false);
+  const [configRoles, setConfigRoles] = useState<string[]>([]);
+  const [configLocations, setConfigLocations] = useState<string[]>([]);
+  const [shiftForm, setShiftForm] = useState({
+    date: "",
+    start: "09:00",
+    end: "17:00",
+  });
+  const [shiftAssignments, setShiftAssignments] = useState<
+    Record<string, { role: string; location: string }>
+  >({});
   const [shifts, setShifts] = useState<any[]>([]);
   const [shiftToDelete, setShiftToDelete] = useState<string | null>(null);
   const [showShiftDelete, setShowShiftDelete] = useState(false);
@@ -93,6 +146,7 @@ export default function AdminSetup() {
           endTime: data.endTime || "17:00",
           hourlyRate: Number(data.hourlyRate ?? 0),
           description: data.description || "",
+          location: data.location || "",
         } as Schedule;
       });
       setWorkSchedules(list);
@@ -108,6 +162,8 @@ export default function AdminSetup() {
           id: docSnap.id,
           name: data.fullName || data.displayName || data.email || "Worker",
           scheduleId: data.scheduleId || "",
+          position: data.position || "",
+          location: data.location || "",
         };
       });
       setWorkers(list);
@@ -146,12 +202,21 @@ export default function AdminSetup() {
         setAttendanceMap(map);
       }
     );
+    const configRef = doc(db, "config", "system");
+    const unsubConfig = onSnapshot(configRef, snap => {
+      const data = snap.data() as any;
+      setConfigRoles(Array.isArray(data?.roles) ? data.roles.map(String) : []);
+      setConfigLocations(
+        Array.isArray(data?.locations) ? data.locations.map(String) : []
+      );
+    });
 
     return () => {
       unsub();
       unsubWorkers();
       unsubShifts();
       unsubAttendance();
+      unsubConfig();
     };
   }, []);
 
@@ -177,6 +242,11 @@ export default function AdminSetup() {
   };
 
   const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  const isValidDate = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(`${value}T00:00:00`);
+    return !Number.isNaN(parsed.getTime());
+  };
   const toMinutes = (value: string) => {
     const [hours, minutes] = value.split(":").map(Number);
     return (hours || 0) * 60 + (minutes || 0);
@@ -224,23 +294,125 @@ export default function AdminSetup() {
 
   const handleAssignSchedule = async (schedule: Schedule) => {
     setAssignStatus("");
-    if (!selectedWorkerId) {
-      setAssignStatus("Select a worker first.");
+    if (!selectedWorkerIds.length) {
+      setAssignStatus("Select at least one worker.");
       return;
     }
     try {
-      await setDoc(
-        doc(db, "users", selectedWorkerId),
-        {
-          scheduleId: schedule.id,
-          scheduleName: schedule.name,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
+      await Promise.all(
+        selectedWorkerIds.map(workerId =>
+          setDoc(
+            doc(db, "users", workerId),
+            {
+              scheduleId: schedule.id,
+              scheduleName: schedule.name,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true }
+          )
+        )
       );
-      setAssignStatus("Schedule assigned to worker.");
+      setAssignStatus(
+        `Schedule assigned to ${selectedWorkerIds.length} worker(s).`
+      );
     } catch {
       setAssignStatus("Failed to assign schedule.");
+    }
+  };
+
+  const getWorkerSchedule = (workerId: string) => {
+    const worker = workers.find(item => item.id === workerId);
+    if (!worker?.scheduleId) return null;
+    return workSchedules.find(item => item.id === worker.scheduleId) || null;
+  };
+
+  const toggleScheduleWorker = (workerId: string) => {
+    setSelectedWorkerIds(prev =>
+      prev.includes(workerId) ? prev.filter(id => id !== workerId) : [...prev, workerId]
+    );
+  };
+
+  const selectShiftWorker = (workerId: string) => {
+    setShiftWorkerIds(prev => {
+      const exists = prev.includes(workerId);
+      const next = exists ? prev.filter(id => id !== workerId) : [...prev, workerId];
+      const nextSelected = next.length === 1 ? next[0] : null;
+      if (nextSelected) {
+        const schedule = getWorkerSchedule(nextSelected);
+        if (schedule) {
+          setShiftForm(form => ({
+            ...form,
+            start: schedule.startTime || form.start,
+            end: schedule.endTime || form.end,
+          }));
+        }
+      }
+      return next;
+    });
+    setShiftAssignStatus("");
+    setShiftFormError("");
+    setShiftAssignments(prev => {
+      const next = { ...prev };
+      if (next[workerId]) {
+        delete next[workerId];
+      } else {
+        next[workerId] = { role: "", location: "" };
+      }
+      return next;
+    });
+  };
+
+  const handleAssignShift = async () => {
+    setShiftAssignStatus("");
+    setShiftFormError("");
+    const error = validateShiftForm();
+    if (error) {
+      setShiftFormError(error);
+      return;
+    }
+    const duplicate = shifts.some(shift => {
+      if (!shiftWorkerIds.includes(String(shift.workerId ?? ""))) return false;
+      return (
+        String(shift.date ?? "") === shiftForm.date &&
+        String(shift.start ?? "") === shiftForm.start &&
+        String(shift.end ?? "") === shiftForm.end
+      );
+    });
+    if (duplicate) {
+      setShiftFormError("Shift already exists for one or more selected workers.");
+      return;
+    }
+    const hours = Number(calculateHours(shiftForm.start, shiftForm.end));
+    try {
+      await Promise.all(
+        shiftWorkerIds.map(workerId => {
+          const assignment = shiftAssignments[workerId];
+          const schedule = getWorkerSchedule(workerId);
+          const payload: Record<string, any> = {
+            workerId,
+            date: shiftForm.date,
+            start: shiftForm.start,
+            end: shiftForm.end,
+            hours: Number.isFinite(hours) ? hours : 0,
+            type: "normal",
+            status: "scheduled",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          };
+          if (assignment?.role) payload.role = assignment.role;
+          if (assignment?.location) payload.location = assignment.location;
+          if (schedule) {
+            payload.scheduleId = schedule.id;
+            payload.scheduleName = schedule.name;
+          }
+          return addDoc(collection(db, "shifts"), payload);
+        })
+      );
+      setShiftAssignStatus(
+        `Shift assigned to ${shiftWorkerIds.length} worker(s).`
+      );
+    } catch {
+      setShiftFormError("Failed to assign shift.");
     }
   };
 
@@ -337,8 +509,132 @@ export default function AdminSetup() {
     return (hours * rate).toFixed(2);
   }, [formData]);
 
+  const shiftSchedule = useMemo(() => {
+    if (shiftWorkerIds.length !== 1) return null;
+    return getWorkerSchedule(shiftWorkerIds[0]);
+  }, [shiftWorkerIds, workers, workSchedules]);
+
+  const validateShiftForm = () => {
+    if (!shiftWorkerIds.length) return "Select at least one worker.";
+    if (!shiftDateConfirmed || !isValidDate(shiftForm.date)) {
+      return "Confirm a shift date.";
+    }
+    if (!isValidTime(shiftForm.start) || !isValidTime(shiftForm.end)) {
+      return "Start and end time must be in HH:MM format.";
+    }
+    if (toMinutes(shiftForm.start) >= toMinutes(shiftForm.end)) {
+      return "End time must be after start time.";
+    }
+    const missingRole = shiftWorkerIds.find(
+      workerId => !shiftAssignments[workerId]?.role?.trim()
+    );
+    if (missingRole) return "Select a role for each worker.";
+    const missingLocation = shiftWorkerIds.find(
+      workerId => !shiftAssignments[workerId]?.location?.trim()
+    );
+    if (missingLocation) return "Select a location for each worker.";
+    return "";
+  };
+
+  const canAssignShift = useMemo(
+    () => !validateShiftForm(),
+    [shiftAssignments, shiftDateConfirmed, shiftForm, shiftWorkerIds]
+  );
+
+  const canEditTime = useMemo(
+    () => shiftDateConfirmed && isValidDate(shiftForm.date),
+    [shiftDateConfirmed, shiftForm.date]
+  );
+
+  const canEditRoleLocation = useMemo(() => {
+    if (!canEditTime) return false;
+    if (!isValidTime(shiftForm.start) || !isValidTime(shiftForm.end)) return false;
+    return toMinutes(shiftForm.start) < toMinutes(shiftForm.end);
+  }, [canEditTime, shiftForm.end, shiftForm.start]);
+
+  const roleOptions = useMemo(() => {
+    if (!shiftWorkerIds.length) return [];
+    const options = new Set<string>();
+    baseRoleOptions.forEach(role => options.add(role));
+    shiftWorkerIds.forEach(workerId => {
+      const worker = workers.find(item => item.id === workerId);
+      const position = String(worker?.position ?? "").trim();
+      if (position) options.add(position);
+      const schedule = getWorkerSchedule(workerId);
+      const scheduleName = String(schedule?.name ?? "").trim();
+      if (scheduleName) options.add(scheduleName);
+    });
+    shifts.forEach(shift => {
+      if (!shiftWorkerIds.includes(String(shift.workerId ?? ""))) return;
+      const role = String(shift.role ?? "").trim();
+      if (role) options.add(role);
+    });
+    configRoles.forEach(role => {
+      const value = String(role ?? "").trim();
+      if (value) options.add(value);
+    });
+    return Array.from(options).sort((a, b) => a.localeCompare(b));
+  }, [configRoles, shiftWorkerIds, shifts, workers, workSchedules]);
+
+  const locationOptions = useMemo(() => {
+    if (!shiftWorkerIds.length) return [];
+    const options = new Set<string>();
+    baseLocationOptions.forEach(location => options.add(location));
+    shiftWorkerIds.forEach(workerId => {
+      const worker = workers.find(item => item.id === workerId);
+      const location = String(worker?.location ?? "").trim();
+      if (location) options.add(location);
+      const schedule = getWorkerSchedule(workerId) as any;
+      const scheduleLocation = String(schedule?.location ?? "").trim();
+      if (scheduleLocation) options.add(scheduleLocation);
+    });
+    shifts.forEach(shift => {
+      if (!shiftWorkerIds.includes(String(shift.workerId ?? ""))) return;
+      const location = String(shift.location ?? "").trim();
+      if (location) options.add(location);
+    });
+    configLocations.forEach(location => {
+      const value = String(location ?? "").trim();
+      if (value) options.add(value);
+    });
+    return Array.from(options).sort((a, b) => a.localeCompare(b));
+  }, [configLocations, shiftWorkerIds, shifts, workers, workSchedules]);
+
 
   const todayKey = new Date().toISOString().slice(0, 10);
+  const monthStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }, []);
+  const monthEnd = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  }, []);
+
+  const calendarDays = useMemo(() => {
+    const daysInMonth = monthEnd.getDate();
+    const firstDay = new Date(
+      monthStart.getFullYear(),
+      monthStart.getMonth(),
+      1
+    ).getDay();
+    const slots: Array<number | null> = [];
+    for (let i = 0; i < firstDay; i += 1) slots.push(null);
+    for (let day = 1; day <= daysInMonth; day += 1) slots.push(day);
+    return slots;
+  }, [monthEnd, monthStart]);
+
+  const timeOptions = useMemo(() => {
+    const options: string[] = [];
+    for (let hour = 0; hour < 24; hour += 1) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const h = String(hour).padStart(2, "0");
+        const m = String(minute).padStart(2, "0");
+        options.push(`${h}:${m}`);
+      }
+    }
+    return options;
+  }, []);
   const resolveShiftStatus = (shift: any) => {
     const status = String(shift.status || "scheduled");
     if (status === "absent") return "absent";
@@ -401,8 +697,7 @@ export default function AdminSetup() {
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => {
-              resetForm();
-              setShowAddModal(true);
+              setShowShiftAssign(prev => !prev);
             }}
           >
             <Plus size={18} color="#fff" />
@@ -423,180 +718,286 @@ export default function AdminSetup() {
           ))}
         </View>
 
-        {workSchedules.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Clock size={44} color={adminPalette.textMuted} />
-            <Text style={styles.emptyTitle}>No Work Schedules</Text>
-            <Text style={styles.emptyText}>
-              Create your first work schedule to get started
-            </Text>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => {
-                resetForm();
-                setShowAddModal(true);
-              }}
-            >
-              <Plus size={18} color="#fff" />
-              <Text style={styles.primaryButtonText}>Create First Schedule</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.grid}>
-            {workSchedules.map(schedule => {
-              const hours = calculateHours(schedule.startTime, schedule.endTime);
-              const dailyEarnings = (
-                Number(hours) * schedule.hourlyRate
-              ).toFixed(2);
-              return (
-                <View key={schedule.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitle}>{schedule.name}</Text>
-                      <Text style={styles.cardSubtitle}>
-                        {schedule.description || "No description"}
-                      </Text>
-                    </View>
-                    <View style={styles.cardActions}>
-                      <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={() => openEditModal(schedule.id)}
-                      >
-                        <Edit size={16} color={adminPalette.textMuted} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.iconButton, styles.dangerButton]}
-                        onPress={() => openDeleteConfirm(schedule.id)}
-                      >
-                        <Trash2 size={16} color={adminPalette.danger} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <View style={styles.cardBody}>
-                    <View style={styles.rowBetween}>
-                      <Text style={styles.label}>Time</Text>
-                      <Text style={styles.value}>
-                        {schedule.startTime} - {schedule.endTime}
-                      </Text>
-                    </View>
-                    <View style={styles.rowBetween}>
-                      <Text style={styles.label}>Hours/Day</Text>
-                      <Text style={styles.value}>{hours}h</Text>
-                    </View>
-                    <View style={styles.rowBetween}>
-                      <Text style={styles.label}>Hourly Rate</Text>
-                      <Text style={styles.value}>
-                        RM {schedule.hourlyRate.toFixed(2)}
-                      </Text>
-                    </View>
-                    <View style={styles.rowBetween}>
-                      <Text style={styles.label}>Daily Earnings</Text>
-                      <Text style={styles.value}>RM {dailyEarnings}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.footerLabel}>Working Days</Text>
-                    <View style={styles.dayRow}>
-                      {schedule.days.map(day => (
-                        <View key={day} style={styles.dayChip}>
-                          <Text style={styles.dayChipText}>
-                            {day.slice(0, 3)}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-
-                  <View style={styles.assignRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Assign to worker</Text>
-                      <View style={styles.workerChips}>
-                        {workers.length === 0 ? (
-                          <Text style={styles.assignHint}>No workers yet</Text>
-                        ) : (
-                          workers.map(worker => (
-                            <TouchableOpacity
-                              key={worker.id}
-                              onPress={() => setSelectedWorkerId(worker.id)}
-                              style={[
-                                styles.workerChip,
-                                selectedWorkerId === worker.id &&
-                                  styles.workerChipActive,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.workerChipText,
-                                  selectedWorkerId === worker.id &&
-                                    styles.workerChipTextActive,
-                                ]}
-                              >
-                                {worker.name}
-                              </Text>
-                            </TouchableOpacity>
-                          ))
-                        )}
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.assignButton}
-                      onPress={() => handleAssignSchedule(schedule)}
-                    >
-                      <Text style={styles.assignButtonText}>Assign</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
         {assignStatus ? (
           <Text style={styles.assignStatus}>{assignStatus}</Text>
         ) : null}
 
-        <View style={styles.shiftSection}>
-          <View style={styles.rowBetween}>
-            <View>
-              <Text style={styles.sectionTitle}>Shifts</Text>
-              <Text style={styles.subtitle}>Past and upcoming shifts</Text>
+        {showShiftAssign ? (
+          <View style={[styles.card, styles.shiftAssignCard]}>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.sectionTitle}>Assign Shift Date</Text>
+                <Text style={styles.subtitle}>
+                  Choose worker(s) and date for a shift.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.assignButton, !canAssignShift && styles.assignButtonDisabled]}
+                onPress={handleAssignShift}
+                disabled={!canAssignShift}
+              >
+                <Text style={styles.assignButtonText}>Assign Shift</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.sortControls}>
-              <TouchableOpacity
-                style={[
-                  styles.sortButton,
-                  shiftSortOrder === "latest" && styles.sortButtonActive,
-                ]}
-                onPress={() => setShiftSortOrder("latest")}
-              >
-                <Text
-                  style={[
-                    styles.sortButtonText,
-                    shiftSortOrder === "latest" && styles.sortButtonTextActive,
-                  ]}
-                >
-                  Latest First
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.sortButton,
-                  shiftSortOrder === "oldest" && styles.sortButtonActive,
-                ]}
-                onPress={() => setShiftSortOrder("oldest")}
-              >
-                <Text
-                  style={[
-                    styles.sortButtonText,
-                    shiftSortOrder === "oldest" && styles.sortButtonTextActive,
-                  ]}
-                >
-                  Oldest First
-                </Text>
-              </TouchableOpacity>
+
+            <View style={{ marginTop: 12, gap: 12 }}>
+              <View>
+                <Text style={styles.inputLabel}>Workers *</Text>
+                <View style={styles.workerChips}>
+                  {workers.length === 0 ? (
+                    <Text style={styles.assignHint}>No workers yet</Text>
+                  ) : (
+                    workers.map(worker => (
+                      <TouchableOpacity
+                        key={worker.id}
+                        onPress={() => selectShiftWorker(worker.id)}
+                        style={[
+                          styles.workerChip,
+                          shiftWorkerIds.includes(worker.id) &&
+                            styles.workerChipActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.workerChipText,
+                            shiftWorkerIds.includes(worker.id) &&
+                              styles.workerChipTextActive,
+                          ]}
+                        >
+                          {worker.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+                {shiftWorkerIds.length === 1 ? (
+                  shiftSchedule ? (
+                    <Text style={styles.assignHint}>
+                      Using {shiftSchedule.name} ({shiftSchedule.startTime}-
+                      {shiftSchedule.endTime})
+                    </Text>
+                  ) : (
+                    <Text style={styles.assignHint}>
+                      No schedule assigned. Set time manually.
+                    </Text>
+                  )
+                ) : null}
+              </View>
+
+              <View style={styles.rowGap}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Shift Date *</Text>
+                  <TouchableOpacity
+                    style={styles.input}
+                    onPress={() => {
+                      const parsed = isValidDate(shiftForm.date)
+                        ? new Date(`${shiftForm.date}T00:00:00`)
+                        : new Date();
+                      setDraftShiftDate(parsed);
+                      setShowShiftDatePicker(true);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.inputText,
+                        !shiftDateConfirmed && styles.inputPlaceholderText,
+                      ]}
+                    >
+                      {shiftDateConfirmed ? shiftForm.date : "Select date"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.rowGap}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Start Time *</Text>
+                  <View style={styles.dropdownWrap}>
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownButton,
+                        !canEditTime && styles.dropdownButtonDisabled,
+                      ]}
+                      onPress={() => {
+                        if (!canEditTime) return;
+                        setShowStartTimeMenu(true);
+                        setShowEndTimeMenu(false);
+                        setActiveRoleMenuWorkerId(null);
+                        setActiveLocationMenuWorkerId(null);
+                      }}
+                      disabled={!canEditTime}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownText,
+                          !shiftForm.start && styles.dropdownPlaceholder,
+                        ]}
+                      >
+                        {shiftForm.start || "Select time"}
+                      </Text>
+                      <ChevronDown size={14} color={adminPalette.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>End Time *</Text>
+                  <View style={styles.dropdownWrap}>
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownButton,
+                        !canEditTime && styles.dropdownButtonDisabled,
+                      ]}
+                      onPress={() => {
+                        if (!canEditTime) return;
+                        setShowEndTimeMenu(true);
+                        setShowStartTimeMenu(false);
+                        setActiveRoleMenuWorkerId(null);
+                        setActiveLocationMenuWorkerId(null);
+                      }}
+                      disabled={!canEditTime}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownText,
+                          !shiftForm.end && styles.dropdownPlaceholder,
+                        ]}
+                      >
+                        {shiftForm.end || "Select time"}
+                      </Text>
+                      <ChevronDown size={14} color={adminPalette.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              <View style={{ gap: 10 }}>
+                <Text style={styles.inputLabel}>Role & Location *</Text>
+                {shiftWorkerIds.length === 0 ? (
+                  <Text style={styles.assignHint}>Select workers first.</Text>
+                ) : (
+                  shiftWorkerIds.map(workerId => {
+                    const worker = workers.find(item => item.id === workerId);
+                    const assignment = shiftAssignments[workerId] || {
+                      role: "",
+                      location: "",
+                    };
+                    return (
+                      <View key={workerId} style={styles.assignmentRow}>
+                        <Text style={styles.assignmentName}>
+                          {worker?.name || workerId}
+                        </Text>
+                        <View style={styles.rowGap}>
+                          <View style={{ flex: 1 }}>
+                            <View style={styles.dropdownWrap}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.dropdownButton,
+                                  !canEditRoleLocation && styles.dropdownButtonDisabled,
+                                ]}
+                                onPress={() => {
+                                  if (!canEditRoleLocation) return;
+                                  setActiveRoleMenuWorkerId(workerId);
+                                  setActiveLocationMenuWorkerId(null);
+                                }}
+                                disabled={!canEditRoleLocation}
+                              >
+                                <Text
+                                  style={[
+                                    styles.dropdownText,
+                                    !assignment.role && styles.dropdownPlaceholder,
+                                  ]}
+                                >
+                                  {assignment.role || "Select role"}
+                                </Text>
+                                <ChevronDown size={14} color={adminPalette.textMuted} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <View style={styles.dropdownWrap}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.dropdownButton,
+                                  !canEditRoleLocation && styles.dropdownButtonDisabled,
+                                ]}
+                                onPress={() => {
+                                  if (!canEditRoleLocation) return;
+                                  setActiveLocationMenuWorkerId(workerId);
+                                  setActiveRoleMenuWorkerId(null);
+                                }}
+                                disabled={!canEditRoleLocation}
+                              >
+                                <Text
+                                  style={[
+                                    styles.dropdownText,
+                                    !assignment.location && styles.dropdownPlaceholder,
+                                  ]}
+                                >
+                                  {assignment.location || "Select location"}
+                                </Text>
+                                <ChevronDown size={14} color={adminPalette.textMuted} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+
+              {shiftFormError ? (
+                <Text style={styles.errorText}>{shiftFormError}</Text>
+              ) : null}
+              {shiftAssignStatus ? (
+                <Text style={styles.assignStatus}>{shiftAssignStatus}</Text>
+              ) : null}
             </View>
           </View>
+        ) : null}
+
+        <View style={styles.shiftSection}>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.sectionTitle}>Shifts</Text>
+                <Text style={styles.subtitle}>Past and upcoming shifts</Text>
+              </View>
+              <View style={styles.sortControls}>
+                <TouchableOpacity
+                  style={[
+                    styles.sortButton,
+                    shiftSortOrder === "latest" && styles.sortButtonActive,
+                  ]}
+                  onPress={() => setShiftSortOrder("latest")}
+                >
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      shiftSortOrder === "latest" && styles.sortButtonTextActive,
+                    ]}
+                  >
+                    Latest First
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.sortButton,
+                    shiftSortOrder === "oldest" && styles.sortButtonActive,
+                  ]}
+                  onPress={() => setShiftSortOrder("oldest")}
+                >
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      shiftSortOrder === "oldest" && styles.sortButtonTextActive,
+                    ]}
+                  >
+                    Oldest First
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
           {shifts.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No shifts yet</Text>
@@ -666,6 +1067,243 @@ export default function AdminSetup() {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showShiftDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowShiftDatePicker(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.dateModal}>
+            <Text style={styles.modalTitle}>Select shift date</Text>
+            <Text style={styles.calendarTitle}>
+              {draftShiftDate.toLocaleString("en-US", { month: "long" })}{" "}
+              {draftShiftDate.getFullYear()}
+            </Text>
+            <View style={styles.calendarWeekRow}>
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(label => (
+                <Text key={label} style={styles.calendarWeekLabel}>
+                  {label}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.calendarGrid}>
+              {calendarDays.map((day, index) => {
+                if (!day) {
+                  return <View key={`empty-${index}`} style={styles.calendarCellEmpty} />;
+                }
+                const dateValue = new Date(
+                  monthStart.getFullYear(),
+                  monthStart.getMonth(),
+                  day
+                );
+                const isSelected = formatLocalDate(dateValue) === formatLocalDate(draftShiftDate);
+                return (
+                  <TouchableOpacity
+                    key={`day-${day}`}
+                    style={[
+                      styles.calendarCell,
+                      isSelected && styles.calendarCellSelected,
+                    ]}
+                    onPress={() => setDraftShiftDate(dateValue)}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarCellText,
+                        isSelected && styles.calendarCellTextSelected,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setShowShiftDatePicker(false)}
+              >
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => {
+                  const formatted = formatLocalDate(draftShiftDate);
+                  setShiftForm(prev => ({ ...prev, date: formatted }));
+                  setShiftDateConfirmed(true);
+                  setShowShiftDatePicker(false);
+                }}
+              >
+                <Text style={styles.primaryButtonText}>Confirm Date</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showStartTimeMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStartTimeMenu(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.dropdownModal}>
+            <Text style={styles.modalTitle}>Select start time</Text>
+            <ScrollView style={{ maxHeight: 260 }}>
+              {timeOptions.map(option => (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShiftForm(prev => ({ ...prev, start: option }));
+                    setShowStartTimeMenu(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setShowStartTimeMenu(false)}
+              >
+                <Text style={styles.secondaryButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showEndTimeMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEndTimeMenu(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.dropdownModal}>
+            <Text style={styles.modalTitle}>Select end time</Text>
+            <ScrollView style={{ maxHeight: 260 }}>
+              {timeOptions.map(option => (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShiftForm(prev => ({ ...prev, end: option }));
+                    setShowEndTimeMenu(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setShowEndTimeMenu(false)}
+              >
+                <Text style={styles.secondaryButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={!!activeRoleMenuWorkerId}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveRoleMenuWorkerId(null)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.dropdownModal}>
+            <Text style={styles.modalTitle}>Select role</Text>
+            <ScrollView style={{ maxHeight: 260 }}>
+              {roleOptions.length === 0 ? (
+                <Text style={styles.dropdownEmptyText}>No roles found</Text>
+              ) : (
+                roleOptions.map(option => (
+                  <TouchableOpacity
+                    key={option}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      if (!activeRoleMenuWorkerId) return;
+                      setShiftAssignments(prev => ({
+                        ...prev,
+                        [activeRoleMenuWorkerId]: {
+                          ...prev[activeRoleMenuWorkerId],
+                          role: option,
+                        },
+                      }));
+                      setActiveRoleMenuWorkerId(null);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{option}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setActiveRoleMenuWorkerId(null)}
+              >
+                <Text style={styles.secondaryButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={!!activeLocationMenuWorkerId}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActiveLocationMenuWorkerId(null)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.dropdownModal}>
+            <Text style={styles.modalTitle}>Select location</Text>
+            <ScrollView style={{ maxHeight: 260 }}>
+              {locationOptions.length === 0 ? (
+                <Text style={styles.dropdownEmptyText}>No locations found</Text>
+              ) : (
+                locationOptions.map(option => (
+                  <TouchableOpacity
+                    key={option}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      if (!activeLocationMenuWorkerId) return;
+                      setShiftAssignments(prev => ({
+                        ...prev,
+                        [activeLocationMenuWorkerId]: {
+                          ...prev[activeLocationMenuWorkerId],
+                          location: option,
+                        },
+                      }));
+                      setActiveLocationMenuWorkerId(null);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{option}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => setActiveLocationMenuWorkerId(null)}
+              >
+                <Text style={styles.secondaryButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {showAddModal ? (
         <View style={styles.overlay}>
@@ -1244,6 +1882,55 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
   },
+  dateModal: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: adminPalette.surface,
+    borderRadius: 16,
+    padding: 20,
+  },
+  dropdownModal: {
+    width: "100%",
+    maxWidth: 280,
+    backgroundColor: adminPalette.surface,
+    borderRadius: 16,
+    padding: 16,
+  },
+  calendarTitle: {
+    color: adminPalette.text,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  calendarWeekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  calendarWeekLabel: { width: 36, textAlign: "center", color: adminPalette.textMuted, fontSize: 11 },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 12,
+  },
+  calendarCell: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: adminPalette.surfaceAlt,
+  },
+  calendarCellEmpty: { width: 36, height: 36 },
+  calendarCellSelected: {
+    backgroundColor: adminPalette.brand,
+    borderColor: adminPalette.brand,
+  },
+  calendarCellText: { color: adminPalette.text, fontSize: 12 },
+  calendarCellTextSelected: { color: "#fff", fontWeight: "700" },
   deleteModal: { maxWidth: 420 },
   modalHeader: {
     flexDirection: "row",
@@ -1263,6 +1950,58 @@ const styles = StyleSheet.create({
     backgroundColor: adminPalette.surfaceAlt,
     color: adminPalette.text,
   },
+  inputText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  inputPlaceholderText: { color: adminPalette.textMuted, fontWeight: "500" },
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: adminPalette.surfaceAlt,
+  },
+  dropdownButtonDisabled: {
+    borderColor: adminPalette.border,
+    backgroundColor: adminPalette.surfaceAlt,
+    opacity: 0.6,
+  },
+  dropdownText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  dropdownPlaceholder: { color: adminPalette.textMuted, fontWeight: "500" },
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  dropdownItemText: { color: adminPalette.text, fontSize: 12 },
+  dropdownEmptyText: {
+    color: adminPalette.textMuted,
+    fontSize: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  assignmentRow: {
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    backgroundColor: adminPalette.surface,
+    gap: 8,
+  },
+  assignmentName: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  dropdownWrap: { position: "relative" as const, zIndex: 1 },
+  dateButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    backgroundColor: adminPalette.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dateButtonText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
   textArea: { minHeight: 80, textAlignVertical: "top" },
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   dayButton: {
@@ -1337,10 +2076,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: adminPalette.brand,
   },
+  assignButtonDisabled: {
+    backgroundColor: adminPalette.border,
+  },
   assignButtonText: { color: "#fff", fontSize: 11, fontWeight: "600" },
   assignHint: { color: adminPalette.textMuted, fontSize: 11 },
   assignStatus: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
   shiftSection: { marginTop: 24 },
+  shiftAssignCard: {
+    width: "100%",
+    marginTop: 16,
+  },
   sectionTitle: { color: adminPalette.text, fontWeight: "700", fontSize: 16 },
   shiftList: {
     marginTop: 12,

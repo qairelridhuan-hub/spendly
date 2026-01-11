@@ -1,7 +1,6 @@
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Wallet } from "lucide-react-native";
-import { useTheme } from "@/lib/context";
 import {
   addDoc,
   collection,
@@ -13,10 +12,10 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { adminPalette } from "@/lib/admin/palette";
 
 export default function AdminPayroll() {
-  const { colors } = useTheme();
   const [records, setRecords] = useState<any[]>([]);
 
   useEffect(() => {
@@ -69,35 +68,35 @@ export default function AdminPayroll() {
 
   return (
     <LinearGradient
-      colors={[colors.backgroundStart, colors.backgroundEnd]}
+      colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <Text style={{ color: colors.text, fontSize: 24, fontWeight: "700" }}>
+        <Text style={{ color: adminPalette.text, fontSize: 24, fontWeight: "700" }}>
           Payroll
         </Text>
-        <Text style={{ color: colors.textMuted, marginTop: 6 }}>
+        <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
           Verify and finalize worker payments.
         </Text>
 
         <View
           style={{
             marginTop: 20,
-            backgroundColor: colors.surface,
+            backgroundColor: adminPalette.surface,
             borderRadius: 18,
             padding: 16,
             borderWidth: 1,
-            borderColor: colors.border,
+            borderColor: adminPalette.border,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Wallet size={18} color={colors.text} />
-            <Text style={{ color: colors.text, fontWeight: "700" }}>
+            <Wallet size={18} color={adminPalette.text} />
+            <Text style={{ color: adminPalette.text, fontWeight: "700" }}>
               Payroll Queue
             </Text>
           </View>
           {records.length === 0 ? (
-            <Text style={{ color: colors.textMuted, marginTop: 10 }}>
+            <Text style={{ color: adminPalette.textMuted, marginTop: 10 }}>
               No payroll records to verify.
             </Text>
           ) : (
@@ -109,14 +108,14 @@ export default function AdminPayroll() {
                     padding: 12,
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: colors.border,
-                    backgroundColor: colors.surfaceAlt,
+                    borderColor: adminPalette.border,
+                    backgroundColor: adminPalette.surfaceAlt,
                   }}
                 >
-                  <Text style={{ color: colors.text, fontWeight: "600" }}>
+                  <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
                     {record.workerId || "Worker"} • {record.period || "Period"}
                   </Text>
-                  <Text style={{ color: colors.textMuted, marginTop: 4 }}>
+                  <Text style={{ color: adminPalette.textMuted, marginTop: 4 }}>
                     RM {Number(record.totalEarnings ?? 0).toFixed(2)} • {record.totalHours || 0}h
                   </Text>
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
@@ -126,7 +125,7 @@ export default function AdminPayroll() {
                         paddingVertical: 6,
                         paddingHorizontal: 10,
                         borderRadius: 999,
-                        backgroundColor: colors.accent,
+                        backgroundColor: adminPalette.accentStrong,
                       }}
                     >
                       <Text style={{ color: "#fff", fontSize: 12 }}>Verify</Text>
@@ -137,7 +136,7 @@ export default function AdminPayroll() {
                         paddingVertical: 6,
                         paddingHorizontal: 10,
                         borderRadius: 999,
-                        backgroundColor: colors.success,
+                        backgroundColor: adminPalette.success,
                       }}
                     >
                       <Text style={{ color: "#fff", fontSize: 12 }}>Mark Paid</Text>

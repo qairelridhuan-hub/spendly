@@ -5,6 +5,7 @@ import {
   getReactNativePersistence,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -29,4 +30,5 @@ export const auth = hasApps
         persistence: getReactNativePersistence(AsyncStorage),
       });
 export const db = getFirestore(app);
+export const functions = getFunctions(app, 'us-central1');
 export const firebaseProjectId = firebaseConfig.projectId;

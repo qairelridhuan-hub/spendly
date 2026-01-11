@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { Platform, View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
   collection,
   collectionGroup,
+  limit,
   onSnapshot,
   query,
+  orderBy,
   where,
   updateDoc,
   doc,
@@ -31,10 +33,12 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [workerCount, setWorkerCount] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const [breakLogs, setBreakLogs] = useState<any[]>([]);
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
   const [workers, setWorkers] = useState<Record<string, any>>({});
   const [config, setConfig] = useState({ hourlyRate: 0, overtimeRate: 0 });
+  const [latestAudit, setLatestAudit] = useState<any | null>(null);
 
   useEffect(() => {
     const workersQuery = query(
@@ -58,6 +62,15 @@ export default function AdminDashboard() {
         ...docSnap.data(),
       }));
       setAttendanceLogs(list);
+    });
+
+    const breaksQuery = collectionGroup(db, "breaks");
+    const unsubBreaks = onSnapshot(breaksQuery, snapshot => {
+      const list = snapshot.docs.map(docSnap => ({
+        workerId: getOwnerId(docSnap),
+        ...docSnap.data(),
+      }));
+      setBreakLogs(list);
     });
 
     const overtimeQuery = collectionGroup(db, "overtime");
@@ -89,12 +102,24 @@ export default function AdminDashboard() {
       });
     });
 
+    const auditsQuery = query(
+      collection(db, "adminAudits"),
+      orderBy("updatedAt", "desc"),
+      limit(1)
+    );
+    const unsubAudits = onSnapshot(auditsQuery, snapshot => {
+      const docSnap = snapshot.docs[0];
+      setLatestAudit(docSnap ? { id: docSnap.id, ...docSnap.data() } : null);
+    });
+
     return () => {
       unsubWorkers();
       unsubAttendance();
+      unsubBreaks();
       unsubOvertime();
       unsubShifts();
       unsubConfig();
+      unsubAudits();
     };
   }, []);
 
@@ -108,25 +133,54 @@ export default function AdminDashboard() {
   }, [shifts]);
 
   const currentPeriod = getPeriodKey(new Date());
+  const attendancePeriods = useMemo(
+    () => extractAttendancePeriods(attendanceLogs),
+    [attendanceLogs]
+  );
+  const activePeriod = useMemo(() => {
+    if (Platform.OS === "web") {
+      return currentPeriod;
+    }
+    if (attendancePeriods.includes(currentPeriod)) {
+      return currentPeriod;
+    }
+    return attendancePeriods[0] || currentPeriod;
+  }, [attendancePeriods, currentPeriod]);
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
+  );
+  const breakMinutesByKey = useMemo(
+    () => buildBreakMinutesMap(breakLogs),
+    [breakLogs]
   );
   const { totalHours, totalEarnings } = useMemo(() => {
     return approvedLogs.reduce(
       (acc, log) => {
         const date = String(log.date ?? "");
-        if (!date.startsWith(currentPeriod)) return acc;
+        if (!date.startsWith(activePeriod)) return acc;
         const workerId = String(log.workerId ?? "");
         const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
-        const hours = getLogHours(log);
+        const hours = getLogHours(log, breakMinutesByKey);
         acc.totalHours += hours;
-        acc.totalEarnings += getLogEarnings(log, rate, config);
+        acc.totalEarnings += getLogEarnings(
+          log,
+          rate,
+          config.overtimeRate,
+          breakMinutesByKey
+        );
         return acc;
       },
       { totalHours: 0, totalEarnings: 0 }
     );
-  }, [approvedLogs, currentPeriod, workers, config.hourlyRate]);
+  }, [
+    approvedLogs,
+    activePeriod,
+    workers,
+    config.hourlyRate,
+    config.overtimeRate,
+    breakMinutesByKey,
+  ]);
   const adjustedTotals = useMemo(
     () => ({
       totalHours,
@@ -147,7 +201,7 @@ export default function AdminDashboard() {
       },
       {
         label: "Total Hours (Month)",
-        value: `${Math.round(adjustedTotals.totalHours)}h`,
+        value: `${adjustedTotals.totalHours.toFixed(0)}h`,
         icon: Clock,
         color: adminPalette.success,
         bg: adminPalette.successSoft,
@@ -156,7 +210,7 @@ export default function AdminDashboard() {
       },
       {
         label: "Total Payroll",
-        value: `RM ${adjustedTotals.totalEarnings.toFixed(2)}`,
+        value: `RM ${adjustedTotals.totalEarnings.toFixed(0)}`,
         icon: DollarSign,
         color: adminPalette.accent,
         bg: adminPalette.infoSoft,
@@ -180,8 +234,22 @@ export default function AdminDashboard() {
     workingDays,
   ]);
 
-  const weeklyData = useMemo(() => buildWeeklyHours(approvedLogs), [approvedLogs]);
-  const recentActivity = useMemo(() => buildRecentActivity(attendanceLogs, workers), [attendanceLogs, workers]);
+  const weeklyData = useMemo(
+    () => buildWeeklyHours(approvedLogs, breakMinutesByKey),
+    [approvedLogs, breakMinutesByKey]
+  );
+  const mismatchItems = useMemo(() => {
+    if (!latestAudit?.issues) return [];
+    return latestAudit.issues
+      .slice(0, 5)
+      .map((issue: any, index: number) => ({
+        id: `${latestAudit.id || "audit"}-${index}`,
+        name: issue.name || issue.workerId || "Worker",
+        detail: `Shifts ${issue.shiftCount ?? 0} • Attendance ${
+          issue.attendanceCount ?? 0
+        }`,
+      }));
+  }, [latestAudit]);
   const upcomingShifts = useMemo(() => buildUpcomingShifts(shifts, workers), [shifts, workers]);
   const pendingActions = useMemo(() => attendanceLogs.filter(log => log.status === "pending").slice(0, 3), [attendanceLogs]);
   const performanceStats = useMemo(() => {
@@ -192,10 +260,15 @@ export default function AdminDashboard() {
       const workerId = String(log.workerId ?? "");
       if (!workerId) return;
       const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
-      const hours = getLogHours(log);
+      const hours = getLogHours(log, breakMinutesByKey);
       map[workerId] = map[workerId] || { hours: 0, earnings: 0 };
       map[workerId].hours += hours;
-      map[workerId].earnings += getLogEarnings(log, rate, config);
+      map[workerId].earnings += getLogEarnings(
+        log,
+        rate,
+        config.overtimeRate,
+        breakMinutesByKey
+      );
     });
     return Object.entries(map)
       .map(([workerId, totals]) => ({
@@ -208,7 +281,10 @@ export default function AdminDashboard() {
         hours: totals.hours,
         earnings: totals.earnings,
       }))
-      .sort((a, b) => b.hours - a.hours)
+      .sort((a, b) => {
+        if (b.earnings !== a.earnings) return b.earnings - a.earnings;
+        return b.hours - a.hours;
+      })
       .slice(0, 3);
   }, [
     approvedLogs,
@@ -216,6 +292,7 @@ export default function AdminDashboard() {
     workers,
     config.hourlyRate,
     config.overtimeRate,
+    breakMinutesByKey,
   ]);
 
   return (
@@ -319,28 +396,32 @@ export default function AdminDashboard() {
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
           <View style={[sectionCard, { flex: 1, minWidth: 260 }]}>
             <View style={sectionHeaderRow}>
-              <Text style={sectionTitle}>Recent Activity</Text>
-              <TouchableOpacity onPress={() => router.push("/admin/attendance")}>
-                <Text style={sectionLink}>View All</Text>
+              <Text style={sectionTitle}>Payroll Mismatch Alerts</Text>
+              <TouchableOpacity onPress={() => router.push("/admin/reports")}>
+                <Text style={sectionLink}>View Report</Text>
               </TouchableOpacity>
             </View>
-            {recentActivity.length === 0 ? (
-              <Text style={emptyText}>No recent activity yet.</Text>
-            ) : (
+            {latestAudit?.issueCount ? (
               <View style={{ gap: 12 }}>
-                {recentActivity.map(activity => (
-                  <View key={activity.id} style={listRow}>
+                {mismatchItems.map(item => (
+                  <View key={item.id} style={listRow}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View style={[statusDot, { backgroundColor: activity.color }]} />
+                      <View style={[statusDot, { backgroundColor: adminPalette.danger }]} />
                       <View>
-                        <Text style={listTitle}>{activity.worker}</Text>
-                        <Text style={listSub}>{activity.action}</Text>
+                        <Text style={listTitle}>{item.name}</Text>
+                        <Text style={listSub}>{item.detail}</Text>
                       </View>
                     </View>
-                    <Text style={listTime}>{activity.time}</Text>
+                    <Text style={listTime}>{latestAudit.period || "-"}</Text>
                   </View>
                 ))}
               </View>
+            ) : (
+              <Text style={emptyText}>
+                {latestAudit
+                  ? "No mismatches found in the latest audit."
+                  : "No mismatch audits yet."}
+              </Text>
             )}
           </View>
 
@@ -470,7 +551,10 @@ export default function AdminDashboard() {
                       style={[
                         progressFill,
                         {
-                          width: `${Math.min(100, (worker.hours / maxHours(performanceStats)) * 100)}%`,
+                          width: `${Math.min(
+                            100,
+                            (worker.earnings / maxEarnings(performanceStats)) * 100
+                          )}%`,
                         },
                       ]}
                     />
@@ -589,7 +673,10 @@ const alertCardWarning = {
 const alertTitle = { color: adminPalette.warning, fontWeight: "600" as const };
 const alertSub = { color: adminPalette.warning, fontSize: 12, marginTop: 2 };
 
-const buildWeeklyHours = (logs: any[]) => {
+const buildWeeklyHours = (
+  logs: any[],
+  breakMinutesByKey: Record<string, number>
+) => {
   const start = startOfWeek(new Date());
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
@@ -600,27 +687,32 @@ const buildWeeklyHours = (logs: any[]) => {
     const date = new Date(`${log.date}T00:00:00`);
     if (Number.isNaN(date.getTime()) || date < start || date > end) return;
     const dayIndex = (date.getDay() + 6) % 7;
-    totals[dayIndex].hours += getLogHours(log);
+    totals[dayIndex].hours += getLogHours(log, breakMinutesByKey);
   });
   return totals;
 };
 
-const buildRecentActivity = (logs: any[], workers: Record<string, any>) =>
-  logs
-    .slice()
-    .sort((a, b) => getTimeValue(b.updatedAt ?? b.createdAt ?? b.date) - getTimeValue(a.updatedAt ?? a.createdAt ?? a.date))
-    .slice(0, 5)
-    .map(log => ({
-      id: log.refPath,
-      worker:
-        workers[log.workerId]?.fullName ||
-        workers[log.workerId]?.email ||
-        log.workerId ||
-        "Worker",
-      action: statusLabel(log.status),
-      time: log.date || "-",
-      color: statusColor(log.status),
-    }));
+const extractAttendancePeriods = (logs: any[]) => {
+  const set = new Set<string>();
+  logs.forEach(log => {
+    const date = String(log.date ?? "");
+    if (date.length >= 7) set.add(date.slice(0, 7));
+  });
+  return Array.from(set).sort((a, b) => b.localeCompare(a));
+};
+
+const buildBreakMinutesMap = (entries: any[]) => {
+  const map: Record<string, number> = {};
+  entries.forEach(entry => {
+    const workerId = String(entry.workerId ?? "");
+    const date = String(entry.date ?? "");
+    if (!workerId || !date) return;
+    if (!entry.startTime || !entry.endTime) return;
+    const minutes = calcMinutesDiff(entry.startTime, entry.endTime);
+    map[`${workerId}:${date}`] = (map[`${workerId}:${date}`] ?? 0) + minutes;
+  });
+  return map;
+};
 
 const buildUpcomingShifts = (shifts: any[], workers: Record<string, any>) => {
   const today = new Date();
@@ -670,16 +762,8 @@ const statusColor = (status: string) => {
   return adminPalette.success;
 };
 
-const getTimeValue = (value: any) => {
-  if (!value) return 0;
-  if (typeof value.toMillis === "function") return value.toMillis();
-  if (typeof value.seconds === "number") return value.seconds * 1000;
-  if (typeof value === "string") {
-    const parsed = new Date(value).getTime();
-    return Number.isNaN(parsed) ? 0 : parsed;
-  }
-  return 0;
-};
+const getOwnerId = (docSnap: any) =>
+  docSnap.ref?.parent?.parent?.id || docSnap.data()?.workerId || "";
 
 const parseTimeToMinutes = (time?: string) => {
   if (!time) return null;
@@ -697,12 +781,12 @@ const getOvertimeHours = (entry: any) => {
   return 0;
 };
 
-const getLogHours = (log: any) => {
+const getLogHours = (log: any, breakMinutesByKey: Record<string, number>) => {
   const storedNet = Number(log.netHours ?? log.net_hours ?? 0);
   if (storedNet > 0) return storedNet;
   const stored = Number(log.hours ?? 0);
   if (stored > 0) return stored;
-  const breakMinutes = getBreakMinutesForLog(log);
+  const breakMinutes = getBreakMinutesForLog(log, breakMinutesByKey);
   if (log.clockInTs && log.clockOutTs) {
     const minutes = Math.max(
       0,
@@ -722,23 +806,32 @@ const getLogOvertimeHours = (log: any) => {
   return 0;
 };
 
-const getLogEarnings = (log: any, hourlyRate: number, config: { overtimeRate: number }) => {
+const getLogEarnings = (
+  log: any,
+  hourlyRate: number,
+  overtimeRate: number,
+  breakMinutesByKey: Record<string, number>
+) => {
   const finalPay = Number(log.finalPay ?? log.final_pay ?? 0);
   if (finalPay > 0) return finalPay;
-  const netHours = getLogHours(log);
+  const netHours = getLogHours(log, breakMinutesByKey);
   const overtimeHours = getLogOvertimeHours(log);
   const regularHours = Math.max(0, netHours - overtimeHours);
-  const overtimeRate = Number(config.overtimeRate ?? 0) || hourlyRate * 1.5;
-  return regularHours * hourlyRate + overtimeHours * overtimeRate;
+  const resolvedOvertimeRate = Number(overtimeRate ?? 0) || hourlyRate * 1.5;
+  return regularHours * hourlyRate + overtimeHours * resolvedOvertimeRate;
 };
 
-const getBreakMinutesForLog = (log: any) => {
+const getBreakMinutesForLog = (
+  log: any,
+  breakMinutesByKey: Record<string, number>
+) => {
   const stored = Number(log.breakMinutes ?? 0);
   if (stored > 0) return stored;
   if (log.breakStart && log.breakEnd) {
     return Math.max(0, calcMinutesDiff(log.breakStart, log.breakEnd));
   }
-  return 0;
+  const dateKey = `${String(log.workerId ?? "")}:${String(log.date ?? "")}`;
+  return breakMinutesByKey[dateKey] ?? 0;
 };
 
 const startOfWeek = (date: Date) => {
@@ -768,6 +861,9 @@ const isThisMonth = (dateValue: string) => {
 
 const maxHours = (stats: { hours: number }[]) =>
   stats.reduce((max, item) => Math.max(max, item.hours), 1);
+
+const maxEarnings = (stats: { earnings: number }[]) =>
+  stats.reduce((max, item) => Math.max(max, item.earnings), 1);
 
 const calcHoursFromTimes = (start: string, end: string, breakMinutes = 0) => {
   const startMinutes = parseTimeToMinutes(start);
