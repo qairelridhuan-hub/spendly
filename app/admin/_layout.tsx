@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -20,9 +21,11 @@ import {
   Settings,
   LogOut,
   Bell,
+  Moon,
+  Sun,
 } from "lucide-react-native";
 import { auth, db } from "@/lib/firebase";
-import { adminPalette } from "@/lib/admin/palette";
+import { AdminThemeProvider, useAdminTheme } from "@/lib/admin/theme";
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -35,12 +38,23 @@ const navItems = [
 ];
 
 export default function AdminLayout() {
+  return (
+    <AdminThemeProvider>
+      <AdminLayoutInner />
+    </AdminThemeProvider>
+  );
+}
+
+function AdminLayoutInner() {
   const router = useRouter();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
+  const toggleAnim = useRef(new Animated.Value(0)).current;
   const [checking, setChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const { colors: adminPalette, mode: adminThemeMode, setMode: setAdminThemeMode } =
+    useAdminTheme();
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -74,6 +88,14 @@ export default function AdminLayout() {
   useEffect(() => {
     pathnameRef.current = pathname;
   }, [pathname]);
+
+  useEffect(() => {
+    Animated.timing(toggleAnim, {
+      toValue: adminThemeMode === "dark" ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [adminThemeMode, toggleAnim]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
@@ -115,6 +137,8 @@ export default function AdminLayout() {
     const match = navItems.find(item => item.href === pathname);
     return match?.label ?? "Dashboard";
   }, [pathname]);
+  const tooltipBackground = adminThemeMode === "dark" ? "#0b1220" : adminPalette.text;
+  const tooltipText = adminThemeMode === "dark" ? adminPalette.text : "#fff";
 
   if (checking) {
     return (
@@ -240,7 +264,7 @@ export default function AdminLayout() {
                           position: "absolute",
                           left: 34,
                           top: -6,
-                          backgroundColor: adminPalette.text,
+                          backgroundColor: tooltipBackground,
                           paddingVertical: 6,
                           paddingHorizontal: 10,
                           borderRadius: 14,
@@ -258,14 +282,14 @@ export default function AdminLayout() {
                             top: 12,
                             width: 8,
                             height: 8,
-                            backgroundColor: adminPalette.text,
+                            backgroundColor: tooltipBackground,
                             transform: [{ rotate: "45deg" }],
                           }}
                         />
                         <Text
                           numberOfLines={1}
                           style={{
-                            color: "#fff",
+                            color: tooltipText,
                             fontSize: 11,
                             fontWeight: "600",
                           }}
@@ -376,32 +400,91 @@ export default function AdminLayout() {
                 Welcome back, {adminName}
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => router.push("/admin/notifications" as any)}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: adminPalette.border,
-                backgroundColor: adminPalette.surfaceAlt,
-              }}
-            >
-              <Bell size={18} color={adminPalette.textMuted} />
-              <View
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => router.push("/admin/notifications" as any)}
                 style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 6,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: adminPalette.danger,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: adminPalette.border,
+                  backgroundColor: adminPalette.surfaceAlt,
                 }}
-              />
-            </TouchableOpacity>
+              >
+                <Bell size={18} color={adminPalette.textMuted} />
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: adminPalette.danger,
+                  }}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  setAdminThemeMode(prev => (prev === "light" ? "dark" : "light"))
+                }
+                accessibilityLabel="Dark mode toggle"
+                style={{
+                  padding: 0,
+                  borderRadius: 0,
+                  borderWidth: 0,
+                  backgroundColor: "transparent",
+                }}
+              >
+                <View
+                  style={{
+                    width: 78,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor:
+                      adminThemeMode === "dark" ? "#111827" : "#f1f5f9",
+                    borderWidth: 1,
+                    borderColor:
+                      adminThemeMode === "dark" ? "#1f2937" : "#e2e8f0",
+                    padding: 4,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Animated.View
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      left: 4,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: "#2563eb",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transform: [
+                        {
+                          translateX: toggleAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 38],
+                          }),
+                        },
+                      ],
+                    }}
+                  >
+                    {adminThemeMode === "dark" ? (
+                      <Moon size={14} color="#fff" />
+                    ) : (
+                      <Sun size={14} color="#fff" />
+                    )}
+                  </Animated.View>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
           <Stack screenOptions={{ headerShown: false }} />
         </View>

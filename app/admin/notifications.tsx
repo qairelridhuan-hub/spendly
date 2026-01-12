@@ -4,9 +4,10 @@ import { Bell } from "lucide-react-native";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 
 export default function AdminNotifications() {
+  const { colors: adminPalette } = useAdminTheme();
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {

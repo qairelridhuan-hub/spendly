@@ -25,7 +25,7 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "@/lib/firebase";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 import { getPeriodKey } from "@/lib/reports/report";
 
 type Worker = {
@@ -41,6 +41,7 @@ type Worker = {
 };
 
 export default function AdminWorkers() {
+  const { colors: adminPalette } = useAdminTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
@@ -57,6 +58,235 @@ export default function AdminWorkers() {
   const createWorkerAuth = useMemo(
     () => httpsCallable(functions, "createWorkerAuth"),
     []
+  );
+  const {
+    headerRow,
+    searchRow,
+    searchIcon,
+    searchIconButton,
+    searchFieldWrap,
+    searchInput,
+    addButton,
+    addButtonText,
+    emptyCard,
+    emptyTitle,
+    emptySub,
+    tableCard,
+    tableHeader,
+    tableHeaderText,
+    tableRow,
+    tableCell,
+    tableCellMuted,
+    avatar,
+    avatarText,
+    workerName,
+    workerEmail,
+    statusBadge,
+    statusActive,
+    statusInactive,
+    statusText,
+    iconButton,
+    overlay,
+    modal,
+    modalHeader,
+    modalTitle,
+    modalBody,
+    inputLabel,
+    inputHint,
+    input,
+    valueText,
+    modalActions,
+    secondaryButton,
+    secondaryButtonText,
+    errorText,
+    deleteText,
+  } = useMemo(
+    () => ({
+      headerRow: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+        gap: 16,
+      },
+      searchRow: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 10,
+      },
+      searchIcon: {
+        position: "absolute" as const,
+        left: 12,
+        top: 12,
+      },
+      searchIconButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        backgroundColor: adminPalette.surface,
+      },
+      searchFieldWrap: {
+        overflow: "hidden" as const,
+      },
+      searchInput: {
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingLeft: 40,
+        paddingRight: 12,
+        backgroundColor: adminPalette.surface,
+        color: adminPalette.text,
+        width: 260,
+      },
+      addButton: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 10,
+        backgroundColor: adminPalette.brand,
+      },
+      addButtonText: { color: "#fff", fontWeight: "600" as const, fontSize: 12 },
+      emptyCard: {
+        marginTop: 24,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 32,
+        alignItems: "center" as const,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      emptyTitle: {
+        color: adminPalette.text,
+        fontWeight: "600" as const,
+        marginTop: 12,
+      },
+      emptySub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 6 },
+      tableCard: {
+        marginTop: 24,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        overflow: "hidden" as const,
+      },
+      tableHeader: {
+        flexDirection: "row" as const,
+        backgroundColor: adminPalette.surfaceAlt,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+      },
+      tableHeaderText: {
+        flex: 1,
+        minWidth: 110,
+        color: adminPalette.textMuted,
+        fontSize: 12,
+        fontWeight: "600" as const,
+      },
+      tableRow: {
+        flexDirection: "row" as const,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+        alignItems: "center" as const,
+      },
+      tableCell: { flex: 1, minWidth: 110, color: adminPalette.text, fontSize: 12 },
+      tableCellMuted: {
+        flex: 1,
+        minWidth: 110,
+        color: adminPalette.textMuted,
+        fontSize: 12,
+      },
+      avatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: adminPalette.infoSoft,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+      },
+      avatarText: { color: adminPalette.accent, fontWeight: "600" as const },
+      workerName: { color: adminPalette.text, fontSize: 12, fontWeight: "600" as const },
+      workerEmail: { color: adminPalette.textMuted, fontSize: 10, marginTop: 2 },
+      statusBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      statusActive: {
+        backgroundColor: adminPalette.successSoft,
+      },
+      statusInactive: {
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      statusText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
+      iconButton: {
+        padding: 8,
+        borderRadius: 10,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(15, 23, 42, 0.55)",
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        padding: 20,
+      },
+      modal: {
+        width: "100%" as const,
+        maxWidth: 520,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 20,
+      },
+      modalHeader: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        alignItems: "center" as const,
+        marginBottom: 12,
+      },
+      modalTitle: { color: adminPalette.text, fontWeight: "600" as const },
+      modalBody: { gap: 10 },
+      inputLabel: { color: adminPalette.textMuted, fontSize: 12 },
+      inputHint: { color: adminPalette.textMuted, fontSize: 11 },
+      input: {
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: adminPalette.surfaceAlt,
+        color: adminPalette.text,
+      },
+      valueText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+      modalActions: { flexDirection: "row" as const, gap: 12, marginTop: 16 },
+      secondaryButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        borderRadius: 10,
+        paddingVertical: 10,
+        alignItems: "center" as const,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      secondaryButtonText: {
+        color: adminPalette.text,
+        fontWeight: "600" as const,
+        fontSize: 12,
+      },
+      errorText: { color: adminPalette.danger, fontSize: 12 },
+      deleteText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 8 },
+    }),
+    [adminPalette]
   );
 
   const isValidEmail = (value: string) =>
@@ -733,216 +963,6 @@ export default function AdminWorkers() {
   );
 }
 
-const headerRow = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "space-between" as const,
-  gap: 16,
-};
-
-const searchRow = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 10,
-};
-
-const searchIcon = {
-  position: "absolute" as const,
-  left: 12,
-  top: 12,
-};
-
-const searchIconButton = {
-  width: 40,
-  height: 40,
-  borderRadius: 10,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  backgroundColor: adminPalette.surface,
-};
-
-const searchFieldWrap = {
-  overflow: "hidden" as const,
-};
-
-const searchInput = {
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  borderRadius: 10,
-  paddingVertical: 10,
-  paddingLeft: 40,
-  paddingRight: 12,
-  backgroundColor: adminPalette.surface,
-  color: adminPalette.text,
-  width: 260,
-};
-
-const addButton = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 8,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-  borderRadius: 10,
-  backgroundColor: adminPalette.brand,
-};
-
-const addButtonText = { color: "#fff", fontWeight: "600" as const, fontSize: 12 };
-
-const emptyCard = {
-  marginTop: 24,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 32,
-  alignItems: "center" as const,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-
-const emptyTitle = {
-  color: adminPalette.text,
-  fontWeight: "600" as const,
-  marginTop: 12,
-};
-const emptySub = { color: adminPalette.textMuted, fontSize: 12, marginTop: 6 };
-
-const tableCard = {
-  marginTop: 24,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  overflow: "hidden" as const,
-};
-
-const tableHeader = {
-  flexDirection: "row" as const,
-  backgroundColor: adminPalette.surfaceAlt,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-};
-
-const tableHeaderText = {
-  flex: 1,
-  minWidth: 110,
-  color: adminPalette.textMuted,
-  fontSize: 12,
-  fontWeight: "600" as const,
-};
-
-const tableRow = {
-  flexDirection: "row" as const,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-  alignItems: "center" as const,
-};
-
-const tableCell = { flex: 1, minWidth: 110, color: adminPalette.text, fontSize: 12 };
-const tableCellMuted = { flex: 1, minWidth: 110, color: adminPalette.textMuted, fontSize: 12 };
-
-const avatar = {
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  backgroundColor: adminPalette.infoSoft,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-
-const avatarText = { color: adminPalette.accent, fontWeight: "600" as const };
-const workerName = { color: adminPalette.text, fontSize: 12, fontWeight: "600" as const };
-const workerEmail = { color: adminPalette.textMuted, fontSize: 10, marginTop: 2 };
-
-const statusBadge = {
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 999,
-  fontSize: 11,
-  overflow: "hidden" as const,
-};
-
-const statusActive = {
-  backgroundColor: adminPalette.successSoft,
-  color: adminPalette.success,
-};
-
-const statusInactive = {
-  backgroundColor: adminPalette.surfaceAlt,
-  color: adminPalette.textMuted,
-};
-
-const statusText = { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 };
-
-const iconButton = {
-  padding: 8,
-  borderRadius: 10,
-  backgroundColor: adminPalette.surfaceAlt,
-};
-
-const overlay = {
-  ...StyleSheet.absoluteFillObject,
-  backgroundColor: "rgba(15, 23, 42, 0.55)",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  padding: 20,
-};
-
-const modal = {
-  width: "100%",
-  maxWidth: 520,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 20,
-};
-
-const modalHeader = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "space-between" as const,
-  marginBottom: 12,
-};
-
-const modalTitle = { color: adminPalette.text, fontWeight: "600" as const };
-
-const modalBody = { gap: 10 };
-
-const inputLabel = { color: adminPalette.textMuted, fontSize: 12 };
-const inputHint = { color: adminPalette.textMuted, fontSize: 11 };
-
-const input = {
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  borderRadius: 10,
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  backgroundColor: adminPalette.surfaceAlt,
-  color: adminPalette.text,
-};
-
-const valueText = { color: adminPalette.text, fontSize: 12, fontWeight: "600" };
-
-const modalActions = { flexDirection: "row" as const, gap: 12, marginTop: 16 };
-
-const secondaryButton = {
-  flex: 1,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  borderRadius: 10,
-  paddingVertical: 10,
-  alignItems: "center" as const,
-  backgroundColor: adminPalette.surfaceAlt,
-};
-
-const secondaryButtonText = { color: adminPalette.text, fontWeight: "600" as const, fontSize: 12 };
-
-const errorText = { color: adminPalette.danger, fontSize: 12 };
-const deleteText = { color: adminPalette.textMuted, fontSize: 12, marginTop: 8 };
 
 const getLogHours = (log: any) => {
   const storedNet = Number(log.netHours ?? log.net_hours ?? 0);

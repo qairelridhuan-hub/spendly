@@ -4,11 +4,12 @@ import { Calendar, Download, FileText, TrendingUp } from "lucide-react-native";
 import { collection, collectionGroup, doc, onSnapshot, query, where } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 
 export default function AdminReports() {
+  const { colors: adminPalette } = useAdminTheme();
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [breakLogs, setBreakLogs] = useState<any[]>([]);
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
@@ -17,6 +18,124 @@ export default function AdminReports() {
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
+  );
+  const {
+    headerRow,
+    title,
+    subtitle,
+    exportButton,
+    exportText,
+    statCard,
+    statTitle,
+    statLabel,
+    statValue,
+    chartCard,
+    sectionTitle,
+    emptyText,
+    generateCard,
+    generateButton,
+    generateButtonText,
+    tableHeader,
+    tableHeaderText,
+    tableRow,
+    tableCell,
+    tableCellMuted,
+  } = useMemo(
+    () => ({
+      headerRow: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        alignItems: "center" as const,
+        marginBottom: 16,
+      },
+      title: {
+        color: adminPalette.text,
+        fontSize: 20,
+        fontWeight: "700" as const,
+      },
+      subtitle: { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 },
+      exportButton: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        backgroundColor: adminPalette.brand,
+        borderRadius: 10,
+      },
+      exportText: { color: "#fff", fontWeight: "600" as const, fontSize: 12 },
+      statCard: {
+        flex: 1,
+        minWidth: 220,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      statTitle: { color: adminPalette.text, fontWeight: "600" as const },
+      statLabel: { color: adminPalette.textMuted, fontSize: 12, marginTop: 10 },
+      statValue: {
+        color: adminPalette.text,
+        fontSize: 16,
+        fontWeight: "600" as const,
+        marginTop: 4,
+      },
+      chartCard: {
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      sectionTitle: { color: adminPalette.text, fontWeight: "600" as const },
+      emptyText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
+      generateCard: {
+        marginTop: 16,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+        gap: 12,
+      },
+      generateButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        backgroundColor: adminPalette.accentStrong,
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 8,
+      },
+      generateButtonText: { color: "#fff", fontWeight: "600" as const, fontSize: 12 },
+      tableHeader: {
+        flexDirection: "row" as const,
+        backgroundColor: adminPalette.surfaceAlt,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+      },
+      tableHeaderText: {
+        flex: 1,
+        color: adminPalette.textMuted,
+        fontSize: 11,
+        fontWeight: "600" as const,
+      },
+      tableRow: {
+        flexDirection: "row" as const,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+      },
+      tableCell: { flex: 1, color: adminPalette.text, fontSize: 12 },
+      tableCellMuted: { flex: 1, color: adminPalette.textMuted, fontSize: 12 },
+    }),
+    [adminPalette]
   );
 
   useEffect(() => {
@@ -308,109 +427,6 @@ export default function AdminReports() {
     </LinearGradient>
   );
 }
-
-const headerRow = {
-  flexDirection: "row" as const,
-  justifyContent: "space-between" as const,
-  alignItems: "center" as const,
-  marginBottom: 16,
-};
-
-const title = {
-  color: adminPalette.text,
-  fontSize: 20,
-  fontWeight: "700" as const,
-};
-const subtitle = { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 };
-
-const exportButton = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 8,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-  backgroundColor: adminPalette.brand,
-  borderRadius: 10,
-};
-
-const exportText = { color: "#fff", fontWeight: "600" as const, fontSize: 12 };
-
-const statCard = {
-  flex: 1,
-  minWidth: 220,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 16,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-
-const statTitle = { color: adminPalette.text, fontWeight: "600" as const };
-const statLabel = { color: adminPalette.textMuted, fontSize: 12, marginTop: 10 };
-const statValue = {
-  color: adminPalette.text,
-  fontSize: 16,
-  fontWeight: "600" as const,
-  marginTop: 4,
-};
-
-const chartCard = {
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 20,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-
-const sectionTitle = { color: adminPalette.text, fontWeight: "600" as const };
-const emptyText = { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 };
-
-const generateCard = {
-  marginTop: 16,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 16,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "space-between" as const,
-  gap: 12,
-};
-const generateButton = {
-  paddingHorizontal: 16,
-  paddingVertical: 10,
-  borderRadius: 12,
-  backgroundColor: adminPalette.accentStrong,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 8,
-};
-const generateButtonText = { color: "#fff", fontWeight: "600" as const, fontSize: 12 };
-
-const tableHeader = {
-  flexDirection: "row" as const,
-  backgroundColor: adminPalette.surfaceAlt,
-  paddingVertical: 10,
-  paddingHorizontal: 12,
-  borderRadius: 10,
-};
-
-const tableHeaderText = {
-  flex: 1,
-  color: adminPalette.textMuted,
-  fontSize: 11,
-  fontWeight: "600" as const,
-};
-const tableRow = {
-  flexDirection: "row" as const,
-  paddingVertical: 10,
-  paddingHorizontal: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-};
-const tableCell = { flex: 1, color: adminPalette.text, fontSize: 12 };
-const tableCellMuted = { flex: 1, color: adminPalette.textMuted, fontSize: 12 };
 
 const aggregateAttendance = (
   approvedLogs: any[],

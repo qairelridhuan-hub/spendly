@@ -26,7 +26,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
+import type { AdminPalette } from "@/lib/admin/palette";
 
 type Schedule = {
   id: string;
@@ -73,6 +74,7 @@ const baseLocationOptions = [
 ];
 
 export default function AdminSetup() {
+  const { colors: adminPalette } = useAdminTheme();
   const [workSchedules, setWorkSchedules] = useState<Schedule[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -129,6 +131,7 @@ export default function AdminSetup() {
     hourlyRate: "",
     description: "",
   });
+  const styles = useMemo(() => createStyles(adminPalette), [adminPalette]);
 
   useEffect(() => {
     const schedulesQuery = query(
@@ -1747,7 +1750,7 @@ export default function AdminSetup() {
 }
 
 
-const styles = StyleSheet.create({
+const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
   container: { padding: 24, paddingBottom: 80 },
   headerRow: {
     flexDirection: "row",

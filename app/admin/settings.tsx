@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { generateShiftsForWorkers, getSystemConfig } from "@/lib/admin/firestore";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 
 type WorkConfig = {
   workingDaysPerWeek: string;
@@ -69,6 +69,7 @@ type ScheduleSummary = {
 };
 
 export default function AdminSettings() {
+  const { colors: adminPalette } = useAdminTheme();
   const [workConfig, setWorkConfig] = useState<WorkConfig>({
     workingDaysPerWeek: "",
     hoursPerDay: "",

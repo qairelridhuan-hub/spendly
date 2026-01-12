@@ -4,13 +4,166 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
 import { collection, collectionGroup, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useEffect, useState } from "react";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 
 export default function AdminCalendar() {
+  const { colors: adminPalette } = useAdminTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<any[]>([]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, string>>({});
   const [workers, setWorkers] = useState<Record<string, { name?: string }>>({});
+  const {
+    card,
+    calendarHeader,
+    calendarTitle,
+    navButton,
+    addButton,
+    addButtonText,
+    calendarGrid,
+    calendarDayLabel,
+    emptyCell,
+    calendarCell,
+    todayCell,
+    cellDayText,
+    todayText,
+    shiftCard,
+    shiftScheduled,
+    shiftCompleted,
+    shiftAbsent,
+    shiftCardHeader,
+    shiftTimeText,
+    shiftWorkerText,
+    shiftMetaText,
+    statusPill,
+    statusPillScheduled,
+    statusPillCompleted,
+    statusPillAbsent,
+    statusPillText,
+    moreText,
+    legendCard,
+    legendTitle,
+    legendItem,
+    legendDot,
+    legendText,
+  } = useMemo(
+    () => ({
+      card: {
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      calendarHeader: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        alignItems: "center" as const,
+        marginBottom: 16,
+      },
+      calendarTitle: {
+        color: adminPalette.text,
+        fontWeight: "700",
+        fontSize: 18,
+      },
+      navButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      addButton: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 6,
+        paddingHorizontal: 12,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: adminPalette.brand,
+      },
+      addButtonText: { color: "#fff", fontWeight: "600", fontSize: 12 },
+      calendarGrid: {
+        flexDirection: "row" as const,
+        flexWrap: "wrap" as const,
+        gap: 8,
+      },
+      calendarDayLabel: {
+        width: "13.5%",
+        textAlign: "center" as const,
+        color: adminPalette.textMuted,
+        fontSize: 12,
+        paddingVertical: 6,
+      },
+      emptyCell: { width: "13.5%", minHeight: 96 },
+      calendarCell: {
+        width: "13.5%",
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        borderRadius: 12,
+        padding: 8,
+        minHeight: 96,
+      },
+      todayCell: {
+        borderColor: adminPalette.accent,
+        backgroundColor: adminPalette.infoSoft,
+      },
+      cellDayText: {
+        color: adminPalette.text,
+        fontSize: 12,
+        marginBottom: 4,
+      },
+      todayText: { color: adminPalette.accent, fontWeight: "600" },
+      shiftCard: {
+        paddingVertical: 4,
+        paddingHorizontal: 6,
+        borderRadius: 8,
+      },
+      shiftScheduled: { backgroundColor: adminPalette.infoSoft },
+      shiftCompleted: { backgroundColor: adminPalette.successSoft },
+      shiftAbsent: { backgroundColor: adminPalette.dangerSoft },
+      shiftCardHeader: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+      },
+      shiftTimeText: {
+        color: adminPalette.text,
+        fontSize: 10,
+        fontWeight: "600" as const,
+      },
+      shiftWorkerText: { color: adminPalette.text, fontSize: 10, marginTop: 2 },
+      shiftMetaText: { color: adminPalette.textMuted, fontSize: 9, marginTop: 2 },
+      statusPill: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 999,
+        backgroundColor: adminPalette.surface,
+      },
+      statusPillScheduled: { backgroundColor: adminPalette.infoSoft },
+      statusPillCompleted: { backgroundColor: adminPalette.successSoft },
+      statusPillAbsent: { backgroundColor: adminPalette.dangerSoft },
+      statusPillText: { color: adminPalette.text, fontSize: 9, fontWeight: "600" as const },
+      moreText: { color: adminPalette.textMuted, fontSize: 10 },
+      legendCard: {
+        marginTop: 20,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      legendTitle: {
+        color: adminPalette.text,
+        fontWeight: "600",
+        marginBottom: 12,
+      },
+      legendItem: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8 },
+      legendDot: { width: 14, height: 14, borderRadius: 4 },
+      legendText: { color: adminPalette.textMuted, fontSize: 12 },
+    }),
+    [adminPalette]
+  );
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "shifts"), snapshot => {
@@ -229,112 +382,6 @@ export default function AdminCalendar() {
   );
 }
 
-const card = {
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 20,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-
-const calendarHeader = {
-  flexDirection: "row" as const,
-  justifyContent: "space-between" as const,
-  alignItems: "center" as const,
-  marginBottom: 16,
-};
-
-const calendarTitle = {
-  color: adminPalette.text,
-  fontWeight: "700",
-  fontSize: 18,
-};
-
-const navButton = {
-  width: 36,
-  height: 36,
-  borderRadius: 10,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  backgroundColor: adminPalette.surfaceAlt,
-};
-
-const addButton = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 6,
-  paddingHorizontal: 12,
-  height: 36,
-  borderRadius: 10,
-  backgroundColor: adminPalette.brand,
-};
-
-const addButtonText = { color: "#fff", fontWeight: "600", fontSize: 12 };
-
-const calendarGrid = {
-  flexDirection: "row" as const,
-  flexWrap: "wrap" as const,
-  gap: 8,
-};
-
-const calendarDayLabel = {
-  width: "13.5%",
-  textAlign: "center" as const,
-  color: adminPalette.textMuted,
-  fontSize: 12,
-  paddingVertical: 6,
-};
-
-const emptyCell = { width: "13.5%", minHeight: 96 };
-
-const calendarCell = {
-  width: "13.5%",
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  borderRadius: 12,
-  padding: 8,
-  minHeight: 96,
-};
-
-const todayCell = {
-  borderColor: adminPalette.accent,
-  backgroundColor: adminPalette.infoSoft,
-};
-const cellDayText = {
-  color: adminPalette.text,
-  fontSize: 12,
-  marginBottom: 4,
-};
-const todayText = { color: adminPalette.accent, fontWeight: "600" };
-
-const shiftCard = {
-  paddingVertical: 4,
-  paddingHorizontal: 6,
-  borderRadius: 8,
-};
-
-const shiftScheduled = { backgroundColor: adminPalette.infoSoft };
-const shiftCompleted = { backgroundColor: adminPalette.successSoft };
-const shiftAbsent = { backgroundColor: adminPalette.dangerSoft };
-const shiftCardHeader = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "space-between" as const,
-};
-const shiftTimeText = { color: adminPalette.text, fontSize: 10, fontWeight: "600" as const };
-const shiftWorkerText = { color: adminPalette.text, fontSize: 10, marginTop: 2 };
-const shiftMetaText = { color: adminPalette.textMuted, fontSize: 9, marginTop: 2 };
-const statusPill = {
-  paddingHorizontal: 6,
-  paddingVertical: 2,
-  borderRadius: 999,
-  backgroundColor: adminPalette.surface,
-};
-const statusPillScheduled = { backgroundColor: adminPalette.infoSoft };
-const statusPillCompleted = { backgroundColor: adminPalette.successSoft };
-const statusPillAbsent = { backgroundColor: adminPalette.dangerSoft };
-const statusPillText = { color: adminPalette.text, fontSize: 9, fontWeight: "600" as const };
-const moreText = { color: adminPalette.textMuted, fontSize: 10 };
 
 const resolveStatus = (shiftStatus?: string, attendanceStatus?: string) => {
   if (attendanceStatus === "absent" || attendanceStatus === "rejected") return "absent";
@@ -352,21 +399,3 @@ const statusLabel = (status: string) => {
   if (status === "absent") return "Absent";
   return "Scheduled";
 };
-
-const legendCard = {
-  marginTop: 20,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 20,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-
-const legendTitle = {
-  color: adminPalette.text,
-  fontWeight: "600",
-  marginBottom: 12,
-};
-const legendItem = { flexDirection: "row" as const, alignItems: "center" as const, gap: 8 };
-const legendDot = { width: 14, height: 14, borderRadius: 4 };
-const legendText = { color: adminPalette.textMuted, fontSize: 12 };

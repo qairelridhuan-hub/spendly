@@ -18,9 +18,10 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useEffect, useMemo, useState } from "react";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 
 export default function AdminAttendance() {
+  const { colors: adminPalette } = useAdminTheme();
   const [logs, setLogs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<
     Record<string, { name?: string; hourlyRate?: number }>
@@ -67,6 +68,270 @@ export default function AdminAttendance() {
     holidays: [] as string[],
   });
   const [latestAudit, setLatestAudit] = useState<any | null>(null);
+  const {
+    statCard,
+    statIcon,
+    statTitle,
+    statSub,
+    tableCard,
+    tableHeader,
+    tableTitle,
+    tableRowHeader,
+    tableHeaderText,
+    tableRow,
+    tableCell,
+    tableCellMuted,
+    tableCellStatus,
+    tableActions,
+    actionButton,
+    emptyText,
+    sortControls,
+    sortButton,
+    sortButtonActive,
+    sortButtonText,
+    sortButtonTextActive,
+    exceptionToolbar,
+    exceptionHint,
+    workerButton,
+    workerButtonText,
+    workerMenu,
+    workerMenuItem,
+    workerMenuText,
+    workerMenuTextActive,
+    modalOverlay,
+    modalCard,
+    modalHeader,
+    modalTitle,
+    modalSubtitle,
+    modalRow,
+    modalLabel,
+    modalValue,
+    modalButton,
+    inputField,
+  } = useMemo(
+    () => ({
+      statCard: {
+        flex: 1,
+        minWidth: 240,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      statIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+      },
+      statTitle: { color: adminPalette.text, fontWeight: "600" },
+      statSub: { color: adminPalette.textMuted, marginTop: 4, fontSize: 12 },
+      tableCard: {
+        marginTop: 24,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        overflow: "visible" as const,
+      },
+      tableHeader: {
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+        position: "relative" as const,
+        zIndex: 3,
+        overflow: "visible" as const,
+      },
+      tableTitle: { color: adminPalette.text, fontWeight: "600" },
+      tableRowHeader: {
+        flexDirection: "row" as const,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        backgroundColor: adminPalette.surfaceAlt,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+      },
+      tableHeaderText: {
+        flex: 1,
+        color: adminPalette.textMuted,
+        fontSize: 12,
+        fontWeight: "600" as const,
+      },
+      tableRow: {
+        flexDirection: "row" as const,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+        alignItems: "center" as const,
+      },
+      tableCell: { flex: 1, color: adminPalette.text, fontSize: 13 },
+      tableCellMuted: { flex: 1, color: adminPalette.textMuted, fontSize: 13 },
+      tableCellStatus: { flex: 1 },
+      tableActions: { flex: 1, alignItems: "flex-start" as const },
+      actionButton: {
+        padding: 8,
+        borderRadius: 10,
+      },
+      emptyText: { color: adminPalette.textMuted, fontSize: 12 },
+      sortControls: { flexDirection: "row", gap: 8 },
+      sortButton: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      sortButtonActive: {
+        borderColor: adminPalette.accent,
+        backgroundColor: adminPalette.infoSoft,
+      },
+      sortButtonText: { color: adminPalette.textMuted, fontSize: 11 },
+      sortButtonTextActive: { color: adminPalette.accent, fontWeight: "700" },
+      exceptionToolbar: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+        position: "relative" as const,
+        zIndex: 2,
+      },
+      exceptionHint: { color: adminPalette.textMuted, fontSize: 12 },
+      workerButton: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      workerButtonText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+      workerMenu: {
+        position: "absolute" as const,
+        top: 42,
+        left: 0,
+        minWidth: 180,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        paddingVertical: 6,
+        zIndex: 20,
+        elevation: 10,
+        shadowColor: "#000",
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+      },
+      workerMenuItem: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+      },
+      workerMenuText: { color: adminPalette.textMuted, fontSize: 12 },
+      workerMenuTextActive: { color: adminPalette.accent, fontWeight: "700" },
+      modalOverlay: {
+        position: "absolute" as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(15, 23, 42, 0.6)",
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        padding: 24,
+      },
+      modalCard: {
+        width: "100%" as const,
+        maxWidth: 520,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      modalHeader: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        alignItems: "center" as const,
+      },
+      modalTitle: {
+        color: adminPalette.text,
+        fontWeight: "700" as const,
+        fontSize: 16,
+      },
+      modalSubtitle: { color: adminPalette.textMuted, marginTop: 6, fontSize: 12 },
+      modalRow: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+      },
+      modalLabel: { color: adminPalette.textMuted, fontSize: 12 },
+      modalValue: { color: adminPalette.text, fontSize: 12, fontWeight: "600" as const },
+      modalButton: {
+        flex: 1,
+        alignItems: "center" as const,
+        paddingVertical: 10,
+        borderRadius: 12,
+      },
+      inputField: {
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        borderRadius: 12,
+        padding: 10,
+        color: adminPalette.text,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+    }),
+    [adminPalette]
+  );
+  const getStatusStyle = (status: string) => {
+    if (status === "approved") {
+      return {
+        badge: {
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          borderRadius: 999,
+          backgroundColor: adminPalette.successSoft,
+          fontSize: 12,
+        },
+        text: { color: adminPalette.success },
+      };
+    }
+    if (status === "rejected" || status === "absent") {
+      return {
+        badge: {
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          borderRadius: 999,
+          backgroundColor: adminPalette.dangerSoft,
+          fontSize: 12,
+        },
+        text: { color: adminPalette.danger },
+      };
+    }
+    return {
+      badge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: adminPalette.warningSoft,
+        fontSize: 12,
+      },
+      text: { color: adminPalette.warning },
+    };
+  };
 
   useEffect(() => {
     const unsub = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
@@ -933,151 +1198,6 @@ export default function AdminAttendance() {
   );
 }
 
-const statCard = {
-  flex: 1,
-  minWidth: 240,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 16,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-
-const statIcon = {
-  width: 40,
-  height: 40,
-  borderRadius: 12,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-
-const statTitle = { color: adminPalette.text, fontWeight: "600" };
-const statSub = { color: adminPalette.textMuted, marginTop: 4, fontSize: 12 };
-
-const tableCard = {
-  marginTop: 24,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  overflow: "visible" as const,
-};
-
-const tableHeader = {
-  paddingHorizontal: 20,
-  paddingVertical: 14,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "space-between" as const,
-  position: "relative" as const,
-  zIndex: 3,
-  overflow: "visible" as const,
-};
-
-const tableTitle = { color: adminPalette.text, fontWeight: "600" };
-
-const tableRowHeader = {
-  flexDirection: "row" as const,
-  paddingHorizontal: 20,
-  paddingVertical: 12,
-  backgroundColor: adminPalette.surfaceAlt,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-};
-
-const tableHeaderText = {
-  flex: 1,
-  color: adminPalette.textMuted,
-  fontSize: 12,
-  fontWeight: "600" as const,
-};
-
-const tableRow = {
-  flexDirection: "row" as const,
-  paddingHorizontal: 20,
-  paddingVertical: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-  alignItems: "center" as const,
-};
-
-const tableCell = { flex: 1, color: adminPalette.text, fontSize: 13 };
-const tableCellMuted = { flex: 1, color: adminPalette.textMuted, fontSize: 13 };
-
-const tableCellStatus = { flex: 1 };
-const tableActions = { flex: 1, alignItems: "flex-start" as const };
-
-const actionButton = {
-  padding: 8,
-  borderRadius: 10,
-};
-
-const emptyText = { color: adminPalette.textMuted, fontSize: 12 };
-
-const sortControls = { flexDirection: "row", gap: 8 };
-const sortButton = {
-  paddingHorizontal: 10,
-  paddingVertical: 6,
-  borderRadius: 999,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  backgroundColor: adminPalette.surfaceAlt,
-};
-const sortButtonActive = {
-  borderColor: adminPalette.accent,
-  backgroundColor: adminPalette.infoSoft,
-};
-const sortButtonText = { color: adminPalette.textMuted, fontSize: 11 };
-const sortButtonTextActive = { color: adminPalette.accent, fontWeight: "700" };
-const exceptionToolbar = {
-  paddingHorizontal: 20,
-  paddingVertical: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "space-between" as const,
-  position: "relative" as const,
-  zIndex: 2,
-};
-const exceptionHint = { color: adminPalette.textMuted, fontSize: 12 };
-const workerButton = {
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 8,
-  paddingHorizontal: 12,
-  paddingVertical: 8,
-  borderRadius: 999,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  backgroundColor: adminPalette.surfaceAlt,
-};
-const workerButtonText = { color: adminPalette.text, fontSize: 12, fontWeight: "600" };
-const workerMenu = {
-  position: "absolute" as const,
-  top: 42,
-  left: 0,
-  minWidth: 180,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  paddingVertical: 6,
-  zIndex: 20,
-  elevation: 10,
-  shadowColor: "#000",
-  shadowOpacity: 0.3,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: 6 },
-};
-const workerMenuItem = {
-  paddingHorizontal: 12,
-  paddingVertical: 8,
-};
-const workerMenuText = { color: adminPalette.textMuted, fontSize: 12 };
-const workerMenuTextActive = { color: adminPalette.accent, fontWeight: "700" };
 const menuSpacer = { height: 160 };
 
 const toLogTimestamp = (log: any) => {
@@ -1093,42 +1213,6 @@ const sortLogsByDate = (items: any[], order: "latest" | "oldest") => {
   return order === "latest" ? sorted.reverse() : sorted;
 };
 
-const getStatusStyle = (status: string) => {
-  if (status === "approved") {
-    return {
-      badge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 999,
-        backgroundColor: adminPalette.successSoft,
-        fontSize: 12,
-      },
-      text: { color: adminPalette.success },
-    };
-  }
-  if (status === "rejected" || status === "absent") {
-    return {
-      badge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 999,
-        backgroundColor: adminPalette.dangerSoft,
-        fontSize: 12,
-      },
-      text: { color: adminPalette.danger },
-    };
-  }
-  return {
-      badge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 999,
-        backgroundColor: adminPalette.warningSoft,
-        fontSize: 12,
-      },
-    text: { color: adminPalette.warning },
-  };
-};
 
 const startOfWeek = (date: Date) => {
   const day = date.getDay();
@@ -1207,56 +1291,6 @@ const parseTimeToMinutes = (time: string) => {
   const [h, m] = time.split(":").map(Number);
   if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
   return h * 60 + m;
-};
-
-const modalOverlay = {
-  position: "absolute" as const,
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: "rgba(15, 23, 42, 0.6)",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  padding: 24,
-};
-
-const modalCard = {
-  width: "100%" as const,
-  maxWidth: 520,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 16,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-
-const modalHeader = {
-  flexDirection: "row" as const,
-  justifyContent: "space-between" as const,
-  alignItems: "center" as const,
-};
-
-const modalTitle = { color: adminPalette.text, fontWeight: "700" as const, fontSize: 16 };
-const modalSubtitle = { color: adminPalette.textMuted, marginTop: 6, fontSize: 12 };
-const modalRow = { flexDirection: "row" as const, justifyContent: "space-between" as const };
-const modalLabel = { color: adminPalette.textMuted, fontSize: 12 };
-const modalValue = { color: adminPalette.text, fontSize: 12, fontWeight: "600" as const };
-
-const modalButton = {
-  flex: 1,
-  alignItems: "center" as const,
-  paddingVertical: 10,
-  borderRadius: 12,
-};
-
-const inputField = {
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  borderRadius: 12,
-  padding: 10,
-  color: adminPalette.text,
-  backgroundColor: adminPalette.surfaceAlt,
 };
 
 const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);

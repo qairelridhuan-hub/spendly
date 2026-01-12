@@ -13,9 +13,10 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useEffect, useState } from "react";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 
 export default function AdminPayroll() {
+  const { colors: adminPalette } = useAdminTheme();
   const [records, setRecords] = useState<any[]>([]);
 
   useEffect(() => {

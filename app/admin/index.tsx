@@ -26,10 +26,11 @@ import {
   XCircle,
 } from "lucide-react-native";
 import { db } from "@/lib/firebase";
-import { adminPalette } from "@/lib/admin/palette";
+import { useAdminTheme } from "@/lib/admin/theme";
 import { getPeriodKey } from "@/lib/reports/report";
 
 export default function AdminDashboard() {
+  const { colors: adminPalette } = useAdminTheme();
   const router = useRouter();
   const [workerCount, setWorkerCount] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
@@ -294,6 +295,137 @@ export default function AdminDashboard() {
     config.overtimeRate,
     breakMinutesByKey,
   ]);
+  const {
+    sectionCard,
+    sectionTitle,
+    sectionSub,
+    sectionLink,
+    sectionHeaderRow,
+    emptyText,
+    chartLabel,
+    listRow,
+    listTitle,
+    listSub,
+    listTime,
+    statusDot,
+    shiftRow,
+    chip,
+    chipText,
+    pendingRow,
+    iconBadge,
+    actionButton,
+    rankBadge,
+    rankText,
+    progressTrack,
+    progressFill,
+    alertCardWarning,
+    alertTitle,
+    alertSub,
+  } = useMemo(
+    () => ({
+      sectionCard: {
+        marginTop: 24,
+        backgroundColor: adminPalette.surface,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        shadowColor: "#0f172a",
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 2,
+      },
+      sectionTitle: { color: adminPalette.text, fontWeight: "700", fontSize: 15 },
+      sectionSub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 },
+      sectionLink: { color: adminPalette.accent, fontSize: 12 },
+      sectionHeaderRow: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        marginBottom: 14,
+      },
+      emptyText: { color: adminPalette.textMuted, fontSize: 12 },
+      chartLabel: { color: adminPalette.textMuted, fontSize: 11, marginTop: 6 },
+      listRow: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: adminPalette.border,
+      },
+      listTitle: { color: adminPalette.text, fontSize: 13, fontWeight: "600" as const },
+      listSub: { color: adminPalette.textMuted, fontSize: 11, marginTop: 2 },
+      listTime: { color: adminPalette.textMuted, fontSize: 10 },
+      statusDot: { width: 8, height: 8, borderRadius: 4 },
+      shiftRow: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        padding: 12,
+        backgroundColor: adminPalette.surfaceAlt,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+      },
+      chip: {
+        backgroundColor: adminPalette.infoSoft,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+      },
+      chipText: { color: adminPalette.accent, fontSize: 11 },
+      pendingRow: {
+        flexDirection: "row" as const,
+        justifyContent: "space-between" as const,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: adminPalette.border,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      iconBadge: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+      },
+      actionButton: { padding: 8, borderRadius: 10 },
+      rankBadge: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: adminPalette.infoSoft,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+      },
+      rankText: { color: adminPalette.accent, fontSize: 12, fontWeight: "700" as const },
+      progressTrack: { height: 6, backgroundColor: adminPalette.border, borderRadius: 999 },
+      progressFill: {
+        height: 6,
+        borderRadius: 999,
+        backgroundColor: adminPalette.accent,
+      },
+      alertCardWarning: {
+        flexDirection: "row" as const,
+        gap: 10,
+        backgroundColor: adminPalette.warningSoft,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: adminPalette.warningSoft,
+        padding: 12,
+        alignItems: "flex-start" as const,
+      },
+      alertTitle: { color: adminPalette.warning, fontWeight: "600" as const },
+      alertSub: { color: adminPalette.warning, fontSize: 12, marginTop: 2 },
+    }),
+    [adminPalette]
+  );
+  const statusColor = (status: string) => {
+    if (status === "approved") return adminPalette.accent;
+    if (status === "absent") return adminPalette.danger;
+    if (status === "pending") return adminPalette.warning;
+    return adminPalette.success;
+  };
 
   return (
     <LinearGradient
@@ -581,98 +713,6 @@ export default function AdminDashboard() {
   );
 }
 
-const sectionCard = {
-  marginTop: 24,
-  backgroundColor: adminPalette.surface,
-  borderRadius: 16,
-  padding: 20,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  shadowColor: "#0f172a",
-  shadowOpacity: 0.05,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 6 },
-  elevation: 2,
-};
-
-const sectionTitle = { color: adminPalette.text, fontWeight: "700", fontSize: 15 };
-const sectionSub = { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 };
-const sectionLink = { color: adminPalette.accent, fontSize: 12 };
-const sectionHeaderRow = {
-  flexDirection: "row" as const,
-  justifyContent: "space-between" as const,
-  marginBottom: 14,
-};
-
-const emptyText = { color: adminPalette.textMuted, fontSize: 12 };
-const chartLabel = { color: adminPalette.textMuted, fontSize: 11, marginTop: 6 };
-
-const listRow = {
-  flexDirection: "row" as const,
-  justifyContent: "space-between" as const,
-  paddingBottom: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: adminPalette.border,
-};
-const listTitle = { color: adminPalette.text, fontSize: 13, fontWeight: "600" as const };
-const listSub = { color: adminPalette.textMuted, fontSize: 11, marginTop: 2 };
-const listTime = { color: adminPalette.textMuted, fontSize: 10 };
-const statusDot = { width: 8, height: 8, borderRadius: 4 };
-
-const shiftRow = {
-  flexDirection: "row" as const,
-  justifyContent: "space-between" as const,
-  padding: 12,
-  backgroundColor: adminPalette.surfaceAlt,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-};
-const chip = {
-  backgroundColor: adminPalette.infoSoft,
-  borderRadius: 999,
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-};
-const chipText = { color: adminPalette.accent, fontSize: 11 };
-
-const pendingRow = {
-  flexDirection: "row" as const,
-  justifyContent: "space-between" as const,
-  padding: 12,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: adminPalette.border,
-  backgroundColor: adminPalette.surfaceAlt,
-};
-const iconBadge = { width: 40, height: 40, borderRadius: 12, alignItems: "center" as const, justifyContent: "center" as const };
-const actionButton = { padding: 8, borderRadius: 10 };
-
-const rankBadge = {
-  width: 28,
-  height: 28,
-  borderRadius: 14,
-  backgroundColor: adminPalette.infoSoft,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-const rankText = { color: adminPalette.accent, fontSize: 12, fontWeight: "700" as const };
-const progressTrack = { height: 6, backgroundColor: adminPalette.border, borderRadius: 999 };
-const progressFill = { height: 6, borderRadius: 999, backgroundColor: adminPalette.accent };
-
-const alertCardWarning = {
-  flexDirection: "row" as const,
-  gap: 10,
-  backgroundColor: adminPalette.warningSoft,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: adminPalette.warningSoft,
-  padding: 12,
-  alignItems: "flex-start" as const,
-};
-const alertTitle = { color: adminPalette.warning, fontWeight: "600" as const };
-const alertSub = { color: adminPalette.warning, fontSize: 12, marginTop: 2 };
-
 const buildWeeklyHours = (
   logs: any[],
   breakMinutesByKey: Record<string, number>
@@ -755,12 +795,6 @@ const statusLabel = (status: string) => {
   return "Attendance pending";
 };
 
-const statusColor = (status: string) => {
-  if (status === "approved") return adminPalette.accent;
-  if (status === "absent") return adminPalette.danger;
-  if (status === "pending") return adminPalette.warning;
-  return adminPalette.success;
-};
 
 const getOwnerId = (docSnap: any) =>
   docSnap.ref?.parent?.parent?.id || docSnap.data()?.workerId || "";
