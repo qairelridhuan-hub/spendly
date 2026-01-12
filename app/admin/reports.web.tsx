@@ -48,6 +48,11 @@ export default function AdminReportsWeb() {
   const [breakLogs, setBreakLogs] = useState<any[]>([]);
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<WorkerMap>({});
+  const [weeklyRange, setWeeklyRange] = useState<"week" | "last7">("week");
+  const [showWeeklyDetails, setShowWeeklyDetails] = useState(false);
+  const [showMonthlyDetails, setShowMonthlyDetails] = useState(false);
+  const [showBreakdownDetails, setShowBreakdownDetails] = useState(false);
+  const [showHoursVsEarningsDetails, setShowHoursVsEarningsDetails] = useState(false);
   const [config, setConfig] = useState({
     hourlyRate: 0,
     hoursPerDay: 0,
@@ -119,9 +124,10 @@ export default function AdminReportsWeb() {
       buildWeeklyHours(
         approvedLogs,
         breakMinutesByKey,
-        overtimeHoursByKey
+        overtimeHoursByKey,
+        weeklyRange
       ),
-    [approvedLogs, breakMinutesByKey, overtimeHoursByKey]
+    [approvedLogs, breakMinutesByKey, overtimeHoursByKey, weeklyRange]
   );
 
   const monthlySummary = useMemo(
@@ -207,6 +213,88 @@ export default function AdminReportsWeb() {
       overtimeHoursByKey,
     ]
   );
+
+  const weeklySummary = useMemo(() => {
+    const values = weeklyHoursData.map(item => Number(item.hours ?? 0));
+    const total = values.reduce((sum, val) => sum + val, 0);
+    if (total <= 0) {
+      return ["No approved hours found for this range."];
+    }
+    const avg = total / values.length;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const maxIndex = values.indexOf(max);
+    const minIndex = values.indexOf(min);
+    return [
+      `Total approved hours: ${formatNumber(total)}.`,
+      `Average per day: ${formatNumber(avg)}.`,
+      `Highest day: ${weeklyHoursData[maxIndex]?.day ?? "--"} (${formatNumber(max)}).`,
+      `Lowest day: ${weeklyHoursData[minIndex]?.day ?? "--"} (${formatNumber(min)}).`,
+    ];
+  }, [weeklyHoursData]);
+
+  const monthlyEarningsSummary = useMemo(() => {
+    const values = monthlyEarningsData.map(item => Number(item.earnings ?? 0));
+    const total = values.reduce((sum, val) => sum + val, 0);
+    if (total <= 0) {
+      return ["No approved earnings recorded for the last 6 months."];
+    }
+    const avg = total / values.length;
+    const max = Math.max(...values);
+    const maxIndex = values.indexOf(max);
+    const first = values[0] ?? 0;
+    const last = values[values.length - 1] ?? 0;
+    const delta = last - first;
+    const trend = first > 0 ? `${formatNumber((delta / first) * 100)}%` : "--";
+    return [
+      `Total approved earnings: ${formatCurrency(total)}.`,
+      `Average per month: ${formatCurrency(avg)}.`,
+      `Best month: ${monthlyEarningsData[maxIndex]?.month ?? "--"} (${formatCurrency(max)}).`,
+      `Change from first to last month: ${formatCurrency(delta)} (${trend}).`,
+    ];
+  }, [monthlyEarningsData]);
+
+  const breakdownSummary = useMemo(() => {
+    const regular = breakdownData.find(item => item.label === "Regular")?.value ?? 0;
+    const overtime = breakdownData.find(item => item.label === "Overtime")?.value ?? 0;
+    const deductions = breakdownData.find(item => item.label === "Deductions")?.value ?? 0;
+    const gross = regular + overtime;
+    const net = gross - deductions;
+    if (gross <= 0 && deductions <= 0) {
+      return ["No approved earnings or deductions recorded for the current period."];
+    }
+    return [
+      `Regular pay: ${formatCurrency(regular)}.`,
+      `Overtime pay: ${formatCurrency(overtime)}.`,
+      `Absence deductions: ${formatCurrency(deductions)}.`,
+      `Net after deductions: ${formatCurrency(net)}.`,
+    ];
+  }, [breakdownData]);
+
+  const hoursVsEarningsSummary = useMemo(() => {
+    const totalHours = hoursVsEarningsData.reduce(
+      (sum, item) => sum + Number(item.hours ?? 0),
+      0
+    );
+    const totalEarnings = hoursVsEarningsData.reduce(
+      (sum, item) => sum + Number(item.earnings ?? 0),
+      0
+    );
+    if (totalHours <= 0 && totalEarnings <= 0) {
+      return ["No approved hours or earnings recorded for the last 6 months."];
+    }
+    const maxEarnings = Math.max(
+      ...hoursVsEarningsData.map(item => Number(item.earnings ?? 0))
+    );
+    const maxIndex = hoursVsEarningsData.findIndex(
+      item => Number(item.earnings ?? 0) === maxEarnings
+    );
+    return [
+      `Total approved hours: ${formatNumber(totalHours)}.`,
+      `Total approved earnings: ${formatCurrency(totalEarnings)}.`,
+      `Top earnings month: ${hoursVsEarningsData[maxIndex]?.month ?? "--"} (${formatCurrency(maxEarnings)}).`,
+    ];
+  }, [hoursVsEarningsData]);
   const workerRows = useMemo(
     () =>
       buildReportWorkers(
@@ -333,9 +421,37 @@ export default function AdminReportsWeb() {
         <Card>
           <CardHeader
             title="Weekly Hours Trend"
-            subtitle="Approved hours by day (Mon–Sun)"
+            subtitle={
+              weeklyRange === "week"
+                ? "Approved hours by day (Mon–Sun)"
+                : "Approved hours by day (last 7 days)"
+            }
+            right={
+              <button
+                type="button"
+                onClick={() => setShowWeeklyDetails(value => !value)}
+                style={styles.detailsButton}
+              >
+                {showWeeklyDetails ? "Hide details" : "View details"}
+              </button>
+            }
           />
           <CardContent>
+            <p style={styles.chartDescription}>
+              Approved attendance hours for the selected range, after breaks.
+            </p>
+            <div style={styles.chartFilterRow}>
+              <select
+                value={weeklyRange}
+                onChange={event =>
+                  setWeeklyRange(event.target.value as "week" | "last7")
+                }
+                style={styles.chartSelect}
+              >
+                <option value="week">This Week (Mon–Sun)</option>
+                <option value="last7">Last 7 Days</option>
+              </select>
+            </div>
             <ChartContainer height={260}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyHoursData}>
@@ -346,6 +462,17 @@ export default function AdminReportsWeb() {
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
+            {showWeeklyDetails ? (
+              <div style={styles.detailsPanel}>
+                <ul style={styles.detailsList}>
+                  {weeklySummary.map(line => (
+                    <li key={line} style={styles.detailsItem}>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -353,8 +480,20 @@ export default function AdminReportsWeb() {
           <CardHeader
             title="Monthly Earnings Trend"
             subtitle="Last 6 months"
+            right={
+              <button
+                type="button"
+                onClick={() => setShowMonthlyDetails(value => !value)}
+                style={styles.detailsButton}
+              >
+                {showMonthlyDetails ? "Hide details" : "View details"}
+              </button>
+            }
           />
           <CardContent>
+            <p style={styles.chartDescription}>
+              Approved attendance earnings per month using hourly and overtime rates.
+            </p>
             <ChartContainer height={260}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyEarningsData}>
@@ -370,6 +509,17 @@ export default function AdminReportsWeb() {
                 </LineChart>
               </ResponsiveContainer>
             </ChartContainer>
+            {showMonthlyDetails ? (
+              <div style={styles.detailsPanel}>
+                <ul style={styles.detailsList}>
+                  {monthlyEarningsSummary.map(line => (
+                    <li key={line} style={styles.detailsItem}>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -377,8 +527,20 @@ export default function AdminReportsWeb() {
           <CardHeader
             title="Earnings Breakdown"
             subtitle="Regular vs overtime vs deductions"
+            right={
+              <button
+                type="button"
+                onClick={() => setShowBreakdownDetails(value => !value)}
+                style={styles.detailsButton}
+              >
+                {showBreakdownDetails ? "Hide details" : "View details"}
+              </button>
+            }
           />
           <CardContent>
+            <p style={styles.chartDescription}>
+              Splits the current period into regular pay, overtime pay, and absence deductions.
+            </p>
             <ChartContainer height={260}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -409,6 +571,17 @@ export default function AdminReportsWeb() {
                 </div>
               ))}
             </div>
+            {showBreakdownDetails ? (
+              <div style={styles.detailsPanel}>
+                <ul style={styles.detailsList}>
+                  {breakdownSummary.map(line => (
+                    <li key={line} style={styles.detailsItem}>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
@@ -418,8 +591,31 @@ export default function AdminReportsWeb() {
           <CardHeader
             title="Hours vs Earnings"
             subtitle="Total hours vs total earnings (last 6 months)"
+            right={
+              <button
+                type="button"
+                onClick={() => setShowHoursVsEarningsDetails(value => !value)}
+                style={styles.detailsButton}
+              >
+                {showHoursVsEarningsDetails ? "Hide details" : "View details"}
+              </button>
+            }
           />
           <CardContent>
+            <p style={styles.chartDescription}>
+              Compares monthly approved hours with total approved earnings.
+            </p>
+            {showHoursVsEarningsDetails ? (
+              <div style={styles.detailsPanel}>
+                <ul style={styles.detailsList}>
+                  {hoursVsEarningsSummary.map(line => (
+                    <li key={line} style={styles.detailsItem}>
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <ChartContainer height={280}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={hoursVsEarningsData}>
@@ -463,16 +659,24 @@ export default function AdminReportsWeb() {
 function buildWeeklyHours(
   logs: AttendanceLog[],
   breakMinutesByKey: Record<string, number>,
-  overtimeHoursByKey: Record<string, number>
+  overtimeHoursByKey: Record<string, number>,
+  range: "week" | "last7"
 ) {
-  const start = startOfWeek(new Date());
-  const end = endOfWeek(new Date());
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const now = new Date();
+  const start =
+    range === "week" ? startOfWeek(now) : startOfLast7Days(now);
+  const end = range === "week" ? endOfWeek(now) : endOfDay(now);
+  const days =
+    range === "week" ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : last7DayLabels(now);
   const totals = days.map(day => ({ day, hours: 0 }));
   logs.forEach(log => {
     const date = new Date(`${log.date}T00:00:00`);
     if (Number.isNaN(date.getTime()) || date < start || date > end) return;
-    const dayIndex = (date.getDay() + 6) % 7;
+    const dayIndex =
+      range === "week"
+        ? (date.getDay() + 6) % 7
+        : days.indexOf(dayLabel(date));
+    if (dayIndex < 0) return;
     totals[dayIndex].hours += getLogHours(log, breakMinutesByKey);
   });
   return totals;
@@ -899,15 +1103,65 @@ function endOfWeek(date: Date) {
   return end;
 }
 
+function endOfDay(date: Date) {
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+function startOfLast7Days(date: Date) {
+  const start = new Date(date);
+  start.setDate(date.getDate() - 6);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function dayLabel(date: Date) {
+  return date.toLocaleString("en-US", { weekday: "short" });
+}
+
+function last7DayLabels(date: Date) {
+  const labels: string[] = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const day = new Date(date);
+    day.setDate(date.getDate() - i);
+    labels.push(dayLabel(day));
+  }
+  return labels;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-MY", {
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatCurrency(value: number) {
+  return `RM ${new Intl.NumberFormat("en-MY", {
+    maximumFractionDigits: 0,
+  }).format(value)}`;
+}
+
 function Card({ children }: { children: React.ReactNode }) {
   return <div style={styles.card}>{children}</div>;
 }
 
-function CardHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+function CardHeader({
+  title,
+  subtitle,
+  right,
+}: {
+  title: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+}) {
   return (
     <div style={styles.cardHeader}>
-      <h3 style={styles.cardTitle}>{title}</h3>
-      {subtitle ? <p style={styles.cardSubtitle}>{subtitle}</p> : null}
+      <div>
+        <h3 style={styles.cardTitle}>{title}</h3>
+        {subtitle ? <p style={styles.cardSubtitle}>{subtitle}</p> : null}
+      </div>
+      {right ? <div style={styles.cardHeaderRight}>{right}</div> : null}
     </div>
   );
 }
@@ -1031,12 +1285,75 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #e2e8f0",
     boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
   },
-  cardHeader: { padding: "18px 20px 0" },
+  cardHeader: {
+    padding: "18px 20px 0",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+    rowGap: 8,
+  },
+  cardHeaderRight: {
+    marginLeft: "auto",
+    flexShrink: 0,
+  },
+  cardHeaderActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  },
   cardTitle: { fontSize: 16, fontWeight: 600, margin: 0 },
   cardSubtitle: { margin: "6px 0 0", color: "#64748b", fontSize: 12 },
   cardContent: { padding: "16px 20px 20px" },
+  chartDescription: {
+    margin: "0 0 10px",
+    color: "#64748b",
+    fontSize: 12,
+  },
   chartContainer: {
     width: "100%",
+  },
+  chartSelect: {
+    borderRadius: 999,
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    padding: "6px 12px",
+    fontSize: 12,
+    color: "#334155",
+    cursor: "pointer",
+  },
+  chartFilterRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginBottom: 8,
+  },
+  detailsButton: {
+    borderRadius: 999,
+    border: "1px solid #cbd5f5",
+    background: "#ffffff",
+    padding: "6px 12px",
+    fontSize: 12,
+    color: "#1d4ed8",
+    cursor: "pointer",
+  },
+  detailsPanel: {
+    marginTop: 12,
+    borderRadius: 12,
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    padding: "10px 12px",
+  },
+  detailsList: {
+    margin: 0,
+    paddingLeft: 16,
+    color: "#475569",
+    fontSize: 12,
+    display: "grid",
+    gap: 6,
+  },
+  detailsItem: {
+    margin: 0,
   },
   legend: { marginTop: 12, display: "grid", gap: 8 },
   legendRow: {

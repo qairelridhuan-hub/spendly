@@ -133,6 +133,20 @@ type ArcadeState = {
   shopBadges?: Record<string, boolean>;
 };
 
+type PowerUpType = keyof NonNullable<ArcadeState["powerUps"]>;
+
+type PowerUpItem = {
+  id: PowerUpType;
+  name: string;
+  description: string;
+  icon: typeof Zap;
+  cost: number;
+  currency: "coins" | "gems";
+  owned: number;
+  gradient: [string, string];
+  border: string;
+};
+
 type DashboardPanel =
   | "main"
   | "profile"
@@ -764,47 +778,47 @@ export default function GameScreen() {
   );
   const unlockedBadges = badges.filter(badge => badge.unlocked);
   const unlockedBadgeCount = badges.filter(badge => badge.unlocked).length;
-  const powerUpItems = [
+  const powerUpItems: PowerUpItem[] = [
     {
-      id: "xpBoost" as const,
+      id: "xpBoost",
       name: "2x XP Boost",
       description: "Double XP for 24 hours",
       icon: Zap,
       cost: 50,
-      currency: "coins" as const,
+      currency: "coins",
       owned: powerUps.xpBoost,
       gradient: ["#f59e0b", "#f97316"],
       border: "rgba(251, 146, 60, 0.4)",
     },
     {
-      id: "shield" as const,
+      id: "shield",
       name: "Budget Shield",
       description: "Protect your streak",
       icon: Shield,
       cost: 10,
-      currency: "gems" as const,
+      currency: "gems",
       owned: powerUps.shield,
       gradient: ["#38bdf8", "#60a5fa"],
       border: "rgba(59, 130, 246, 0.4)",
     },
     {
-      id: "multiplier" as const,
+      id: "multiplier",
       name: "Savings Multiplier",
       description: "Earn 50% more on goals",
       icon: TrendingUp,
       cost: 75,
-      currency: "coins" as const,
+      currency: "coins",
       owned: powerUps.multiplier,
       gradient: ["#22c55e", "#10b981"],
       border: "rgba(34, 197, 94, 0.4)",
     },
     {
-      id: "luckyCharm" as const,
+      id: "luckyCharm",
       name: "Lucky Charm",
       description: "Better rewards for 12h",
       icon: Sparkles,
       cost: 15,
-      currency: "gems" as const,
+      currency: "gems",
       owned: powerUps.luckyCharm,
       gradient: ["#a855f7", "#ec4899"],
       border: "rgba(236, 72, 153, 0.45)",
@@ -1022,7 +1036,7 @@ export default function GameScreen() {
   };
 
   const handleBuyPowerUp = async (
-    type: keyof ArcadeState["powerUps"],
+    type: PowerUpType,
     cost: number,
     currency: "coins" | "gems"
   ) => {
@@ -2213,7 +2227,7 @@ export default function GameScreen() {
                   style={styles.sectionLink}
                   onPress={() => handleMenuSelect("badges")}
                 >
-                  <Text style={styles.sectionLinkText}>View All -></Text>
+                  <Text style={styles.sectionLinkText}>{"View All ->"}</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.badgeProgressTrack}>

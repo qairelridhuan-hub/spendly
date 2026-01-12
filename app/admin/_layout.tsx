@@ -40,6 +40,7 @@ export default function AdminLayout() {
   const pathnameRef = useRef(pathname);
   const [checking, setChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -188,11 +189,18 @@ export default function AdminLayout() {
           <ScrollView>
             {navItems.map(item => {
               const isActive = pathname === item.href;
+              const isHovered = hoveredNav === item.href;
               const Icon = item.icon;
               return (
                 <TouchableOpacity
                   key={item.href}
                   onPress={() => router.push(item.href as any)}
+                  onHoverIn={
+                    Platform.OS === "web" ? () => setHoveredNav(item.href) : undefined
+                  }
+                  onHoverOut={
+                    Platform.OS === "web" ? () => setHoveredNav(null) : undefined
+                  }
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -206,10 +214,67 @@ export default function AdminLayout() {
                     marginBottom: 6,
                   }}
                 >
-                  <Icon
-                    size={18}
-                    color={isActive ? adminPalette.accentStrong : adminPalette.textMuted}
-                  />
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                      transform: [{ scale: isHovered ? 1.15 : 1 }],
+                      backgroundColor: isHovered
+                        ? adminPalette.surfaceAlt
+                        : "transparent",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Icon
+                      size={18}
+                      color={
+                        isActive ? adminPalette.accentStrong : adminPalette.textMuted
+                      }
+                    />
+                    {Platform.OS === "web" && isHovered ? (
+                      <View
+                        style={{
+                          position: "absolute",
+                          left: 34,
+                          top: -6,
+                          backgroundColor: adminPalette.text,
+                          paddingVertical: 6,
+                          paddingHorizontal: 10,
+                          borderRadius: 14,
+                          zIndex: 20,
+                          shadowColor: "#0f172a",
+                          shadowOpacity: 0.18,
+                          shadowRadius: 8,
+                          shadowOffset: { width: 0, height: 4 },
+                        }}
+                      >
+                        <View
+                          style={{
+                            position: "absolute",
+                            left: -4,
+                            top: 12,
+                            width: 8,
+                            height: 8,
+                            backgroundColor: adminPalette.text,
+                            transform: [{ rotate: "45deg" }],
+                          }}
+                        />
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            color: "#fff",
+                            fontSize: 11,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {item.label}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <Text
                     style={{
                       color: isActive ? adminPalette.accentStrong : adminPalette.textMuted,
