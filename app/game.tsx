@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFonts } from "expo-font";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import {
@@ -29,6 +30,7 @@ import {
   Trophy,
   User,
   Zap,
+  Search,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -40,6 +42,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   Text,
   TouchableOpacity,
   View,
@@ -157,6 +160,12 @@ type DashboardPanel =
   | "shop";
 
 export default function GameScreen() {
+  const [shopFontLoaded] = useFonts({
+    "SpaceGrotesk-SemiBold": require("../assets/fonts/SpaceGrotesk-SemiBold.ttf"),
+  });
+  const [pixelFontLoaded] = useFonts({
+    PressStart2P: require("../assets/fonts/PressStart2P-Regular.ttf"),
+  });
   const neon = {
     bgStart: "#1a0033",
     bgEnd: "#080014",
@@ -173,6 +182,10 @@ export default function GameScreen() {
   const [activePanel, setActivePanel] = useState<DashboardPanel>("main");
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopError, setShopError] = useState<string | null>(null);
+  const [shopQuery, setShopQuery] = useState("");
+  const [showAllShop, setShowAllShop] = useState(false);
+  const xpGlowAnim = useRef(new Animated.Value(0.2)).current;
+  const titleGlowAnim = useRef(new Animated.Value(0.6)).current;
   const spinRotation = useRef(new Animated.Value(0)).current;
   const spinTurns = useRef(0);
   const lastAwardedLevelRef = useRef<number | null>(null);
@@ -626,6 +639,42 @@ export default function GameScreen() {
       useNativeDriver: false,
     }).start();
   }, [progress, xpProgressAnim]);
+  useEffect(() => {
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(xpGlowAnim, {
+          toValue: 0.55,
+          duration: 900,
+          useNativeDriver: false,
+        }),
+        Animated.timing(xpGlowAnim, {
+          toValue: 0.2,
+          duration: 900,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    glowLoop.start();
+    return () => glowLoop.stop();
+  }, [xpGlowAnim]);
+  useEffect(() => {
+    const titleLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(titleGlowAnim, {
+          toValue: 1,
+          duration: 1100,
+          useNativeDriver: false,
+        }),
+        Animated.timing(titleGlowAnim, {
+          toValue: 0.6,
+          duration: 1100,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    titleLoop.start();
+    return () => titleLoop.stop();
+  }, [titleGlowAnim]);
   const coins = arcadeState?.coins ?? 0;
   const gems = arcadeState?.gems ?? 0;
   const xpWallet = Math.max(0, arcadeState?.bonusXp ?? 0);
@@ -1161,6 +1210,7 @@ export default function GameScreen() {
     inputRange: [0, 100],
     outputRange: ["0%", "100%"],
   });
+  const xpGlowOpacity = xpGlowAnim;
   const panelTitle =
     activePanel === "profile"
       ? "Profile Achievements"
@@ -1514,23 +1564,43 @@ export default function GameScreen() {
           >
             <ArrowLeft size={20} color="#e5e7eb" />
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Budget Arcade</Text>
-            <Text style={styles.headerSubtitle}>Your Financial Game</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setActivePanel("shop")}
+              accessibilityLabel="Open shop"
+            >
+              <ShoppingBag size={20} color="#e5e7eb" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setMenuOpen(true)}
+            >
+              <Menu size={20} color="#e5e7eb" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setActivePanel("shop")}
-            accessibilityLabel="Open shop"
-          >
-            <ShoppingBag size={20} color="#e5e7eb" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setMenuOpen(true)}
-          >
-            <Menu size={20} color="#e5e7eb" />
-          </TouchableOpacity>
+          <View style={styles.headerTitleWrap} pointerEvents="none">
+            <View style={styles.headerTitleStack}>
+              <Animated.Text
+                style={[
+                  styles.headerTitle,
+                  pixelFontLoaded && styles.headerTitlePixel,
+                  styles.headerTitleGlow,
+                  { opacity: titleGlowAnim },
+                ]}
+              >
+                Budget Arcade
+              </Animated.Text>
+              <Text
+                style={[
+                  styles.headerTitle,
+                  pixelFontLoaded && styles.headerTitlePixel,
+                ]}
+              >
+                Budget Arcade
+              </Text>
+            </View>
+          </View>
         </View>
 
         <ScrollView
@@ -1591,6 +1661,12 @@ export default function GameScreen() {
                 </View>
 
                 <View style={styles.xpTrack}>
+                  <Animated.View
+                    style={[
+                      styles.xpGlow,
+                      { width: xpFillWidth, opacity: xpGlowOpacity },
+                    ]}
+                  />
                   <Animated.View
                     style={[styles.xpFill, { width: xpFillWidth }]}
                   />
@@ -2282,33 +2358,145 @@ export default function GameScreen() {
             </View>
           ) : activePanel === "shop" ? (
             <View style={styles.sectionCard}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionTitleRow}>
-                  <ShoppingBag size={18} color="#38bdf8" />
-                  <Text style={styles.sectionTitle}>XP Exchange</Text>
+              <LinearGradient
+                colors={["#0f172a", "#111827"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.shopHero}
+              >
+                <View style={styles.shopHeroRow}>
+                  <View style={styles.shopHeroTitleBlock}>
+                    <View style={styles.shopHeroTitleRow}>
+                      <ShoppingBag size={18} color="#f59e0b" />
+                      <Text
+                        style={[
+                          styles.shopHeroTitle,
+                          shopFontLoaded && styles.shopTitleFont,
+                        ]}
+                      >
+                        Arcade Shop
+                      </Text>
+                    </View>
+                    <Text style={styles.shopHeroSubtitle}>
+                      Browse rewards and trade with coins, gems, or XP.
+                    </Text>
+                  </View>
+                  <View style={styles.shopHeroBadge}>
+                    <Text style={styles.shopHeroBadgeText}>
+                      {Math.max(0, nextXp - totalXp)} XP to level up
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.sectionBadge}>
-                  <Text style={styles.sectionBadgeText}>
+                <View style={styles.shopSearch}>
+                  <Search size={16} color="#94a3b8" />
+                  <TextInput
+                    value={shopQuery}
+                    onChangeText={setShopQuery}
+                    placeholder="Search boosts, badges, currency"
+                    placeholderTextColor="#94a3b8"
+                    style={styles.shopSearchInput}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    accessibilityLabel="Search shop items"
+                  />
+                </View>
+                <View style={styles.shopProgressRow}>
+                  <Text style={styles.shopProgressLabel}>XP progress</Text>
+                  <Text style={styles.shopProgressValue}>
                     {Math.max(0, nextXp - totalXp)} XP to level up
                   </Text>
                 </View>
-              </View>
-              <Text style={styles.sectionSubtitle}>
-                Trade coins, gems, or XP for rewards. XP trades use bonus XP only.
-              </Text>
-              <View style={styles.shopWalletRow}>
-                <View style={styles.shopWalletPill}>
-                  <Coins size={14} color="#facc15" />
-                  <Text style={styles.shopWalletText}>{coins}</Text>
+                <View style={styles.shopProgressShell}>
+                  <View style={styles.shopProgressTrack}>
+                    <Animated.View
+                      style={[styles.shopProgressFill, { width: xpFillWidth }]}
+                    >
+                      <LinearGradient
+                        colors={["#fde047", "#f59e0b"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.shopProgressFillInner}
+                      />
+                    </Animated.View>
+                  </View>
                 </View>
-                <View style={styles.shopWalletPill}>
-                  <Gem size={14} color="#38bdf8" />
-                  <Text style={styles.shopWalletText}>{gems}</Text>
+                <View style={styles.shopWalletRow}>
+                  <View style={[styles.shopWalletCard, styles.shopWalletCoins]}>
+                    <View style={styles.shopWalletIcon}>
+                      <Coins size={14} color="#facc15" />
+                    </View>
+                    <View style={styles.shopWalletTextBlock}>
+                      <Text style={styles.shopWalletLabel}>Coins</Text>
+                      <Text
+                        style={[
+                          styles.shopWalletValue,
+                          shopFontLoaded && styles.shopTitleFont,
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.85}
+                      >
+                        {coins}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.shopWalletCard, styles.shopWalletGems]}>
+                    <View style={styles.shopWalletIcon}>
+                      <Gem size={14} color="#38bdf8" />
+                    </View>
+                    <View style={styles.shopWalletTextBlock}>
+                      <Text style={styles.shopWalletLabel}>Gems</Text>
+                      <Text
+                        style={[
+                          styles.shopWalletValue,
+                          shopFontLoaded && styles.shopTitleFont,
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.85}
+                      >
+                        {gems}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.shopWalletCard, styles.shopWalletXp]}>
+                    <View style={styles.shopWalletIcon}>
+                      <Zap size={14} color="#fb923c" />
+                    </View>
+                    <View style={styles.shopWalletTextBlock}>
+                      <Text style={styles.shopWalletLabel}>Bonus XP</Text>
+                      <Text
+                        style={[
+                          styles.shopWalletValue,
+                          shopFontLoaded && styles.shopTitleFont,
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.85}
+                      >
+                        {xpWallet}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.shopWalletPill}>
-                  <Zap size={14} color="#fb923c" />
-                  <Text style={styles.shopWalletText}>{xpWallet} XP</Text>
-                </View>
+              </LinearGradient>
+              <View style={styles.shopSectionHeader}>
+                <Text
+                  style={[
+                    styles.shopSectionTitle,
+                    shopFontLoaded && styles.shopTitleFont,
+                  ]}
+                >
+                  {showAllShop ? "All items" : "Recommended for you"}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowAllShop(prev => !prev)}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.shopSectionLink}>
+                    {showAllShop ? "Show less" : "See all"}
+                  </Text>
+                </TouchableOpacity>
               </View>
               {shopError ? (
                 <View style={styles.validationBanner}>
@@ -2317,36 +2505,82 @@ export default function GameScreen() {
                 </View>
               ) : null}
               <View style={styles.shopGrid}>
-                {shopCatalog.map(item => {
+                {shopCatalog
+                  .filter(item => {
+                    if (!shopQuery.trim()) return true;
+                    const term = shopQuery.trim().toLowerCase();
+                    const rewardText =
+                      item.reward.type === "badge"
+                        ? "badge"
+                        : item.reward.type;
+                    return (
+                      item.title.toLowerCase().includes(term) ||
+                      item.description.toLowerCase().includes(term) ||
+                      rewardText.includes(term)
+                    );
+                  })
+                  .slice(
+                    0,
+                    showAllShop || shopQuery.trim().length > 0 ? undefined : 3
+                  )
+                  .map(item => {
                   const badgeOwned =
                     item.reward.type === "badge" && item.reward.badgeId
                       ? Boolean(arcadeState?.shopBadges?.[item.reward.badgeId])
                       : false;
                   return (
                     <View key={item.id} style={styles.shopCard}>
-                      <View style={styles.shopCardHeader}>
-                        <Text style={styles.shopCardTitle}>{item.title}</Text>
-                        <View style={styles.shopPill}>
+                      <View style={styles.shopCardTop}>
+                        <LinearGradient
+                          colors={["rgba(59, 130, 246, 0.35)", "rgba(15, 23, 42, 0.9)"]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.shopImageWrap}
+                        >
                           {item.reward.type === "coins" ? (
-                            <Coins size={12} color="#facc15" />
+                            <Coins size={18} color="#facc15" />
                           ) : item.reward.type === "gems" ? (
-                            <Gem size={12} color="#38bdf8" />
+                            <Gem size={18} color="#38bdf8" />
                           ) : item.reward.type === "xp" ? (
-                            <Zap size={12} color="#fb923c" />
+                            <Zap size={18} color="#fb923c" />
                           ) : (
-                            <Award size={12} color="#f472b6" />
+                            <Award size={18} color="#f472b6" />
                           )}
-                          <Text style={styles.shopPillText}>
-                            {item.reward.type === "badge"
-                              ? "Badge"
-                              : `+${item.reward.amount}`}
+                        </LinearGradient>
+                        <View style={styles.shopCardInfo}>
+                          <View style={styles.shopCardTitleRow}>
+                            <Text
+                              style={[
+                                styles.shopCardTitle,
+                                shopFontLoaded && styles.shopTitleFont,
+                              ]}
+                            >
+                              {item.title}
+                            </Text>
+                            <View style={styles.shopRewardTag}>
+                              <Text style={styles.shopRewardText}>
+                                {item.reward.type === "badge"
+                                  ? "Badge"
+                                  : `+${item.reward.amount}`}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={styles.shopCardDesc}>
+                            {item.description}
                           </Text>
+                          <View style={styles.shopMetaRow}>
+                            <View style={styles.shopRating}>
+                              <Star size={12} color="#facc15" />
+                              <Text style={styles.shopRatingText}>4.8</Text>
+                            </View>
+                            {badgeOwned ? (
+                              <View style={styles.shopOwnedPill}>
+                                <Text style={styles.shopOwnedText}>Owned</Text>
+                              </View>
+                            ) : null}
+                          </View>
                         </View>
                       </View>
-                      <Text style={styles.shopCardDesc}>{item.description}</Text>
-                      {badgeOwned ? (
-                        <Text style={styles.shopOwnedText}>Owned</Text>
-                      ) : null}
                       <View style={styles.shopFooter}>
                         <View style={styles.shopOfferList}>
                           {item.offers.map(offer => {
@@ -2382,7 +2616,7 @@ export default function GameScreen() {
                       </View>
                     </View>
                   );
-                })}
+                  })}
               </View>
             </View>
           ) : (
@@ -2457,6 +2691,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingTop: 4,
     paddingBottom: 12,
+    position: "relative",
   },
   iconButton: {
     width: 36,
@@ -2466,9 +2701,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(15, 23, 42, 0.8)",
   },
-  headerCenter: { flex: 1, alignItems: "center" },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
-  headerSubtitle: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
+  headerActions: { flexDirection: "row", gap: 8 },
+  headerTitleWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  headerTitleStack: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
+    color: "#e5e7eb",
+    textAlign: "center",
+  },
+  headerTitlePixel: {
+    fontFamily: "PressStart2P",
+    fontSize: 12,
+    letterSpacing: 0.5,
+    color: "#facc15",
+  },
+  headerTitleGlow: {
+    position: "absolute",
+    textShadowColor: "rgba(255, 225, 120, 1)",
+    textShadowRadius: 16,
+    textShadowOffset: { width: 0, height: 0 },
+  },
   panelHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -2551,10 +2811,23 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 999,
     backgroundColor: "rgba(0, 0, 0, 0.25)",
-    overflow: "hidden",
+    overflow: "visible",
+    position: "relative",
     marginTop: 10,
   },
   xpFill: { height: 10, borderRadius: 999, backgroundColor: "#facc15" },
+  xpGlow: {
+    position: "absolute",
+    left: 0,
+    top: -4,
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: "rgba(250, 204, 21, 0.4)",
+    shadowColor: "#facc15",
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
   levelFooter: { marginTop: 12, gap: 10 },
   nextUnlockRow: {
     flexDirection: "row",
@@ -2708,53 +2981,184 @@ const styles = StyleSheet.create({
     borderColor: "rgba(248, 113, 113, 0.35)",
   },
   validationText: { fontSize: 11, color: "#fecaca", flex: 1 },
-  shopGrid: {
-    marginTop: 12,
+  shopTitleFont: { fontFamily: "SpaceGrotesk-SemiBold" },
+  shopHero: {
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+    backgroundColor: "#0f172a",
+    marginBottom: 14,
+  },
+  shopHeroRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     gap: 12,
   },
-  shopWalletRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  shopWalletPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  shopHeroTitleBlock: { flex: 1 },
+  shopHeroTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  shopHeroTitle: { color: "#f8fafc", fontSize: 18, fontWeight: "700" },
+  shopHeroSubtitle: { color: "#cbd5f5", fontSize: 12, marginTop: 6 },
+  shopHeroBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    backgroundColor: "rgba(59, 130, 246, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.35)",
+  },
+  shopHeroBadgeText: { color: "#bfdbfe", fontSize: 11, fontWeight: "700" },
+  shopSearch: {
+    marginTop: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(15, 23, 42, 0.8)",
     borderWidth: 1,
     borderColor: "rgba(148, 163, 184, 0.2)",
   },
-  shopWalletText: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
-  shopCard: {
-    borderRadius: 16,
-    padding: 14,
-    backgroundColor: "rgba(15, 23, 42, 0.6)",
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.25)",
+  shopSearchInput: {
+    flex: 1,
+    color: "#e2e8f0",
+    fontSize: 12,
+    fontWeight: "600",
   },
-  shopCardHeader: {
+  shopProgressRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 10,
   },
-  shopCardTitle: { color: "#e5e7eb", fontSize: 14, fontWeight: "700" },
-  shopCardDesc: { color: "#94a3b8", fontSize: 12, marginTop: 6 },
-  shopOwnedText: { color: "#4ade80", fontSize: 11, marginTop: 8, fontWeight: "700" },
-  shopPill: {
+  shopProgressLabel: { color: "#cbd5f5", fontSize: 11, fontWeight: "700" },
+  shopProgressValue: { color: "#fcd34d", fontSize: 10, fontWeight: "700" },
+  shopProgressShell: {
+    marginTop: 8,
+    marginBottom: 8,
+    position: "relative",
+  },
+  shopProgressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(148, 163, 184, 0.18)",
+    overflow: "hidden",
+    zIndex: 2,
+  },
+  shopProgressFill: {
+    height: "100%",
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  shopProgressFillInner: { flex: 1 },
+  shopWalletRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  shopWalletCard: {
+    flex: 1,
+    minHeight: 56,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+  },
+  shopWalletCoins: { backgroundColor: "rgba(250, 204, 21, 0.08)" },
+  shopWalletGems: { backgroundColor: "rgba(56, 189, 248, 0.08)" },
+  shopWalletXp: { backgroundColor: "rgba(251, 146, 60, 0.1)" },
+  shopWalletIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.7)",
+  },
+  shopWalletTextBlock: { flexShrink: 1, minWidth: 0 },
+  shopWalletLabel: {
+    color: "#94a3b8",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  shopWalletValue: {
+    color: "#e2e8f0",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  shopSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  shopSectionTitle: { color: "#e2e8f0", fontSize: 14, fontWeight: "700" },
+  shopSectionLink: { color: "#38bdf8", fontSize: 12, fontWeight: "700" },
+  shopGrid: {
+    gap: 12,
+  },
+  shopCard: {
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+  },
+  shopCardTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  shopImageWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.25)",
+  },
+  shopCardInfo: { flex: 1 },
+  shopCardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  shopCardTitle: { color: "#e5e7eb", fontSize: 14, fontWeight: "700" },
+  shopRewardTag: {
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: "rgba(251, 146, 60, 0.2)",
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.35)",
   },
-  shopPillText: { color: "#fdba74", fontSize: 12, fontWeight: "700" },
+  shopRewardText: { color: "#bfdbfe", fontSize: 11, fontWeight: "700" },
+  shopCardDesc: { color: "#94a3b8", fontSize: 12, marginTop: 6 },
+  shopMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 8,
+  },
+  shopRating: { flexDirection: "row", alignItems: "center", gap: 4 },
+  shopRatingText: { color: "#fcd34d", fontSize: 11, fontWeight: "700" },
+  shopOwnedPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(34, 197, 94, 0.2)",
+  },
+  shopOwnedText: { color: "#86efac", fontSize: 10, fontWeight: "700" },
   shopFooter: {
     marginTop: 12,
     flexDirection: "row",
@@ -2776,7 +3180,7 @@ const styles = StyleSheet.create({
   shopBuyButton: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: "#38bdf8",
   },
   shopBuyButtonDisabled: { backgroundColor: "rgba(148, 163, 184, 0.35)" },

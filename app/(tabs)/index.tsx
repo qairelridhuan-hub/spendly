@@ -89,10 +89,14 @@ export default function WorkerHomeScreen() {
   const gameGlow = useRef(new Animated.Value(0)).current;
   const gameSpin = useRef(new Animated.Value(0)).current;
   const gameFloat = useRef(new Animated.Value(0)).current;
+  const gameChase = useRef(new Animated.Value(0)).current;
+  const gameChomp = useRef(new Animated.Value(0)).current;
+  const ghostEyeAnim = useRef(new Animated.Value(0)).current;
   const sliderX = useRef(new Animated.Value(0)).current;
   const sliderStart = useRef(0);
   const sliderValue = useRef(0);
   const gameSplashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gameTitleGlow = useRef(new Animated.Value(0.4)).current;
   const scrollRef = useRef<ScrollView>(null);
   const lastLogoTap = useRef(0);
   const logoTapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,13 +153,16 @@ export default function WorkerHomeScreen() {
     holidays: [] as string[],
   });
 
-  const sliderKnobSize = 40;
-  const sliderPadding = 6;
+  const sliderKnobSize = 36;
+  const sliderPadding = 5;
   const sliderMax = Math.max(
     0,
     sliderTrackWidth - sliderKnobSize - sliderPadding * 2
   );
   const sliderFillWidth = Animated.add(sliderX, sliderKnobSize);
+  const chasePackWidth = 92;
+  const chasePadding = 10;
+  const chaseMax = Math.max(0, sliderTrackWidth - chasePackWidth - chasePadding * 2);
   const floatY = gameFloat.interpolate({
     inputRange: [0, 1],
     outputRange: [-6, 6],
@@ -550,12 +557,12 @@ export default function WorkerHomeScreen() {
       Animated.sequence([
         Animated.timing(gameFloat, {
           toValue: 1,
-          duration: 1400,
+          duration: 2200,
           useNativeDriver: true,
         }),
         Animated.timing(gameFloat, {
           toValue: 0,
-          duration: 1400,
+          duration: 2200,
           useNativeDriver: true,
         }),
       ])
@@ -563,6 +570,82 @@ export default function WorkerHomeScreen() {
     floatAnimation.start();
     return () => floatAnimation.stop();
   }, [gameFloat, showGameGate]);
+  useEffect(() => {
+    if (!showGameGate) return;
+    const chaseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gameChase, {
+          toValue: 1,
+          duration: 3200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(gameChase, {
+          toValue: 0,
+          duration: 3200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    chaseLoop.start();
+    return () => chaseLoop.stop();
+  }, [gameChase, showGameGate]);
+  useEffect(() => {
+    if (!showGameGate) return;
+    const chompLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gameChomp, {
+          toValue: 1,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+        Animated.timing(gameChomp, {
+          toValue: 0,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    chompLoop.start();
+    return () => chompLoop.stop();
+  }, [gameChomp, showGameGate]);
+  useEffect(() => {
+    if (!showGameGate) return;
+    const eyeLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ghostEyeAnim, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(ghostEyeAnim, {
+          toValue: 0,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    eyeLoop.start();
+    return () => eyeLoop.stop();
+  }, [ghostEyeAnim, showGameGate]);
+  useEffect(() => {
+    if (!showGameGate) return;
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(gameTitleGlow, {
+          toValue: 1,
+          duration: 1100,
+          useNativeDriver: false,
+        }),
+        Animated.timing(gameTitleGlow, {
+          toValue: 0.4,
+          duration: 1100,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    glowLoop.start();
+    return () => glowLoop.stop();
+  }, [gameTitleGlow, showGameGate]);
 
   useEffect(() => {
     if (!showGameGate) return;
@@ -1731,25 +1814,57 @@ export default function WorkerHomeScreen() {
                   { transform: [{ translateY: floatY }] },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.gameGateTitle,
-                    { fontFamily: pixelFontLoaded ? "PressStart2P" : undefined },
-                  ]}
-                >
-                  GAME
-                </Text>
-                <Text
-                  style={[
-                    styles.gameGateTitle,
-                    styles.gameGateTitleTight,
-                    { fontFamily: pixelFontLoaded ? "PressStart2P" : undefined },
-                  ]}
-                >
-                  ON
-                </Text>
+                <View style={styles.gameGateTitleStack}>
+                  <Animated.Text
+                    style={[
+                      styles.gameGateTitle,
+                      styles.gameGateTitleGlow,
+                      { opacity: gameTitleGlow },
+                      {
+                        fontFamily: pixelFontLoaded
+                          ? "PressStart2P"
+                          : undefined,
+                      },
+                    ]}
+                  >
+                    GAME
+                  </Animated.Text>
+                  <Text
+                    style={[
+                      styles.gameGateTitle,
+                      { fontFamily: pixelFontLoaded ? "PressStart2P" : undefined },
+                    ]}
+                  >
+                    GAME
+                  </Text>
+                </View>
+                <View style={styles.gameGateTitleStack}>
+                  <Animated.Text
+                    style={[
+                      styles.gameGateTitle,
+                      styles.gameGateTitleTight,
+                      styles.gameGateTitleGlow,
+                      { opacity: gameTitleGlow },
+                      {
+                        fontFamily: pixelFontLoaded
+                          ? "PressStart2P"
+                          : undefined,
+                      },
+                    ]}
+                  >
+                    ON
+                  </Animated.Text>
+                  <Text
+                    style={[
+                      styles.gameGateTitle,
+                      styles.gameGateTitleTight,
+                      { fontFamily: pixelFontLoaded ? "PressStart2P" : undefined },
+                    ]}
+                  >
+                    ON
+                  </Text>
+                </View>
               </Animated.View>
-              <Text style={styles.gameGateSubtitle}>Slide to enter the arcade</Text>
               <View
                 style={styles.gameGateSlider}
                 onLayout={event =>
@@ -1771,6 +1886,176 @@ export default function WorkerHomeScreen() {
                   {...sliderPanResponder.panHandlers}
                 >
                   <Gamepad2 size={18} color="#0f172a" />
+                </Animated.View>
+              </View>
+              <View style={styles.gameGateChaseTrack}>
+                <Animated.View
+                  style={[
+                    styles.gameGateChaseRow,
+                    {
+                      transform: [
+                        {
+                          translateX: gameChase.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, chaseMax],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={styles.pacman}>
+                    <Animated.View
+                      style={[
+                        styles.pacmanMouth,
+                        {
+                          transform: [
+                            {
+                              scaleX: gameChomp.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.35, 1],
+                              }),
+                            },
+                            {
+                              scaleY: gameChomp.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.35, 1],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                  </View>
+                  <View style={[styles.ghost, styles.ghostRed]}>
+                    <View style={styles.ghostEyes}>
+                      <View style={styles.ghostEyeSocket}>
+                        <Animated.View
+                          style={[
+                            styles.ghostEyePupil,
+                            {
+                              transform: [
+                                {
+                                  translateX: ghostEyeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-1, 1],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={styles.ghostEyeSocket}>
+                        <Animated.View
+                          style={[
+                            styles.ghostEyePupil,
+                            {
+                              transform: [
+                                {
+                                  translateX: ghostEyeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-1, 1],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <View style={styles.ghostFeet}>
+                      <View style={styles.ghostFoot} />
+                      <View style={styles.ghostFoot} />
+                      <View style={styles.ghostFoot} />
+                    </View>
+                  </View>
+                  <View style={[styles.ghost, styles.ghostBlue]}>
+                    <View style={styles.ghostEyes}>
+                      <View style={styles.ghostEyeSocket}>
+                        <Animated.View
+                          style={[
+                            styles.ghostEyePupil,
+                            {
+                              transform: [
+                                {
+                                  translateX: ghostEyeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-1, 1],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={styles.ghostEyeSocket}>
+                        <Animated.View
+                          style={[
+                            styles.ghostEyePupil,
+                            {
+                              transform: [
+                                {
+                                  translateX: ghostEyeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-1, 1],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <View style={styles.ghostFeet}>
+                      <View style={styles.ghostFoot} />
+                      <View style={styles.ghostFoot} />
+                      <View style={styles.ghostFoot} />
+                    </View>
+                  </View>
+                  <View style={[styles.ghost, styles.ghostGreen]}>
+                    <View style={styles.ghostEyes}>
+                      <View style={styles.ghostEyeSocket}>
+                        <Animated.View
+                          style={[
+                            styles.ghostEyePupil,
+                            {
+                              transform: [
+                                {
+                                  translateX: ghostEyeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-1, 1],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={styles.ghostEyeSocket}>
+                        <Animated.View
+                          style={[
+                            styles.ghostEyePupil,
+                            {
+                              transform: [
+                                {
+                                  translateX: ghostEyeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-1, 1],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                    <View style={styles.ghostFeet}>
+                      <View style={styles.ghostFoot} />
+                      <View style={styles.ghostFoot} />
+                      <View style={styles.ghostFoot} />
+                    </View>
+                  </View>
                 </Animated.View>
               </View>
             </View>
@@ -2707,6 +2992,16 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 3, height: 3 },
     textShadowRadius: 0,
   },
+  gameGateTitleStack: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  gameGateTitleGlow: {
+    position: "absolute",
+    textShadowColor: "rgba(255, 225, 120, 1)",
+    textShadowRadius: 18,
+    textShadowOffset: { width: 0, height: 0 },
+  },
   gameGateTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -2720,21 +3015,22 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   gameGateSlider: {
-    width: "100%",
-    height: 52,
+    width: "88%",
+    height: 46,
     borderRadius: 999,
     backgroundColor: "#0b1220",
     borderWidth: 1,
     borderColor: "rgba(148, 163, 184, 0.2)",
     justifyContent: "center",
     overflow: "hidden",
-    padding: 6,
+    padding: 5,
+    marginTop: 12,
   },
   gameGateSliderFill: {
     position: "absolute",
-    left: 6,
-    top: 6,
-    bottom: 6,
+    left: 5,
+    top: 5,
+    bottom: 5,
     borderRadius: 999,
     backgroundColor: "rgba(34, 197, 94, 0.6)",
   },
@@ -2746,18 +3042,93 @@ const styles = StyleSheet.create({
   },
   gameGateSliderKnob: {
     position: "absolute",
-    left: 6,
-    top: 6,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    left: 5,
+    top: 5,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#22c55e",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#22c55e",
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+  },
+  gameGateChaseTrack: {
+    width: "88%",
+    height: 22,
+    marginTop: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    overflow: "hidden",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  gameGateChaseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  pacman: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#facc15",
+    position: "relative",
+  },
+  pacmanMouth: {
+    position: "absolute",
+    right: -1,
+    top: 3,
+    width: 8,
+    height: 8,
+    backgroundColor: "rgba(15, 23, 42, 0.9)",
+    transform: [{ rotate: "45deg" }],
+  },
+  ghost: {
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+    position: "relative",
+    overflow: "hidden",
+  },
+  ghostRed: { backgroundColor: "#ef4444" },
+  ghostBlue: { backgroundColor: "#38bdf8" },
+  ghostGreen: { backgroundColor: "#22c55e" },
+  ghostEyes: {
+    flexDirection: "row",
+    gap: 3,
+    position: "absolute",
+    top: 3,
+    left: 3,
+  },
+  ghostEyeSocket: {
+    width: 4,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#e2e8f0",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  ghostEyePupil: {
+    width: 2,
+    height: 2,
+    borderRadius: 999,
+    backgroundColor: "#0f172a",
+  },
+  ghostFeet: {
+    position: "absolute",
+    bottom: -2,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 1,
+  },
+  ghostFoot: {
+    width: 4,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#0f172a",
   },
   gameSplashOverlay: {
     position: "absolute",

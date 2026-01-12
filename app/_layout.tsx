@@ -1,4 +1,5 @@
 import { Stack, usePathname } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LogBox } from "react-native";
@@ -29,6 +30,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }} />
     </ThemeProvider>
   );
