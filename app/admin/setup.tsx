@@ -689,6 +689,32 @@ export default function AdminSetup() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.headerRow}>
           <View>
@@ -1800,6 +1826,11 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     borderWidth: 1,
     borderColor: adminPalette.border,
     width: 300,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1836,9 +1867,14 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: adminPalette.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   summaryLabel: { color: adminPalette.textMuted, fontSize: 12 },
-  summaryValue: { color: adminPalette.text, fontSize: 18, fontWeight: "700" },
+  summaryValue: { color: adminPalette.accentStrong, fontSize: 18, fontWeight: "700" },
   sortControls: { flexDirection: "row", gap: 8 },
   sortButton: {
     paddingHorizontal: 10,
@@ -1884,6 +1920,13 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     backgroundColor: adminPalette.surface,
     borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 5,
   },
   dateModal: {
     width: "100%",
@@ -1891,6 +1934,13 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     backgroundColor: adminPalette.surface,
     borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   dropdownModal: {
     width: "100%",
@@ -1898,6 +1948,13 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     backgroundColor: adminPalette.surface,
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: adminPalette.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   calendarTitle: {
     color: adminPalette.text,

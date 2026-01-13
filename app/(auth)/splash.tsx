@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFonts } from "expo-font";
 import { router } from "expo-router";
-import { Animated, PanResponder, Text, View } from "react-native";
+import { Animated, Image, PanResponder, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
@@ -394,7 +394,11 @@ export default function SplashScreen() {
               transform: [{ scale: logoScale }],
             }}
           >
-            <Text style={{ fontSize: 24, color: "#0b1220" }}>💰</Text>
+            <Image
+              source={require("../../assets/images/spendly-logo.png")}
+              style={{ width: 32, height: 32 }}
+              resizeMode="contain"
+            />
           </Animated.View>
 
           <Animated.Text

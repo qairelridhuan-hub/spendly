@@ -118,6 +118,11 @@ export default function AdminAttendance() {
         padding: 16,
         borderWidth: 1,
         borderColor: adminPalette.border,
+        shadowColor: "#000",
+        shadowOpacity: 0.18,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 3,
       },
       statIcon: {
         width: 40,
@@ -135,6 +140,11 @@ export default function AdminAttendance() {
         borderWidth: 1,
         borderColor: adminPalette.border,
         overflow: "visible" as const,
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 4,
       },
       tableHeader: {
         paddingHorizontal: 20,
@@ -261,6 +271,11 @@ export default function AdminAttendance() {
         padding: 16,
         borderWidth: 1,
         borderColor: adminPalette.border,
+        shadowColor: "#000",
+        shadowOpacity: 0.24,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 12 },
+        elevation: 5,
       },
       modalHeader: {
         flexDirection: "row" as const,
@@ -681,6 +696,32 @@ export default function AdminAttendance() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
           <View style={statCard}>
@@ -833,12 +874,18 @@ export default function AdminAttendance() {
             </View>
           ) : (
             <View>
-              {filteredExceptions.slice(0, 8).map(item => {
+              {filteredExceptions.slice(0, 8).map((item, index) => {
                 const log = item.log;
                 const workerName =
                   workers[log.workerId]?.name || log.workerId || "Worker";
                 return (
-                  <View key={log.refPath} style={tableRow}>
+                  <View
+                    key={log.refPath}
+                    style={[
+                      tableRow,
+                      index % 2 === 1 ? { backgroundColor: adminPalette.surfaceAlt } : null,
+                    ]}
+                  >
                     <View style={{ flex: 2 }}>
                       <Text style={tableCell}>{workerName}</Text>
                       <Text style={tableCellMuted}>
@@ -964,14 +1011,20 @@ export default function AdminAttendance() {
                   </Text>
                 ))}
               </View>
-              {sortedLogs.map(log => {
+              {sortedLogs.map((log, index) => {
                 const statusStyle = getStatusStyle(log.status);
                 const workerName =
                   workers[log.workerId]?.name || log.workerId || "Worker";
                 const overtimeHours = overtimeMap[`${log.workerId}:${log.date}`] ?? 0;
                 const breakEntry = breakMap[`${log.workerId}:${log.date}`];
                 return (
-                  <View key={log.refPath} style={tableRow}>
+                  <View
+                    key={log.refPath}
+                    style={[
+                      tableRow,
+                      index % 2 === 1 ? { backgroundColor: adminPalette.surfaceAlt } : null,
+                    ]}
+                  >
                     <Text style={tableCell}>{workerName}</Text>
                     <Text style={tableCellMuted}>{log.date || "-"}</Text>
                     <Text style={tableCellMuted}>

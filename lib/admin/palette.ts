@@ -41,23 +41,23 @@ export const lightAdminPalette: AdminPalette = {
 };
 
 export const darkAdminPalette: AdminPalette = {
-  backgroundStart: "#0b1220",
-  backgroundEnd: "#0f172a",
-  surface: "#121b2b",
-  surfaceAlt: "#1b2636",
-  border: "#273244",
-  text: "#e5e7eb",
-  textMuted: "#a1a1aa",
-  brand: "#38bdf8",
-  accent: "#38bdf8",
-  accentStrong: "#7dd3fc",
+  backgroundStart: "#050505",
+  backgroundEnd: "#0c0c0c",
+  surface: "#0f0f0f",
+  surfaceAlt: "#171717",
+  border: "#2a2a2a",
+  text: "#f5f5f5",
+  textMuted: "#9ca3af",
+  brand: "#e5e5e5",
+  accent: "#e5e5e5",
+  accentStrong: "#ffffff",
   success: "#22c55e",
   warning: "#f59e0b",
   danger: "#f87171",
-  infoSoft: "#1f2f46",
-  successSoft: "#123521",
-  warningSoft: "#3d2a10",
-  dangerSoft: "#3b1b1b",
+  infoSoft: "#1a1a1a",
+  successSoft: "#12301a",
+  warningSoft: "#33230d",
+  dangerSoft: "#331616",
 };
 
 export const adminPalettes: Record<AdminPaletteMode, AdminPalette> = {

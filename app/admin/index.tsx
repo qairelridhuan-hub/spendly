@@ -330,11 +330,11 @@ export default function AdminDashboard() {
         padding: 20,
         borderWidth: 1,
         borderColor: adminPalette.border,
-        shadowColor: "#0f172a",
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 2,
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 4,
       },
       sectionTitle: { color: adminPalette.text, fontWeight: "700", fontSize: 15 },
       sectionSub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 },
@@ -432,6 +432,32 @@ export default function AdminDashboard() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
           {cards.map(card => {
@@ -447,11 +473,11 @@ export default function AdminDashboard() {
                   padding: 16,
                   borderWidth: 1,
                   borderColor: adminPalette.border,
-                  shadowColor: "#0f172a",
-                  shadowOpacity: 0.06,
-                  shadowRadius: 12,
-                  shadowOffset: { width: 0, height: 6 },
-                  elevation: 2,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.22,
+                  shadowRadius: 16,
+                  shadowOffset: { width: 0, height: 10 },
+                  elevation: 4,
                 }}
               >
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -477,7 +503,7 @@ export default function AdminDashboard() {
                 </View>
                 <Text
                   style={{
-                    color: adminPalette.text,
+                    color: adminPalette.accentStrong,
                     fontWeight: "700",
                     fontSize: 20,
                     marginTop: 12,

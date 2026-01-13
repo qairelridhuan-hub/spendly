@@ -53,6 +53,11 @@ export default function AdminCalendar() {
         padding: 20,
         borderWidth: 1,
         borderColor: adminPalette.border,
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 4,
       },
       calendarHeader: {
         flexDirection: "row" as const,
@@ -152,6 +157,11 @@ export default function AdminCalendar() {
         padding: 20,
         borderWidth: 1,
         borderColor: adminPalette.border,
+        shadowColor: "#000",
+        shadowOpacity: 0.18,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 3,
       },
       legendTitle: {
         color: adminPalette.text,
@@ -242,6 +252,32 @@ export default function AdminCalendar() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
         <View style={card}>
           <View style={calendarHeader}>

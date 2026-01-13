@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -1318,7 +1319,11 @@ export default function WorkerHomeScreen() {
               style={styles.avatar}
               onPress={handleLogoPress}
             >
-              <Text style={styles.avatarText}>💰</Text>
+              <Image
+                source={require("../../assets/images/spendly-logo.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
 
             <View>
@@ -2924,7 +2929,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
-  avatarText: { fontSize: 18 },
+  logoImage: { width: 24, height: 24 },
   appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
   greeting: { fontSize: 13, color: "#9ca3af" },
   headerRight: { flexDirection: "row", gap: 16, alignItems: "center" },

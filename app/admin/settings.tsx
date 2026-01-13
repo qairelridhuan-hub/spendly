@@ -128,6 +128,13 @@ export default function AdminSettings() {
       .split(",")
       .map(item => item.trim())
       .filter(Boolean);
+  const cardShadow = {
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  };
 
   const getConfigError = () => {
     const days = Number(workConfig.workingDaysPerWeek);
@@ -514,6 +521,32 @@ export default function AdminSettings() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
         <Text style={{ color: adminPalette.text, fontSize: 20, fontWeight: "700" }}>
           Work Schedule Setup
@@ -530,6 +563,7 @@ export default function AdminSettings() {
             padding: 16,
             borderWidth: 1,
             borderColor: adminPalette.border,
+            ...cardShadow,
           }}
         >
           <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
@@ -606,6 +640,7 @@ export default function AdminSettings() {
             padding: 16,
             borderWidth: 1,
             borderColor: adminPalette.border,
+            ...cardShadow,
           }}
         >
           <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
@@ -649,6 +684,7 @@ export default function AdminSettings() {
             padding: 16,
             borderWidth: 1,
             borderColor: adminPalette.border,
+            ...cardShadow,
           }}
         >
           <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
@@ -1070,6 +1106,7 @@ export default function AdminSettings() {
             padding: 16,
             borderWidth: 1,
             borderColor: adminPalette.border,
+            ...cardShadow,
           }}
         >
           <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
@@ -1151,6 +1188,7 @@ export default function AdminSettings() {
             padding: 16,
             borderWidth: 1,
             borderColor: adminPalette.border,
+            ...cardShadow,
           }}
         >
           <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>

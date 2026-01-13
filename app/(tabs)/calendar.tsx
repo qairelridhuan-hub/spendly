@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -250,7 +251,11 @@ export default function CalendarScreen() {
               style={styles.logo}
               onPress={() => router.push("/(tabs)/profile")}
             >
-              <Text>💰</Text>
+              <Image
+                source={require("../../assets/images/spendly-logo.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
             <View>
               <Text style={styles.appName}>Spendly</Text>
@@ -799,7 +804,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
+  logoImage: { width: 24, height: 24 },
   appName: { fontWeight: "700", fontSize: 16, color: "#e5e7eb" },
   subText: { color: "#9ca3af" },
   headerRight: { flexDirection: "row", gap: 16, alignItems: "center" },

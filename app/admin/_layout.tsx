@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   Alert,
@@ -50,6 +51,7 @@ function AdminLayoutInner() {
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   const toggleAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
   const [checking, setChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
@@ -98,6 +100,18 @@ function AdminLayoutInner() {
   }, [adminThemeMode, toggleAnim]);
 
   useEffect(() => {
+    const shimmer = Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 1400,
+        useNativeDriver: true,
+      })
+    );
+    shimmer.start();
+    return () => shimmer.stop();
+  }, [shimmerAnim]);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
       const currentPath = pathnameRef.current;
       if (!user) {
@@ -139,6 +153,10 @@ function AdminLayoutInner() {
   }, [pathname]);
   const tooltipBackground = adminThemeMode === "dark" ? "#0b1220" : adminPalette.text;
   const tooltipText = adminThemeMode === "dark" ? adminPalette.text : "#fff";
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-120, 120],
+  });
 
   if (checking) {
     return (
@@ -146,6 +164,56 @@ function AdminLayoutInner() {
         colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
         style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
       >
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            width: 380,
+            height: 380,
+            borderRadius: 190,
+            backgroundColor: adminPalette.surfaceAlt,
+            opacity: 0.35,
+            top: -140,
+            right: -120,
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            width: 520,
+            height: 520,
+            borderRadius: 260,
+            backgroundColor: adminPalette.surfaceAlt,
+            opacity: 0.18,
+            bottom: -260,
+            left: -220,
+          }}
+        />
+        <View
+          style={{
+            width: 200,
+            height: 12,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: adminPalette.border,
+            backgroundColor: adminPalette.surfaceAlt,
+            overflow: "hidden",
+            marginBottom: 12,
+          }}
+        >
+          <Animated.View
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              width: 120,
+              backgroundColor: adminPalette.accentStrong,
+              opacity: 0.15,
+              transform: [{ translateX: shimmerTranslate }],
+            }}
+          />
+        </View>
         <Text style={{ color: adminPalette.text }}>Loading admin...</Text>
       </LinearGradient>
     );
@@ -160,6 +228,32 @@ function AdminLayoutInner() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <View style={{ flex: 1, flexDirection: "row" }}>
         <View
           style={{
@@ -186,12 +280,18 @@ function AdminLayoutInner() {
                   width: 40,
                   height: 40,
                   borderRadius: 12,
-                  backgroundColor: adminPalette.accent,
+                  backgroundColor: "#ffffff",
+                  borderWidth: 1,
+                  borderColor: "#e2e8f0",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>S</Text>
+                <Image
+                  source={require("../../assets/images/spendly-logo.png")}
+                  style={{ width: 22, height: 22 }}
+                  resizeMode="contain"
+                />
               </View>
               <View>
                 <Text
@@ -444,11 +544,9 @@ function AdminLayoutInner() {
                     width: 78,
                     height: 36,
                     borderRadius: 18,
-                    backgroundColor:
-                      adminThemeMode === "dark" ? "#111827" : "#f1f5f9",
+                    backgroundColor: adminPalette.surfaceAlt,
                     borderWidth: 1,
-                    borderColor:
-                      adminThemeMode === "dark" ? "#1f2937" : "#e2e8f0",
+                    borderColor: adminPalette.border,
                     padding: 4,
                     flexDirection: "row",
                     alignItems: "center",
@@ -463,7 +561,7 @@ function AdminLayoutInner() {
                       width: 28,
                       height: 28,
                       borderRadius: 14,
-                      backgroundColor: "#2563eb",
+                      backgroundColor: adminPalette.accentStrong,
                       alignItems: "center",
                       justifyContent: "center",
                       transform: [

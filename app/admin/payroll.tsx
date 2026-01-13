@@ -72,6 +72,32 @@ export default function AdminPayroll() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
         <Text style={{ color: adminPalette.text, fontSize: 24, fontWeight: "700" }}>
           Payroll
@@ -88,6 +114,11 @@ export default function AdminPayroll() {
             padding: 16,
             borderWidth: 1,
             borderColor: adminPalette.border,
+            shadowColor: "#000",
+            shadowOpacity: 0.2,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 10 },
+            elevation: 4,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -102,7 +133,7 @@ export default function AdminPayroll() {
             </Text>
           ) : (
             <View style={{ marginTop: 12, gap: 10 }}>
-              {records.map(record => (
+              {records.map((record, index) => (
                 <View
                   key={record.refPath}
                   style={{
@@ -110,14 +141,19 @@ export default function AdminPayroll() {
                     borderRadius: 12,
                     borderWidth: 1,
                     borderColor: adminPalette.border,
-                    backgroundColor: adminPalette.surfaceAlt,
+                    backgroundColor:
+                      index % 2 === 1 ? adminPalette.surfaceAlt : adminPalette.surface,
                   }}
                 >
                   <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
                     {record.workerId || "Worker"} • {record.period || "Period"}
                   </Text>
                   <Text style={{ color: adminPalette.textMuted, marginTop: 4 }}>
-                    RM {Number(record.totalEarnings ?? 0).toFixed(2)} • {record.totalHours || 0}h
+                    RM{" "}
+                    <Text style={{ color: adminPalette.accentStrong, fontWeight: "600" }}>
+                      {Number(record.totalEarnings ?? 0).toFixed(2)}
+                    </Text>{" "}
+                    • {record.totalHours || 0}h
                   </Text>
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
                     <TouchableOpacity

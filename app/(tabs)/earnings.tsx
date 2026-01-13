@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -377,7 +378,11 @@ export default function EarningsScreen() {
                 style={styles.logo}
                 onPress={() => router.push("/(tabs)/profile")}
               >
-                <Text style={styles.logoText}>💰</Text>
+                <Image
+                  source={require("../../assets/images/spendly-logo.png")}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
               <View>
                 <Text style={styles.appName}>Spendly</Text>
@@ -1078,7 +1083,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
-  logoText: { fontSize: 18 },
+  logoImage: { width: 24, height: 24 },
   appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
   subText: { fontSize: 13, color: "#9ca3af" },
   headerRight: {

@@ -25,6 +25,7 @@ import {
 import { db } from "@/lib/firebase";
 import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
+import { useAdminTheme } from "@/lib/admin/theme";
 
 type AttendanceLog = {
   date?: string;
@@ -44,6 +45,7 @@ const chartColors = {
 };
 
 export default function AdminReportsWeb() {
+  const { colors: adminPalette } = useAdminTheme();
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [breakLogs, setBreakLogs] = useState<any[]>([]);
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
@@ -58,6 +60,7 @@ export default function AdminReportsWeb() {
     hoursPerDay: 0,
     overtimeRate: 0,
   });
+  const styles = useMemo(() => createStyles(adminPalette), [adminPalette]);
 
   useEffect(() => {
     const unsubAttendance = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
@@ -338,6 +341,44 @@ export default function AdminReportsWeb() {
     await printReport(html);
   };
 
+  const Card = ({ children }: { children: React.ReactNode }) => {
+    return <div style={styles.card}>{children}</div>;
+  };
+
+  const CardHeader = ({
+    title,
+    subtitle,
+    right,
+  }: {
+    title: string;
+    subtitle?: string;
+    right?: React.ReactNode;
+  }) => {
+    return (
+      <div style={styles.cardHeader}>
+        <div>
+          <h3 style={styles.cardTitle}>{title}</h3>
+          {subtitle ? <p style={styles.cardSubtitle}>{subtitle}</p> : null}
+        </div>
+        {right ? <div style={styles.cardHeaderRight}>{right}</div> : null}
+      </div>
+    );
+  };
+
+  const CardContent = ({ children }: { children: React.ReactNode }) => {
+    return <div style={styles.cardContent}>{children}</div>;
+  };
+
+  const ChartContainer = ({
+    children,
+    height,
+  }: {
+    children: React.ReactNode;
+    height: number;
+  }) => {
+    return <div style={{ ...styles.chartContainer, height }}>{children}</div>;
+  };
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -405,8 +446,14 @@ export default function AdminReportsWeb() {
                 </span>
               ))}
             </div>
-            {monthlySummary.map(row => (
-              <div key={row.period} style={styles.tableRow}>
+            {monthlySummary.map((row, index) => (
+              <div
+                key={row.period}
+                style={{
+                  ...styles.tableRow,
+                  background: index % 2 === 1 ? adminPalette.surfaceAlt : "transparent",
+                }}
+              >
                 <span style={styles.tableCell}>{row.period}</span>
                 <span style={styles.tableCellMuted}>{row.totalHours.toFixed(0)}</span>
                 <span style={styles.tableCellMuted}>{row.absenceDeductions.toFixed(0)}</span>
@@ -455,7 +502,7 @@ export default function AdminReportsWeb() {
             <ChartContainer height={260}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyHoursData}>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid vertical={false} stroke={adminPalette.border} />
                   <XAxis dataKey="day" tickLine={false} axisLine={false} />
                   <Tooltip />
                   <Bar dataKey="hours" fill={chartColors.primary} radius={6} />
@@ -497,7 +544,7 @@ export default function AdminReportsWeb() {
             <ChartContainer height={260}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyEarningsData}>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid vertical={false} stroke={adminPalette.border} />
                   <XAxis dataKey="month" tickLine={false} axisLine={false} />
                   <Tooltip />
                   <Line
@@ -629,7 +676,7 @@ export default function AdminReportsWeb() {
                       <stop offset="95%" stopColor={chartColors.secondary} stopOpacity={0.1} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid vertical={false} stroke={adminPalette.border} />
                   <XAxis dataKey="month" tickLine={false} axisLine={false} />
                   <Tooltip />
                   <Area
@@ -1142,51 +1189,28 @@ function formatCurrency(value: number) {
   }).format(value)}`;
 }
 
-function Card({ children }: { children: React.ReactNode }) {
-  return <div style={styles.card}>{children}</div>;
-}
-
-function CardHeader({
-  title,
-  subtitle,
-  right,
-}: {
-  title: string;
-  subtitle?: string;
-  right?: React.ReactNode;
-}) {
-  return (
-    <div style={styles.cardHeader}>
-      <div>
-        <h3 style={styles.cardTitle}>{title}</h3>
-        {subtitle ? <p style={styles.cardSubtitle}>{subtitle}</p> : null}
-      </div>
-      {right ? <div style={styles.cardHeaderRight}>{right}</div> : null}
-    </div>
-  );
-}
-
-function CardContent({ children }: { children: React.ReactNode }) {
-  return <div style={styles.cardContent}>{children}</div>;
-}
-
-function ChartContainer({
-  children,
-  height,
-}: {
-  children: React.ReactNode;
-  height: number;
-}) {
-  return <div style={{ ...styles.chartContainer, height }}>{children}</div>;
-}
-
-const styles: Record<string, React.CSSProperties> = {
+const createStyles = (
+  adminPalette: {
+    backgroundStart: string;
+    surface: string;
+    surfaceAlt: string;
+    border: string;
+    text: string;
+    textMuted: string;
+    accent: string;
+    accentStrong: string;
+    success: string;
+  }
+): Record<string, React.CSSProperties> => ({
   page: {
     minHeight: "100vh",
-    background: "#f8fafc",
+    backgroundColor: adminPalette.backgroundStart,
+    backgroundImage:
+      "radial-gradient(900px 500px at 8% -10%, rgba(255,255,255,0.06), transparent 60%), radial-gradient(700px 420px at 92% 8%, rgba(255,255,255,0.04), transparent 55%)",
+    backgroundRepeat: "no-repeat",
     padding: "32px 40px",
     fontFamily: "system-ui, -apple-system, sans-serif",
-    color: "#0f172a",
+    color: adminPalette.text,
   },
   header: {
     display: "flex",
@@ -1198,8 +1222,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "10px 16px",
     borderRadius: 10,
     border: "none",
-    background: "#1e40af",
-    color: "#fff",
+    background: adminPalette.accentStrong,
+    color: adminPalette.backgroundStart,
     fontWeight: 600,
     cursor: "pointer",
     display: "inline-flex",
@@ -1207,7 +1231,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   title: { fontSize: 24, fontWeight: 700, margin: 0 },
-  subtitle: { margin: "6px 0 0", color: "#64748b", fontSize: 14 },
+  subtitle: { margin: "6px 0 0", color: adminPalette.textMuted, fontSize: 14 },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -1224,21 +1248,26 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 20,
   },
   summaryCard: {
-    background: "#ffffff",
+    background: adminPalette.surface,
     borderRadius: 16,
-    border: "1px solid #e2e8f0",
+    border: `1px solid ${adminPalette.border}`,
     padding: "16px 18px",
-    boxShadow: "0 6px 20px rgba(15, 23, 42, 0.04)",
+    boxShadow: "0 6px 20px rgba(0, 0, 0, 0.12)",
   },
-  summaryLabel: { margin: 0, color: "#64748b", fontSize: 12, fontWeight: 600 },
-  summaryValue: { margin: "8px 0 4px", fontSize: 20, fontWeight: 700 },
-  summaryHint: { margin: 0, color: "#94a3b8", fontSize: 12 },
+  summaryLabel: { margin: 0, color: adminPalette.textMuted, fontSize: 12, fontWeight: 600 },
+  summaryValue: {
+    margin: "8px 0 4px",
+    fontSize: 20,
+    fontWeight: 700,
+    color: adminPalette.accentStrong,
+  },
+  summaryHint: { margin: 0, color: adminPalette.textMuted, fontSize: 12 },
   tableCard: {
-    background: "#ffffff",
+    background: adminPalette.surface,
     borderRadius: 18,
-    border: "1px solid #e2e8f0",
+    border: `1px solid ${adminPalette.border}`,
     padding: "18px 20px",
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.14)",
     marginBottom: 24,
   },
   tableHeaderRow: {
@@ -1249,7 +1278,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 12,
   },
   tableTitle: { fontSize: 16, fontWeight: 600, margin: 0 },
-  tableSubtitle: { fontSize: 12, color: "#64748b", margin: 0 },
+  tableSubtitle: { fontSize: 12, color: adminPalette.textMuted, margin: 0 },
   table: {
     display: "grid",
     gap: 6,
@@ -1259,11 +1288,11 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "1.2fr 1fr 1fr 1fr",
     gap: 8,
     padding: "8px 10px",
-    background: "#f1f5f9",
+    background: adminPalette.surfaceAlt,
     borderRadius: 10,
     fontSize: 12,
     fontWeight: 600,
-    color: "#64748b",
+    color: adminPalette.textMuted,
   },
   tableHeaderCell: { fontSize: 12 },
   tableRow: {
@@ -1271,19 +1300,19 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "1.2fr 1fr 1fr 1fr",
     gap: 8,
     padding: "8px 10px",
-    borderBottom: "1px solid #e2e8f0",
+    borderBottom: `1px solid ${adminPalette.border}`,
     fontSize: 12,
-    color: "#0f172a",
+    color: adminPalette.text,
   },
   tableCell: { fontWeight: 600 },
-  tableCellMuted: { color: "#64748b" },
-  tableCellStrong: { fontWeight: 600, color: "#16a34a" },
-  emptyText: { margin: 0, color: "#94a3b8", fontSize: 12 },
+  tableCellMuted: { color: adminPalette.textMuted },
+  tableCellStrong: { fontWeight: 600, color: adminPalette.success },
+  emptyText: { margin: 0, color: adminPalette.textMuted, fontSize: 12 },
   card: {
-    background: "#ffffff",
+    background: adminPalette.surface,
     borderRadius: 18,
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
+    border: `1px solid ${adminPalette.border}`,
+    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.16)",
   },
   cardHeader: {
     padding: "18px 20px 0",
@@ -1304,11 +1333,11 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
   },
   cardTitle: { fontSize: 16, fontWeight: 600, margin: 0 },
-  cardSubtitle: { margin: "6px 0 0", color: "#64748b", fontSize: 12 },
+  cardSubtitle: { margin: "6px 0 0", color: adminPalette.textMuted, fontSize: 12 },
   cardContent: { padding: "16px 20px 20px" },
   chartDescription: {
     margin: "0 0 10px",
-    color: "#64748b",
+    color: adminPalette.textMuted,
     fontSize: 12,
   },
   chartContainer: {
@@ -1316,11 +1345,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   chartSelect: {
     borderRadius: 999,
-    border: "1px solid #e2e8f0",
-    background: "#f8fafc",
+    border: `1px solid ${adminPalette.border}`,
+    background: adminPalette.surfaceAlt,
     padding: "6px 12px",
     fontSize: 12,
-    color: "#334155",
+    color: adminPalette.text,
     cursor: "pointer",
   },
   chartFilterRow: {
@@ -1330,24 +1359,24 @@ const styles: Record<string, React.CSSProperties> = {
   },
   detailsButton: {
     borderRadius: 999,
-    border: "1px solid #cbd5f5",
-    background: "#ffffff",
+    border: `1px solid ${adminPalette.border}`,
+    background: adminPalette.surface,
     padding: "6px 12px",
     fontSize: 12,
-    color: "#1d4ed8",
+    color: adminPalette.accent,
     cursor: "pointer",
   },
   detailsPanel: {
     marginTop: 12,
     borderRadius: 12,
-    border: "1px solid #e2e8f0",
-    background: "#f8fafc",
+    border: `1px solid ${adminPalette.border}`,
+    background: adminPalette.surfaceAlt,
     padding: "10px 12px",
   },
   detailsList: {
     margin: 0,
     paddingLeft: 16,
-    color: "#475569",
+    color: adminPalette.textMuted,
     fontSize: 12,
     display: "grid",
     gap: 6,
@@ -1362,7 +1391,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 8,
     fontSize: 12,
-    color: "#475569",
+    color: adminPalette.textMuted,
   },
   legendDot: {
     width: 10,
@@ -1370,5 +1399,5 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 999,
   },
   legendLabel: { fontWeight: 500 },
-  legendValue: { fontWeight: 600, color: "#0f172a" },
-};
+  legendValue: { fontWeight: 600, color: adminPalette.text },
+});

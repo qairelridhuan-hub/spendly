@@ -160,6 +160,11 @@ export default function AdminWorkers() {
         alignItems: "center" as const,
         borderWidth: 1,
         borderColor: adminPalette.border,
+        shadowColor: "#000",
+        shadowOpacity: 0.18,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 3,
       },
       emptyTitle: {
         color: adminPalette.text,
@@ -174,6 +179,11 @@ export default function AdminWorkers() {
         borderWidth: 1,
         borderColor: adminPalette.border,
         overflow: "hidden" as const,
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 4,
       },
       tableHeader: {
         flexDirection: "row" as const,
@@ -548,6 +558,32 @@ export default function AdminWorkers() {
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
       style={{ flex: 1 }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 520,
+          height: 520,
+          borderRadius: 260,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.18,
+          top: -220,
+          right: -160,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          width: 680,
+          height: 680,
+          borderRadius: 340,
+          backgroundColor: adminPalette.surfaceAlt,
+          opacity: 0.12,
+          bottom: -320,
+          left: -260,
+        }}
+      />
       <ScrollView
         contentContainerStyle={{ padding: 24, paddingBottom: 80 }}
         onScrollBeginDrag={() => {
@@ -648,10 +684,16 @@ export default function AdminWorkers() {
                 </Text>
               ))}
             </View>
-            {filteredWorkers.map(worker => {
+            {filteredWorkers.map((worker, index) => {
               const workerTotals = totals[worker.id] || { hours: 0, earnings: 0 };
               return (
-                <View key={worker.id} style={tableRow}>
+                <View
+                  key={worker.id}
+                  style={[
+                    tableRow,
+                    index % 2 === 1 ? { backgroundColor: adminPalette.surfaceAlt } : null,
+                  ]}
+                >
                   <View style={[tableCell, { flexDirection: "row", gap: 10, minWidth: 220 }]}>
                     <View style={avatar}>
                       <Text style={avatarText}>
