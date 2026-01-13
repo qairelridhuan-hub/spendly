@@ -386,7 +386,7 @@ export default function SplashScreen() {
               width: 56,
               height: 56,
               borderRadius: 28,
-              backgroundColor: "#b7f34d",
+              backgroundColor: "#ffffff",
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 18,
