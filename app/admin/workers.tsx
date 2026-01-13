@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Keyboard,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -77,6 +78,10 @@ export default function AdminWorkers() {
     tableRow,
     tableCell,
     tableCellMuted,
+    tableDivider,
+    tableScroll,
+    tableScrollContent,
+    tableContent,
     avatar,
     avatarText,
     workerName,
@@ -84,8 +89,15 @@ export default function AdminWorkers() {
     statusBadge,
     statusActive,
     statusInactive,
+    statusChip,
+    statusChipDot,
+    statusChipText,
     statusText,
     iconButton,
+    actionButton,
+    actionButtonText,
+    dangerActionButton,
+    dangerActionButtonText,
     overlay,
     modal,
     modalHeader,
@@ -215,6 +227,15 @@ export default function AdminWorkers() {
         color: adminPalette.textMuted,
         fontSize: 12,
       },
+      tableDivider: {
+        borderRightWidth: 1,
+        borderRightColor: adminPalette.border,
+        paddingRight: 12,
+        marginRight: 12,
+      },
+      tableScroll: { width: "100%" as const },
+      tableScrollContent: { flexGrow: 1 },
+      tableContent: { minWidth: 980, width: "100%" as const },
       avatar: {
         width: 36,
         height: 36,
@@ -238,11 +259,43 @@ export default function AdminWorkers() {
       statusInactive: {
         backgroundColor: adminPalette.surfaceAlt,
       },
+      statusChip: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 6,
+        alignSelf: "flex-start" as const,
+      },
+      statusChipDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+      },
+      statusChipText: { fontSize: 12, fontWeight: "600" as const },
       statusText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
       iconButton: {
         padding: 8,
         borderRadius: 10,
         backgroundColor: adminPalette.surfaceAlt,
+      },
+      actionButton: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 999,
+        backgroundColor: adminPalette.surfaceAlt,
+      },
+      actionButtonText: {
+        color: adminPalette.textMuted,
+        fontSize: 11,
+        fontWeight: "600" as const,
+      },
+      dangerActionButton: {
+        backgroundColor: adminPalette.dangerSoft,
+      },
+      dangerActionButtonText: {
+        color: adminPalette.danger,
       },
       overlay: {
         ...StyleSheet.absoluteFillObject,
@@ -661,97 +714,146 @@ export default function AdminWorkers() {
           </View>
         ) : (
           <View style={tableCard}>
-            <View style={tableHeader}>
-              {[
-                "Worker",
-                "Position",
-                "Contact",
-                "Rate/Hour",
-                "Total Hours",
-                "Earnings",
-                "Status",
-                "Actions",
-              ].map(label => (
-                <Text
-                  key={label}
-                  style={[
-                    tableHeaderText,
-                    label === "Worker" && { minWidth: 220 },
-                    label === "Status" && { minWidth: 140 },
-                  ]}
-                >
-                  {label}
-                </Text>
-              ))}
-            </View>
-            {filteredWorkers.map((worker, index) => {
-              const workerTotals = totals[worker.id] || { hours: 0, earnings: 0 };
-              return (
-                <View
-                  key={worker.id}
-                  style={[
-                    tableRow,
-                    index % 2 === 1 ? { backgroundColor: adminPalette.surfaceAlt } : null,
-                  ]}
-                >
-                  <View style={[tableCell, { flexDirection: "row", gap: 10, minWidth: 220 }]}>
-                    <View style={avatar}>
-                      <Text style={avatarText}>
-                        {worker.name ? worker.name[0] : "W"}
-                      </Text>
-                    </View>
-                    <View>
-                      <Text style={workerName}>{worker.name}</Text>
-                      <Text style={workerEmail}>
-                        {worker.workerCode ? `${worker.workerCode} • ` : ""}{worker.email}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={tableCellMuted}>{worker.position || "-"}</Text>
-                  <Text style={tableCellMuted}>{worker.phone || "-"}</Text>
-                  <Text style={tableCell}>
-                    RM {Number(worker.hourlyRate || 0).toFixed(2)}
-                  </Text>
-                  <Text style={tableCell}>
-                    {workerTotals.hours.toFixed(1)}h
-                  </Text>
-                  <Text style={tableCell}>
-                    RM {workerTotals.earnings.toFixed(2)}
-                  </Text>
-                  <View style={[tableCell, { minWidth: 140 }]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={Platform.OS === "web"}
+              style={tableScroll}
+              contentContainerStyle={tableScrollContent}
+            >
+              <View style={tableContent}>
+                <View style={tableHeader}>
+                  {[
+                    "Worker",
+                    "Position",
+                    "Contact",
+                    "Rate/Hour",
+                    "Total Hours",
+                    "Earnings",
+                    "Status",
+                    "Actions",
+                  ].map((label, index, arr) => (
                     <Text
+                      key={label}
                       style={[
-                        statusBadge,
-                        worker.status === "active"
-                          ? statusActive
-                          : statusInactive,
+                        tableHeaderText,
+                        label === "Worker" && { minWidth: 220 },
+                        label === "Status" && { minWidth: 140 },
+                        index !== arr.length - 1 ? tableDivider : null,
                       ]}
                     >
-                      {worker.status === "active" ? "Active" : "Inactive"}
+                      {label}
                     </Text>
-                  </View>
-                  <View style={tableCell}>
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <TouchableOpacity
-                        style={iconButton}
-                        onPress={() => openEditModal(worker)}
-                      >
-                        <Edit size={14} color={adminPalette.textMuted} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[iconButton, { backgroundColor: adminPalette.dangerSoft }]}
-                        onPress={() => {
-                          setWorkerToDelete(worker);
-                          setShowDeleteConfirm(true);
-                        }}
-                      >
-                        <Trash2 size={14} color={adminPalette.danger} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  ))}
                 </View>
-              );
-            })}
+                {filteredWorkers.map((worker, index) => {
+                  const workerTotals = totals[worker.id] || { hours: 0, earnings: 0 };
+                  return (
+                    <View
+                      key={worker.id}
+                      style={[
+                        tableRow,
+                        index % 2 === 1
+                          ? { backgroundColor: adminPalette.surfaceAlt }
+                          : null,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          tableCell,
+                          tableDivider,
+                          { flexDirection: "row", gap: 10, minWidth: 220 },
+                        ]}
+                      >
+                        <View style={avatar}>
+                          <Text style={avatarText}>
+                            {worker.name ? worker.name[0] : "W"}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={workerName}>{worker.name}</Text>
+                          <Text style={workerEmail}>
+                            {worker.workerCode ? `${worker.workerCode} • ` : ""}
+                            {worker.email}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[tableCellMuted, tableDivider]}>
+                        {worker.position || "-"}
+                      </Text>
+                      <Text style={[tableCellMuted, tableDivider]}>
+                        {worker.phone || "-"}
+                      </Text>
+                      <Text style={[tableCell, tableDivider]}>
+                        RM {Number(worker.hourlyRate || 0).toFixed(2)}
+                      </Text>
+                      <Text style={[tableCell, tableDivider]}>
+                        {workerTotals.hours.toFixed(1)}h
+                      </Text>
+                      <Text style={[tableCell, tableDivider]}>
+                        RM {workerTotals.earnings.toFixed(2)}
+                      </Text>
+                      <View style={[tableCell, tableDivider, { minWidth: 140 }]}>
+                        <View
+                          style={[
+                            statusBadge,
+                            statusChip,
+                            worker.status === "active" ? statusActive : statusInactive,
+                          ]}
+                        >
+                          <View
+                            style={[
+                              statusChipDot,
+                              {
+                                backgroundColor:
+                                  worker.status === "active"
+                                    ? adminPalette.success
+                                    : adminPalette.textMuted,
+                              },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              statusChipText,
+                              {
+                                color:
+                                  worker.status === "active"
+                                    ? adminPalette.success
+                                    : adminPalette.textMuted,
+                              },
+                            ]}
+                          >
+                            {worker.status === "active" ? "Active" : "Inactive"}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={tableCell}>
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          <TouchableOpacity
+                            style={actionButton}
+                            onPress={() => openEditModal(worker)}
+                          >
+                            <Edit size={12} color={adminPalette.textMuted} />
+                            <Text style={actionButtonText}>Edit</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[actionButton, dangerActionButton]}
+                            onPress={() => {
+                              setWorkerToDelete(worker);
+                              setShowDeleteConfirm(true);
+                            }}
+                          >
+                            <Trash2 size={12} color={adminPalette.danger} />
+                            <Text style={[actionButtonText, dangerActionButtonText]}>
+                              Delete
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
           </View>
         )}
 

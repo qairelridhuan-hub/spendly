@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -135,6 +136,31 @@ export default function AdminSettings() {
     shadowOffset: { width: 0, height: 10 },
     elevation: 4,
   };
+  const actionBar = useMemo(
+    () => ({
+      position: Platform.OS === "web" ? ("sticky" as const) : ("relative" as const),
+      top: 0,
+      zIndex: 20,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "space-between" as const,
+      gap: 12,
+      padding: 12,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: adminPalette.border,
+      backgroundColor: adminPalette.surface,
+    }),
+    [adminPalette]
+  );
+  const fieldLabel = useMemo(
+    () => ({
+      color: adminPalette.textMuted,
+      fontSize: 11,
+      marginBottom: 6,
+    }),
+    [adminPalette]
+  );
 
   const getConfigError = () => {
     const days = Number(workConfig.workingDaysPerWeek);
@@ -472,7 +498,7 @@ export default function AdminSettings() {
       color: adminPalette.text,
       backgroundColor: adminPalette.surfaceAlt,
     }),
-    []
+    [adminPalette]
   );
 
   const example = useMemo(() => {
@@ -548,12 +574,57 @@ export default function AdminSettings() {
         }}
       />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <Text style={{ color: adminPalette.text, fontSize: 20, fontWeight: "700" }}>
+        <Text
+          style={{
+            color: adminPalette.text,
+            fontSize: 22,
+            fontWeight: "800",
+            letterSpacing: 0.3,
+          }}
+        >
           Work Schedule Setup
         </Text>
         <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
           Define work schedules and assign them to workers.
         </Text>
+        <View style={[actionBar, { marginTop: 16 }]}>
+          <View>
+            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
+              Quick actions
+            </Text>
+            <Text style={{ color: adminPalette.textMuted, fontSize: 11 }}>
+              Save changes or generate shifts when ready.
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <TouchableOpacity
+              onPress={handleSaveConfig}
+              style={{
+                backgroundColor: adminPalette.accent,
+                paddingVertical: 10,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleGenerateSchedule}
+              disabled={generating}
+              style={{
+                backgroundColor: adminPalette.accentStrong,
+                paddingVertical: 10,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+                opacity: generating ? 0.7 : 1,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>
+                {generating ? "Generating..." : "Auto-generate"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View
           style={{
@@ -570,64 +641,79 @@ export default function AdminSettings() {
             Work Configuration
           </Text>
           <View style={{ gap: 12 }}>
-            <TextInput
-              placeholder="Working days per week"
-              placeholderTextColor={adminPalette.textMuted}
-              keyboardType="numeric"
-              value={workConfig.workingDaysPerWeek}
-              onChangeText={value =>
-                setWorkConfig(prev => ({
-                  ...prev,
-                  workingDaysPerWeek: sanitizeIntInput(value),
-                }))
-              }
-              style={inputStyle}
-            />
-            <TextInput
-              placeholder="Working hours per day"
-              placeholderTextColor={adminPalette.textMuted}
-              keyboardType="numeric"
-              value={workConfig.hoursPerDay}
-              onChangeText={value =>
-                setWorkConfig(prev => ({
-                  ...prev,
-                  hoursPerDay: sanitizeNumberInput(value),
-                }))
-              }
-              style={inputStyle}
-            />
-            <TextInput
-              placeholder="Total duration (months)"
-              placeholderTextColor={adminPalette.textMuted}
-              keyboardType="numeric"
-              value={workConfig.durationMonths}
-              onChangeText={value =>
-                setWorkConfig(prev => ({
-                  ...prev,
-                  durationMonths: sanitizeIntInput(value),
-                }))
-              }
-              style={inputStyle}
-            />
+            <View>
+              <Text style={fieldLabel}>Working days per week</Text>
+              <TextInput
+                placeholder="e.g. 5"
+                placeholderTextColor={adminPalette.textMuted}
+                keyboardType="numeric"
+                value={workConfig.workingDaysPerWeek}
+                onChangeText={value =>
+                  setWorkConfig(prev => ({
+                    ...prev,
+                    workingDaysPerWeek: sanitizeIntInput(value),
+                  }))
+                }
+                style={inputStyle}
+              />
+            </View>
+            <View>
+              <Text style={fieldLabel}>Working hours per day</Text>
+              <TextInput
+                placeholder="e.g. 8"
+                placeholderTextColor={adminPalette.textMuted}
+                keyboardType="numeric"
+                value={workConfig.hoursPerDay}
+                onChangeText={value =>
+                  setWorkConfig(prev => ({
+                    ...prev,
+                    hoursPerDay: sanitizeNumberInput(value),
+                  }))
+                }
+                style={inputStyle}
+              />
+            </View>
+            <View>
+              <Text style={fieldLabel}>Total duration (months)</Text>
+              <TextInput
+                placeholder="e.g. 6"
+                placeholderTextColor={adminPalette.textMuted}
+                keyboardType="numeric"
+                value={workConfig.durationMonths}
+                onChangeText={value =>
+                  setWorkConfig(prev => ({
+                    ...prev,
+                    durationMonths: sanitizeIntInput(value),
+                  }))
+                }
+                style={inputStyle}
+              />
+            </View>
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <TextInput
-                placeholder="Preferred start"
-                placeholderTextColor={adminPalette.textMuted}
-                value={workConfig.preferredStart}
-                onChangeText={value =>
-                  setWorkConfig(prev => ({ ...prev, preferredStart: value }))
-                }
-                style={[inputStyle, { flex: 1 }]}
-              />
-              <TextInput
-                placeholder="Preferred end"
-                placeholderTextColor={adminPalette.textMuted}
-                value={workConfig.preferredEnd}
-                onChangeText={value =>
-                  setWorkConfig(prev => ({ ...prev, preferredEnd: value }))
-                }
-                style={[inputStyle, { flex: 1 }]}
-              />
+              <View style={{ flex: 1 }}>
+                <Text style={fieldLabel}>Preferred start (HH:MM)</Text>
+                <TextInput
+                  placeholder="09:00"
+                  placeholderTextColor={adminPalette.textMuted}
+                  value={workConfig.preferredStart}
+                  onChangeText={value =>
+                    setWorkConfig(prev => ({ ...prev, preferredStart: value }))
+                  }
+                  style={inputStyle}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={fieldLabel}>Preferred end (HH:MM)</Text>
+                <TextInput
+                  placeholder="18:00"
+                  placeholderTextColor={adminPalette.textMuted}
+                  value={workConfig.preferredEnd}
+                  onChangeText={value =>
+                    setWorkConfig(prev => ({ ...prev, preferredEnd: value }))
+                  }
+                  style={inputStyle}
+                />
+              </View>
             </View>
           </View>
         </View>
@@ -647,32 +733,38 @@ export default function AdminSettings() {
             Payment Configuration
           </Text>
           <View style={{ gap: 12 }}>
-            <TextInput
-              placeholder="Hourly rate (RM)"
-              placeholderTextColor={adminPalette.textMuted}
-              keyboardType="numeric"
-              value={paymentConfig.hourlyRate}
-              onChangeText={value =>
-                setPaymentConfig(prev => ({
-                  ...prev,
-                  hourlyRate: sanitizeNumberInput(value),
-                }))
-              }
-              style={inputStyle}
-            />
-            <TextInput
-              placeholder="Overtime rate (RM)"
-              placeholderTextColor={adminPalette.textMuted}
-              keyboardType="numeric"
-              value={paymentConfig.overtimeRate}
-              onChangeText={value =>
-                setPaymentConfig(prev => ({
-                  ...prev,
-                  overtimeRate: sanitizeNumberInput(value),
-                }))
-              }
-              style={inputStyle}
-            />
+            <View>
+              <Text style={fieldLabel}>Hourly rate (RM)</Text>
+              <TextInput
+                placeholder="10.00"
+                placeholderTextColor={adminPalette.textMuted}
+                keyboardType="numeric"
+                value={paymentConfig.hourlyRate}
+                onChangeText={value =>
+                  setPaymentConfig(prev => ({
+                    ...prev,
+                    hourlyRate: sanitizeNumberInput(value),
+                  }))
+                }
+                style={inputStyle}
+              />
+            </View>
+            <View>
+              <Text style={fieldLabel}>Overtime rate (RM)</Text>
+              <TextInput
+                placeholder="15.00"
+                placeholderTextColor={adminPalette.textMuted}
+                keyboardType="numeric"
+                value={paymentConfig.overtimeRate}
+                onChangeText={value =>
+                  setPaymentConfig(prev => ({
+                    ...prev,
+                    overtimeRate: sanitizeNumberInput(value),
+                  }))
+                }
+                style={inputStyle}
+              />
+            </View>
           </View>
         </View>
 
@@ -1117,66 +1209,81 @@ export default function AdminSettings() {
           </Text>
           <View style={{ gap: 12 }}>
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <TextInput
-                placeholder="Allowed start (HH:MM)"
-                placeholderTextColor={adminPalette.textMuted}
-                value={rulesConfig.allowedStart}
-                onChangeText={value =>
-                  setRulesConfig(prev => ({ ...prev, allowedStart: value }))
-                }
-                style={[inputStyle, { flex: 1 }]}
-              />
-              <TextInput
-                placeholder="Allowed end (HH:MM)"
-                placeholderTextColor={adminPalette.textMuted}
-                value={rulesConfig.allowedEnd}
-                onChangeText={value =>
-                  setRulesConfig(prev => ({ ...prev, allowedEnd: value }))
-                }
-                style={[inputStyle, { flex: 1 }]}
-              />
+              <View style={{ flex: 1 }}>
+                <Text style={fieldLabel}>Allowed start (HH:MM)</Text>
+                <TextInput
+                  placeholder="09:00"
+                  placeholderTextColor={adminPalette.textMuted}
+                  value={rulesConfig.allowedStart}
+                  onChangeText={value =>
+                    setRulesConfig(prev => ({ ...prev, allowedStart: value }))
+                  }
+                  style={inputStyle}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={fieldLabel}>Allowed end (HH:MM)</Text>
+                <TextInput
+                  placeholder="18:00"
+                  placeholderTextColor={adminPalette.textMuted}
+                  value={rulesConfig.allowedEnd}
+                  onChangeText={value =>
+                    setRulesConfig(prev => ({ ...prev, allowedEnd: value }))
+                  }
+                  style={inputStyle}
+                />
+              </View>
             </View>
             <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={fieldLabel}>Max hours per day</Text>
+                <TextInput
+                  placeholder="10"
+                  placeholderTextColor={adminPalette.textMuted}
+                  keyboardType="numeric"
+                  value={rulesConfig.maxHoursPerDay}
+                  onChangeText={value =>
+                    setRulesConfig(prev => ({
+                      ...prev,
+                      maxHoursPerDay: sanitizeNumberInput(value),
+                    }))
+                  }
+                  style={inputStyle}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={fieldLabel}>Max hours per week</Text>
+                <TextInput
+                  placeholder="48"
+                  placeholderTextColor={adminPalette.textMuted}
+                  keyboardType="numeric"
+                  value={rulesConfig.maxHoursPerWeek}
+                  onChangeText={value =>
+                    setRulesConfig(prev => ({
+                      ...prev,
+                      maxHoursPerWeek: sanitizeNumberInput(value),
+                    }))
+                  }
+                  style={inputStyle}
+                />
+              </View>
+            </View>
+            <View>
+              <Text style={fieldLabel}>Minimum rest hours between shifts</Text>
               <TextInput
-                placeholder="Max hours per day"
+                placeholder="12"
                 placeholderTextColor={adminPalette.textMuted}
                 keyboardType="numeric"
-                value={rulesConfig.maxHoursPerDay}
+                value={rulesConfig.minRestHours}
                 onChangeText={value =>
                   setRulesConfig(prev => ({
                     ...prev,
-                    maxHoursPerDay: sanitizeNumberInput(value),
+                    minRestHours: sanitizeNumberInput(value),
                   }))
                 }
-                style={[inputStyle, { flex: 1 }]}
-              />
-              <TextInput
-                placeholder="Max hours per week"
-                placeholderTextColor={adminPalette.textMuted}
-                keyboardType="numeric"
-                value={rulesConfig.maxHoursPerWeek}
-                onChangeText={value =>
-                  setRulesConfig(prev => ({
-                    ...prev,
-                    maxHoursPerWeek: sanitizeNumberInput(value),
-                  }))
-                }
-                style={[inputStyle, { flex: 1 }]}
+                style={inputStyle}
               />
             </View>
-            <TextInput
-              placeholder="Minimum rest hours between shifts"
-              placeholderTextColor={adminPalette.textMuted}
-              keyboardType="numeric"
-              value={rulesConfig.minRestHours}
-              onChangeText={value =>
-                setRulesConfig(prev => ({
-                  ...prev,
-                  minRestHours: sanitizeNumberInput(value),
-                }))
-              }
-              style={inputStyle}
-            />
           </View>
         </View>
 
@@ -1198,13 +1305,16 @@ export default function AdminSettings() {
             Assign workers to a schedule template.
           </Text>
           <View style={{ gap: 12 }}>
-            <TextInput
-              placeholder="Worker ID (select below)"
-              placeholderTextColor={adminPalette.textMuted}
-              value={selectedWorkerId}
-              onChangeText={setSelectedWorkerId}
-              style={inputStyle}
-            />
+            <View>
+              <Text style={fieldLabel}>Worker ID (select below)</Text>
+              <TextInput
+                placeholder="Paste or select a worker UID"
+                placeholderTextColor={adminPalette.textMuted}
+                value={selectedWorkerId}
+                onChangeText={setSelectedWorkerId}
+                style={inputStyle}
+              />
+            </View>
             <View style={{ gap: 10 }}>
               {workers.length === 0 ? (
                 <Text style={{ color: adminPalette.textMuted }}>

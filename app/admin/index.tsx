@@ -195,7 +195,7 @@ export default function AdminDashboard() {
         label: "Active Workers",
         value: String(workerCount),
         icon: Users,
-        color: adminPalette.accent,
+        color: adminPalette.accentStrong,
         bg: adminPalette.infoSoft,
         trend: "up",
         change: "",
@@ -204,8 +204,8 @@ export default function AdminDashboard() {
         label: "Total Hours (Month)",
         value: `${adjustedTotals.totalHours.toFixed(0)}h`,
         icon: Clock,
-        color: adminPalette.success,
-        bg: adminPalette.successSoft,
+        color: adminPalette.accentStrong,
+        bg: adminPalette.infoSoft,
         trend: "up",
         change: "",
       },
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
         label: "Total Payroll",
         value: `RM ${adjustedTotals.totalEarnings.toFixed(0)}`,
         icon: DollarSign,
-        color: adminPalette.accent,
+        color: adminPalette.accentStrong,
         bg: adminPalette.infoSoft,
         trend: "up",
         change: "",
@@ -222,8 +222,8 @@ export default function AdminDashboard() {
         label: "Working Days",
         value: `${workingDays}`,
         icon: Calendar,
-        color: adminPalette.warning,
-        bg: adminPalette.warningSoft,
+        color: adminPalette.accentStrong,
+        bg: adminPalette.infoSoft,
         trend: "neutral",
         change: "",
       },
@@ -314,6 +314,7 @@ export default function AdminDashboard() {
     pendingRow,
     iconBadge,
     actionButton,
+    actionButtonText,
     rankBadge,
     rankText,
     progressTrack,
@@ -321,6 +322,8 @@ export default function AdminDashboard() {
     alertCardWarning,
     alertTitle,
     alertSub,
+    sparklineRow,
+    sparklineBar,
   } = useMemo(
     () => ({
       sectionCard: {
@@ -336,8 +339,13 @@ export default function AdminDashboard() {
         shadowOffset: { width: 0, height: 10 },
         elevation: 4,
       },
-      sectionTitle: { color: adminPalette.text, fontWeight: "700", fontSize: 15 },
-      sectionSub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 },
+      sectionTitle: {
+        color: adminPalette.text,
+        fontWeight: "800" as const,
+        fontSize: 16,
+        letterSpacing: 0.3,
+      },
+      sectionSub: { color: adminPalette.textMuted, fontSize: 13, marginTop: 4 },
       sectionLink: { color: adminPalette.accent, fontSize: 12 },
       sectionHeaderRow: {
         flexDirection: "row" as const,
@@ -345,7 +353,7 @@ export default function AdminDashboard() {
         marginBottom: 14,
       },
       emptyText: { color: adminPalette.textMuted, fontSize: 12 },
-      chartLabel: { color: adminPalette.textMuted, fontSize: 11, marginTop: 6 },
+      chartLabel: { color: adminPalette.textMuted, fontSize: 12, marginTop: 6 },
       listRow: {
         flexDirection: "row" as const,
         justifyContent: "space-between" as const,
@@ -353,9 +361,9 @@ export default function AdminDashboard() {
         borderBottomWidth: 1,
         borderBottomColor: adminPalette.border,
       },
-      listTitle: { color: adminPalette.text, fontSize: 13, fontWeight: "600" as const },
-      listSub: { color: adminPalette.textMuted, fontSize: 11, marginTop: 2 },
-      listTime: { color: adminPalette.textMuted, fontSize: 10 },
+      listTitle: { color: adminPalette.text, fontSize: 14, fontWeight: "600" as const },
+      listSub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 2 },
+      listTime: { color: adminPalette.textMuted, fontSize: 11 },
       statusDot: { width: 8, height: 8, borderRadius: 4 },
       shiftRow: {
         flexDirection: "row" as const,
@@ -389,7 +397,15 @@ export default function AdminDashboard() {
         alignItems: "center" as const,
         justifyContent: "center" as const,
       },
-      actionButton: { padding: 8, borderRadius: 10 },
+      actionButton: {
+        flexDirection: "row" as const,
+        alignItems: "center" as const,
+        gap: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 999,
+      },
+      actionButtonText: { fontSize: 11, fontWeight: "600" as const },
       rankBadge: {
         width: 28,
         height: 28,
@@ -399,9 +415,9 @@ export default function AdminDashboard() {
         justifyContent: "center" as const,
       },
       rankText: { color: adminPalette.accent, fontSize: 12, fontWeight: "700" as const },
-      progressTrack: { height: 6, backgroundColor: adminPalette.border, borderRadius: 999 },
+      progressTrack: { height: 7, backgroundColor: adminPalette.border, borderRadius: 999 },
       progressFill: {
-        height: 6,
+        height: 7,
         borderRadius: 999,
         backgroundColor: adminPalette.accent,
       },
@@ -417,9 +433,23 @@ export default function AdminDashboard() {
       },
       alertTitle: { color: adminPalette.warning, fontWeight: "600" as const },
       alertSub: { color: adminPalette.warning, fontSize: 12, marginTop: 2 },
+      sparklineRow: {
+        height: 18,
+        flexDirection: "row" as const,
+        alignItems: "flex-end" as const,
+        gap: 4,
+        marginBottom: 10,
+      },
+      sparklineBar: {
+        width: 6,
+        borderRadius: 6,
+        backgroundColor: adminPalette.accent,
+        opacity: 0.75,
+      },
     }),
     [adminPalette]
   );
+  const sparklineHeights = [6, 10, 4, 12, 7, 14, 5, 9];
   const statusColor = (status: string) => {
     if (status === "approved") return adminPalette.accent;
     if (status === "absent") return adminPalette.danger;
@@ -473,6 +503,8 @@ export default function AdminDashboard() {
                   padding: 16,
                   borderWidth: 1,
                   borderColor: adminPalette.border,
+                  borderTopWidth: 3,
+                  borderTopColor: adminPalette.accent,
                   shadowColor: "#000",
                   shadowOpacity: 0.22,
                   shadowRadius: 16,
@@ -480,6 +512,14 @@ export default function AdminDashboard() {
                   elevation: 4,
                 }}
               >
+                <View style={sparklineRow}>
+                  {sparklineHeights.map((height, idx) => (
+                    <View
+                      key={`${card.label}-spark-${idx}`}
+                      style={[sparklineBar, { height }]}
+                    />
+                  ))}
+                </View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <View
                     style={{
@@ -505,7 +545,7 @@ export default function AdminDashboard() {
                   style={{
                     color: adminPalette.accentStrong,
                     fontWeight: "700",
-                    fontSize: 20,
+                    fontSize: 22,
                     marginTop: 12,
                   }}
                 >
@@ -515,7 +555,7 @@ export default function AdminDashboard() {
                   style={{
                     color: adminPalette.textMuted,
                     marginTop: 6,
-                    fontSize: 12,
+                    fontSize: 13,
                   }}
                 >
                   {card.label}
@@ -654,7 +694,10 @@ export default function AdminDashboard() {
                         { backgroundColor: adminPalette.successSoft },
                       ]}
                     >
-                      <CheckCircle size={18} color={adminPalette.success} />
+                      <CheckCircle size={16} color={adminPalette.success} />
+                      <Text style={[actionButtonText, { color: adminPalette.success }]}>
+                        Approve
+                      </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() =>
@@ -665,7 +708,10 @@ export default function AdminDashboard() {
                         { backgroundColor: adminPalette.dangerSoft },
                       ]}
                     >
-                      <XCircle size={18} color={adminPalette.danger} />
+                      <XCircle size={16} color={adminPalette.danger} />
+                      <Text style={[actionButtonText, { color: adminPalette.danger }]}>
+                        Reject
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
