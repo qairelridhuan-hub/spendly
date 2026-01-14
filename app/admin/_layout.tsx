@@ -9,7 +9,6 @@ import {
   Alert,
   Platform,
   Animated,
-  TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -24,7 +23,6 @@ import {
   ShieldCheck,
   LogOut,
   Bell,
-  Search,
   Layers,
   SlidersHorizontal,
   Moon,
@@ -72,7 +70,6 @@ function AdminLayoutInner() {
   const [checking, setChecking] = useState(true);
   const [adminName, setAdminName] = useState("Admin");
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const { colors: adminPalette, mode: adminThemeMode, setMode: setAdminThemeMode } =
     useAdminTheme();
   const handleLogout = async () => {
@@ -108,6 +105,7 @@ function AdminLayoutInner() {
   useEffect(() => {
     pathnameRef.current = pathname;
   }, [pathname]);
+
 
   useEffect(() => {
     Animated.timing(toggleAnim, {
@@ -576,33 +574,6 @@ function AdminLayoutInner() {
               </Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: adminPalette.border,
-                  backgroundColor: adminPalette.surfaceAlt,
-                  minWidth: 220,
-                }}
-              >
-                <Search size={16} color={adminPalette.textMuted} />
-                <TextInput
-                  placeholder="Search anything..."
-                  placeholderTextColor={adminPalette.textMuted}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  style={{
-                    flex: 1,
-                    color: adminPalette.text,
-                    fontSize: 12,
-                  }}
-                />
-              </View>
               <TouchableOpacity
                 onPress={() => router.push("/admin/workers" as any)}
                 style={{

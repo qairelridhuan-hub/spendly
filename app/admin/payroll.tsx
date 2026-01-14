@@ -67,6 +67,7 @@ export default function AdminPayroll() {
     }
   };
 
+
   return (
     <LinearGradient
       colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
