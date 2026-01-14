@@ -505,7 +505,13 @@ export default function AdminReportsWeb() {
                   <CartesianGrid vertical={false} stroke={adminPalette.border} />
                   <XAxis dataKey="day" tickLine={false} axisLine={false} />
                   <Tooltip />
-                  <Bar dataKey="hours" fill={chartColors.primary} radius={6} />
+                  <Bar
+                    dataKey="hours"
+                    fill={chartColors.primary}
+                    radius={6}
+                    minPointSize={2}
+                    background={{ fill: adminPalette.surfaceAlt }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
