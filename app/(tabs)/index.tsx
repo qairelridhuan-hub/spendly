@@ -404,11 +404,9 @@ export default function WorkerHomeScreen() {
     isPastPeriod,
   ]);
   const amountLabel =
-    assignedHours > 0 ? "Estimated So Far" : "Collected (Completed Shifts)";
+    assignedHours > 0 ? "Estimated So Far" : "Collected from completed shifts";
   const amountHint =
-    assignedHours > 0
-      ? "Based on assigned shifts so far"
-      : "Based on completed shifts so far";
+    assignedHours > 0 ? "Based on assigned shifts so far" : "";
   const titleText =
     selectedPeriod === currentPeriod
       ? "Earnings So Far (This Month)"
@@ -437,7 +435,9 @@ export default function WorkerHomeScreen() {
     isPastPeriod && finalizedPayrollAmount != null
       ? "Based on paid payroll record"
       : amountHint;
-  const displayAmountSummary = `${displayAmountLabel} • ${displayAmountHint}`;
+  const displayAmountSummary = displayAmountHint
+    ? `${displayAmountLabel} • ${displayAmountHint}`
+    : displayAmountLabel;
   const displayRightLabel =
     selectedPeriod === currentPeriod ? "Projected End-of-Month" : "Finalized Payroll";
   const displayRightValue =
