@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Temporary broad access for authenticated users to stop permission errors.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
