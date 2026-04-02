@@ -730,7 +730,7 @@ export default function AdminAttendance() {
                 <Clock size={18} color={adminPalette.accent} />
               </View>
               <View>
-                <Text style={statTitle}>Today's Attendance</Text>
+                <Text style={statTitle}>{"Today's Attendance"}</Text>
                 <Text style={statSub}>
                   {weeklyStats.todayPresent} of {totalWorkers} workers present
                 </Text>

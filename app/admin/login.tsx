@@ -285,7 +285,7 @@ export default function AdminLogin() {
               lineHeight: 16,
             }}
           >
-            Authorized personnel only. By signing in, you agree to Spendly's
+            Authorized personnel only. By signing in, you agree to {"Spendly's"}
             admin usage and data handling policies.
           </Text>
         </View>

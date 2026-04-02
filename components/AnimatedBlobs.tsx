@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Animated } from "react-native";
+import { Animated, StyleSheet } from "react-native";
 
 type AnimatedBlobsProps = {
   blobStyle: Record<string, unknown>;
@@ -59,6 +59,14 @@ export function AnimatedBlobs({ blobStyle, blobAltStyle }: AnimatedBlobsProps) {
     inputRange: [0, 1],
     outputRange: [120, -120],
   });
+  const driftThirdX = xAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-40, 40],
+  });
+  const driftThirdY = yAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-30, 30],
+  });
 
   return (
     <>
@@ -74,6 +82,31 @@ export function AnimatedBlobs({ blobStyle, blobAltStyle }: AnimatedBlobsProps) {
           { transform: [{ translateX: driftAltX }, { translateY: driftAltY }] },
         ]}
       />
+      <Animated.View
+        style={[
+          styles.globalBottomBlob,
+          {
+            transform: [
+              { translateX: driftThirdX },
+              { translateY: driftThirdY },
+              { scale: 0.9 },
+            ],
+          },
+        ]}
+      />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  globalBottomBlob: {
+    position: "absolute",
+    width: 240,
+    height: 240,
+    borderRadius: 999,
+    backgroundColor: "rgba(95, 120, 60, 0.35)",
+    bottom: -80,
+    left: -60,
+    zIndex: 0,
+  },
+});

@@ -23,7 +23,6 @@ import {
   ChevronRight,
   Home,
   Shield,
-  Sparkles,
   Star,
   Target,
   TrendingUp,
@@ -37,7 +36,6 @@ import {
   Alert,
   Animated,
   Dimensions,
-  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -111,15 +109,11 @@ type ArcadeState = {
   displayName?: string;
   photoUrl?: string;
   role?: string;
-  spinsLeft: number;
-  lastSpinDate?: string;
-  lastSpinReward?: { type: "xp" | "coins" | "gems"; amount: number };
   lastLevel?: number;
   powerUps?: {
     xpBoost: number;
     shield: number;
     multiplier: number;
-    luckyCharm: number;
   };
   daily?: {
     date: string;
@@ -154,7 +148,6 @@ type DashboardPanel =
   | "main"
   | "profile"
   | "achievements"
-  | "lucky-spin"
   | "badges"
   | "challenges"
   | "shop";
@@ -186,8 +179,6 @@ export default function GameScreen() {
   const [showAllShop, setShowAllShop] = useState(false);
   const xpGlowAnim = useRef(new Animated.Value(0.2)).current;
   const titleGlowAnim = useRef(new Animated.Value(0.6)).current;
-  const spinRotation = useRef(new Animated.Value(0)).current;
-  const spinTurns = useRef(0);
   const lastAwardedLevelRef = useRef<number | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -211,14 +202,9 @@ export default function GameScreen() {
   });
   const [arcadeState, setArcadeState] = useState<ArcadeState | null>(null);
   const [arcadeReady, setArcadeReady] = useState(false);
-  const [isSpinning, setIsSpinning] = useState(false);
   const [leaderboardEntries, setLeaderboardEntries] = useState<
     { rank: number; name: string; level: number; xp: number; isYou: boolean }[]
   >([]);
-  const [lastSpinReward, setLastSpinReward] = useState<
-    ArcadeState["lastSpinReward"] | null
-  >(null);
-  const spinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const selfEntryRef = useRef({ name: "Worker", level: 1, xp: 0 });
@@ -424,14 +410,11 @@ export default function GameScreen() {
         displayName: userProfile.displayName,
         photoUrl: userProfile.photoUrl ?? null,
         role: userProfile.role ?? "worker",
-        spinsLeft: 1,
-        lastSpinDate: todayKey,
         lastLevel: 1,
         powerUps: {
           xpBoost: 0,
           shield: 0,
           multiplier: 0,
-          luckyCharm: 0,
         },
         daily: {
           date: todayKey,
@@ -678,12 +661,10 @@ export default function GameScreen() {
   const coins = arcadeState?.coins ?? 0;
   const gems = arcadeState?.gems ?? 0;
   const xpWallet = Math.max(0, arcadeState?.bonusXp ?? 0);
-  const spinsLeft = arcadeState?.spinsLeft ?? 0;
   const powerUps = arcadeState?.powerUps ?? {
     xpBoost: 0,
     shield: 0,
     multiplier: 0,
-    luckyCharm: 0,
   };
   const dailyQuestClaims =
     arcadeState?.daily?.date === todayKey ? arcadeState.daily?.questClaims ?? {} : {};
@@ -861,17 +842,6 @@ export default function GameScreen() {
       gradient: ["#22c55e", "#10b981"],
       border: "rgba(34, 197, 94, 0.4)",
     },
-    {
-      id: "luckyCharm",
-      name: "Lucky Charm",
-      description: "Better rewards for 12h",
-      icon: Sparkles,
-      cost: 15,
-      currency: "gems",
-      owned: powerUps.luckyCharm,
-      gradient: ["#a855f7", "#ec4899"],
-      border: "rgba(236, 72, 153, 0.45)",
-    },
   ];
 
   useEffect(() => {
@@ -895,10 +865,6 @@ export default function GameScreen() {
       updateDoc(arcadeRef, updates);
     }
   }, [arcadeRef, arcadeState, level, totalXp, userProfile]);
-
-  useEffect(() => {
-    setLastSpinReward(arcadeState?.lastSpinReward ?? null);
-  }, [arcadeState?.lastSpinReward]);
 
   useEffect(() => {
     if (!userId) {
@@ -987,12 +953,6 @@ export default function GameScreen() {
 
   useEffect(() => {
     if (!arcadeRef || !arcadeState) return;
-    if (arcadeState.lastSpinDate === todayKey) return;
-    updateDoc(arcadeRef, { spinsLeft: 1, lastSpinDate: todayKey });
-  }, [arcadeRef, arcadeState, todayKey]);
-
-  useEffect(() => {
-    if (!arcadeRef || !arcadeState) return;
     const lastLevel = lastAwardedLevelRef.current ?? arcadeState.lastLevel ?? 1;
     if (level <= lastLevel) return;
     const diff = level - lastLevel;
@@ -1040,15 +1000,6 @@ export default function GameScreen() {
       };
     }, [arcadeRef, arcadeState, todayKey])
   );
-
-  useEffect(() => {
-    return () => {
-      if (spinTimer.current) {
-        clearTimeout(spinTimer.current);
-        spinTimer.current = null;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -1112,58 +1063,6 @@ export default function GameScreen() {
     });
   };
 
-  const handleSpin = () => {
-    if (!arcadeRef || isSpinning || spinsLeft <= 0) return;
-    setIsSpinning(true);
-    setLastSpinReward(null);
-    const extraTurns = 3 + Math.random() * 2;
-    spinTurns.current += extraTurns;
-    Animated.timing(spinRotation, {
-      toValue: spinTurns.current,
-      duration: 1600,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-    const rewards = [
-      { type: "coins" as const, min: 100, max: 500 },
-      { type: "gems" as const, min: 5, max: 25 },
-      { type: "xp" as const, min: 50, max: 200 },
-      { type: "coins" as const, min: 50, max: 150 },
-    ];
-    const reward = rewards[Math.floor(Math.random() * rewards.length)];
-    const amount =
-      Math.floor(Math.random() * (reward.max - reward.min + 1)) + reward.min;
-
-    spinTimer.current = setTimeout(async () => {
-      try {
-        await runTransaction(db, async transaction => {
-          const snap = await transaction.get(arcadeRef);
-          if (!snap.exists()) return;
-          const data = snap.data() as ArcadeState;
-          if ((data.spinsLeft ?? 0) <= 0) return;
-          const updates: Record<string, any> = {
-            spinsLeft: increment(-1),
-            lastSpinReward: { type: reward.type, amount },
-          };
-          if (reward.type === "xp") {
-            updates.bonusXp = increment(amount);
-          } else if (reward.type === "coins") {
-            updates.coins = increment(amount);
-          } else if (reward.type === "gems") {
-            updates.gems = increment(amount);
-          }
-          transaction.update(arcadeRef, updates);
-        });
-        setLastSpinReward({
-          type: reward.type,
-          amount,
-        });
-      } finally {
-        setIsSpinning(false);
-      }
-    }, 1600);
-  };
-
   const handleClaimChallenge = async (challenge: Challenge) => {
     if (!userId || !arcadeRef || challenge.claimed || !challenge.completed) return;
     const challengeRef = doc(db, "users", userId, "challenges", challenge.id);
@@ -1216,12 +1115,10 @@ export default function GameScreen() {
       ? "Profile Achievements"
       : activePanel === "achievements"
         ? "Achievement Path"
-        : activePanel === "lucky-spin"
-          ? "Lucky Spin"
-          : activePanel === "badges"
-            ? "Badge Collection"
-            : activePanel === "challenges"
-              ? "Weekly Challenges"
+        : activePanel === "badges"
+          ? "Badge Collection"
+          : activePanel === "challenges"
+            ? "Weekly Challenges"
               : activePanel === "shop"
                 ? "XP Exchange Shop"
                 : "";
@@ -1525,14 +1422,6 @@ export default function GameScreen() {
             >
               <Star size={18} color="#facc15" />
               <Text style={styles.menuItemText}>Achievement Path</Text>
-              <ChevronRight size={16} color="#64748b" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleMenuSelect("lucky-spin")}
-            >
-              <Sparkles size={18} color="#f472b6" />
-              <Text style={styles.menuItemText}>Lucky Spin</Text>
               <ChevronRight size={16} color="#64748b" />
             </TouchableOpacity>
             <TouchableOpacity
@@ -2177,114 +2066,6 @@ export default function GameScreen() {
                     </View>
                   );
                 })}
-              </View>
-            </View>
-          ) : activePanel === "lucky-spin" ? (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionTitleRow}>
-                  <Sparkles size={18} color="#f472b6" />
-                  <Text style={styles.sectionTitle}>Lucky Spin</Text>
-                </View>
-                <View style={styles.sectionBadge}>
-                  <Text style={styles.sectionBadgeText}>
-                    {spinsLeft} spin{spinsLeft !== 1 ? "s" : ""} left
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.spinRow}>
-                <Animated.View
-                  style={[
-                    styles.spinWheel,
-                    {
-                      transform: [
-                        {
-                          rotate: spinRotation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ["0deg", "360deg"],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <View style={styles.spinWheelRing} />
-                  <View style={styles.spinWheelInner}>
-                    <View style={[styles.spinWheelIcon, styles.spinWheelIconTop]}>
-                      <Coins size={14} color="#facc15" />
-                    </View>
-                    <View style={[styles.spinWheelIcon, styles.spinWheelIconRight]}>
-                      <Gem size={14} color="#38bdf8" />
-                    </View>
-                    <View style={[styles.spinWheelIcon, styles.spinWheelIconBottom]}>
-                      <Zap size={14} color="#fb923c" />
-                    </View>
-                    <View style={[styles.spinWheelIcon, styles.spinWheelIconLeft]}>
-                      <Gift size={14} color="#f472b6" />
-                    </View>
-                    <View style={styles.spinWheelCenter}>
-                      <Sparkles size={14} color="#e2e8f0" />
-                    </View>
-                  </View>
-                  <View style={styles.spinPointer} />
-                </Animated.View>
-                <View style={styles.spinInfo}>
-                  {lastSpinReward ? (
-                    <View style={styles.spinRewardCard}>
-                      <Text style={styles.spinRewardTitle}>You won!</Text>
-                      <Text style={styles.spinRewardValue}>
-                        {lastSpinReward.amount}{" "}
-                        {lastSpinReward.type === "xp"
-                          ? "XP"
-                          : lastSpinReward.type === "coins"
-                            ? "Coins"
-                            : "Gems"}
-                      </Text>
-                    </View>
-                  ) : (
-                    <>
-                      <Text style={styles.spinInfoTitle}>Daily Free Spin!</Text>
-                      <Text style={styles.spinInfoSub}>
-                        Win coins, gems, or XP boosts
-                      </Text>
-                    </>
-                  )}
-                  <TouchableOpacity
-                    style={[
-                      styles.spinButton,
-                      (isSpinning || spinsLeft <= 0) &&
-                        styles.spinButtonDisabled,
-                    ]}
-                    onPress={handleSpin}
-                    disabled={isSpinning || spinsLeft <= 0}
-                  >
-                    <Text style={styles.spinButtonText}>
-                      {isSpinning
-                        ? "Spinning..."
-                        : spinsLeft > 0
-                          ? "Spin Now"
-                          : "No spins left"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.spinRewardsRow}>
-                <View style={styles.spinRewardTile}>
-                  <Coins size={16} color="#facc15" />
-                  <Text style={styles.spinTileLabel}>100-500</Text>
-                </View>
-                <View style={styles.spinRewardTile}>
-                  <Gem size={16} color="#38bdf8" />
-                  <Text style={styles.spinTileLabel}>5-25</Text>
-                </View>
-                <View style={styles.spinRewardTile}>
-                  <Zap size={16} color="#fb923c" />
-                  <Text style={styles.spinTileLabel}>50-200 XP</Text>
-                </View>
-                <View style={styles.spinRewardTile}>
-                  <Gift size={16} color="#f472b6" />
-                  <Text style={styles.spinTileLabel}>Mystery</Text>
-                </View>
               </View>
             </View>
           ) : activePanel === "badges" ? (
@@ -3230,127 +3011,6 @@ const styles = StyleSheet.create({
   },
   powerBuyButtonDisabled: { backgroundColor: "rgba(148, 163, 184, 0.35)" },
   powerBuyText: { fontSize: 11, fontWeight: "700", color: "#ffffff" },
-  spinRow: { flexDirection: "row", gap: 14, alignItems: "center" },
-  spinWheel: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#0f0820",
-    borderWidth: 1,
-    borderColor: "rgba(236, 72, 153, 0.3)",
-  },
-  spinWheelRing: {
-    position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 2,
-    borderColor: "#ec4899",
-  },
-  spinWheelInner: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 1,
-    borderColor: "#7c3aed",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#0b1020",
-  },
-  spinWheelIcon: {
-    position: "absolute",
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.95)",
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.2)",
-  },
-  spinWheelIconTop: {
-    top: -8,
-    left: "50%",
-    transform: [{ translateX: -13 }],
-  },
-  spinWheelIconRight: {
-    right: -8,
-    top: "50%",
-    transform: [{ translateY: -13 }],
-  },
-  spinWheelIconBottom: {
-    bottom: -8,
-    left: "50%",
-    transform: [{ translateX: -13 }],
-  },
-  spinWheelIconLeft: {
-    left: -8,
-    top: "50%",
-    transform: [{ translateY: -13 }],
-  },
-  spinWheelCenter: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#0f0820",
-    borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.4)",
-  },
-  spinPointer: {
-    position: "absolute",
-    top: -6,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderBottomWidth: 10,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderBottomColor: "#facc15",
-  },
-  spinInfo: { flex: 1 },
-  spinRewardCard: {
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(34, 197, 94, 0.4)",
-    backgroundColor: "rgba(34, 197, 94, 0.12)",
-    marginBottom: 10,
-  },
-  spinRewardTitle: { fontSize: 12, fontWeight: "700", color: "#4ade80" },
-  spinRewardValue: { fontSize: 16, fontWeight: "800", color: "#ffffff", marginTop: 4 },
-  spinInfoTitle: { fontSize: 14, fontWeight: "700", color: "#ffffff" },
-  spinInfoSub: { fontSize: 12, color: "#94a3b8", marginTop: 4, marginBottom: 10 },
-  spinButton: {
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: "rgba(236, 72, 153, 0.9)",
-    alignItems: "center",
-  },
-  spinButtonDisabled: { backgroundColor: "rgba(148, 163, 184, 0.35)" },
-  spinButtonText: { fontSize: 13, fontWeight: "700", color: "#ffffff" },
-  spinRewardsRow: {
-    marginTop: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  spinRewardTile: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(234, 179, 8, 0.3)",
-    backgroundColor: "#0f0820",
-    alignItems: "center",
-    gap: 6,
-  },
-  spinTileLabel: { fontSize: 10, color: "#94a3b8", marginTop: 4 },
   leaderboardList: { gap: 10 },
   leaderboardRow: {
     flexDirection: "row",
