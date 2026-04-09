@@ -1216,7 +1216,6 @@ export default function WorkerHomeScreen() {
   ===================== */
   return (
     <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <Animated.View
         style={[
           styles.bgBlobBottom,
@@ -1259,6 +1258,7 @@ export default function WorkerHomeScreen() {
           },
         ]}
       />
+      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* 🔝 HEADER */}
         <View style={styles.header}>

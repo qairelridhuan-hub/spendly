@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet } from "react-native";
+import { BlurView } from "expo-blur";
 
 type AnimatedBlobsProps = {
   blobStyle: Record<string, unknown>;
@@ -93,6 +94,12 @@ export function AnimatedBlobs({ blobStyle, blobAltStyle }: AnimatedBlobsProps) {
             ],
           },
         ]}
+      />
+      <BlurView
+        intensity={55}
+        tint="dark"
+        style={StyleSheet.absoluteFillObject}
+        experimentalBlurMethod="dimezisBlurView"
       />
     </>
   );
