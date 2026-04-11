@@ -176,9 +176,7 @@ function AdminLayoutInner() {
     const match = navItems.find(item => item.href === pathname);
     return match?.label ?? "Dashboard";
   }, [pathname]);
-  const tooltipBackground = adminThemeMode === "dark" ? "#0b1220" : adminPalette.text;
-  const tooltipText = adminThemeMode === "dark" ? adminPalette.text : "#fff";
-  const shimmerTranslate = shimmerAnim.interpolate({
+const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [-120, 120],
   });
@@ -424,46 +422,6 @@ function AdminLayoutInner() {
                         }}
                       >
                         <Icon size={18} color={isActive ? sidebarActive : sidebarMuted} />
-                        {Platform.OS === "web" && isHovered ? (
-                          <View
-                            style={{
-                              position: "absolute",
-                              left: 34,
-                              top: -6,
-                              backgroundColor: tooltipBackground,
-                              paddingVertical: 6,
-                              paddingHorizontal: 10,
-                              borderRadius: 14,
-                              zIndex: 20,
-                              shadowColor: "#0f172a",
-                              shadowOpacity: 0.18,
-                              shadowRadius: 8,
-                              shadowOffset: { width: 0, height: 4 },
-                            }}
-                          >
-                            <View
-                              style={{
-                                position: "absolute",
-                                left: -4,
-                                top: 12,
-                                width: 8,
-                                height: 8,
-                                backgroundColor: tooltipBackground,
-                                transform: [{ rotate: "45deg" }],
-                              }}
-                            />
-                            <Text
-                              numberOfLines={1}
-                              style={{
-                                color: tooltipText,
-                                fontSize: 11,
-                                fontWeight: "600",
-                              }}
-                            >
-                              {item.label}
-                            </Text>
-                          </View>
-                        ) : null}
                       </View>
                       <Text
                         style={{
