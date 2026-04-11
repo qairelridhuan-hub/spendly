@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Keyboard,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -335,7 +334,6 @@ export default function AdminWorkers() {
   };
 
   const p = adminPalette;
-  const cell = { flex: 1, minWidth: 110 };
 
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
@@ -377,7 +375,7 @@ export default function AdminWorkers() {
           </View>
         </View>
 
-        {/* Table */}
+        {/* Worker list */}
         {filteredWorkers.length === 0 ? (
           <View style={{ backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border, padding: 40, alignItems: "center" }}>
             <Users size={32} color={p.textMuted} strokeWidth={1.5} />
@@ -386,58 +384,85 @@ export default function AdminWorkers() {
           </View>
         ) : (
           <View style={{ backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border, overflow: "hidden" }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={Platform.OS === "web"} style={{ width: "100%" }}>
-              <View style={{ minWidth: 900 }}>
-                {/* Table head */}
-                <View style={{ flexDirection: "row", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: p.border, backgroundColor: p.surfaceAlt }}>
-                  {["Worker", "Position", "Contact", "Rate/hr", "Hours", "Earnings", "Status", ""].map(h => (
-                    <Text key={h} style={[{ color: p.textMuted, fontSize: 11, fontWeight: "600" }, cell, h === "Worker" && { minWidth: 200 }]}>{h}</Text>
-                  ))}
-                </View>
-                {/* Rows */}
-                {filteredWorkers.map((worker, idx) => {
-                  const wt = totals[worker.id] || { hours: 0, earnings: 0 };
-                  const isActive = worker.status === "active";
-                  return (
-                    <View key={worker.id} style={{ flexDirection: "row", paddingHorizontal: 16, paddingVertical: 11, borderBottomWidth: idx < filteredWorkers.length - 1 ? 1 : 0, borderBottomColor: p.border, alignItems: "center" }}>
-                      {/* Worker */}
-                      <View style={[{ flexDirection: "row", gap: 10, alignItems: "center", minWidth: 200 }, cell]}>
-                        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
-                          <Text style={{ color: p.accent, fontSize: 11, fontWeight: "700" }}>{worker.name?.[0] ?? "W"}</Text>
-                        </View>
-                        <View>
-                          <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" }}>{worker.name}</Text>
-                          <Text style={{ color: p.textMuted, fontSize: 10, marginTop: 1 }}>{worker.workerCode ? `${worker.workerCode} · ` : ""}{worker.email}</Text>
-                        </View>
-                      </View>
-                      <Text style={[{ color: p.textMuted, fontSize: 12 }, cell]}>{worker.position || "—"}</Text>
-                      <Text style={[{ color: p.textMuted, fontSize: 12 }, cell]}>{worker.phone || "—"}</Text>
-                      <Text style={[{ color: p.text, fontSize: 12 }, cell]}>RM {Number(worker.hourlyRate || 0).toFixed(2)}</Text>
-                      <Text style={[{ color: p.text, fontSize: 12 }, cell]}>{wt.hours.toFixed(1)}h</Text>
-                      <Text style={[{ color: p.success, fontSize: 12, fontWeight: "600" }, cell]}>RM {wt.earnings.toFixed(0)}</Text>
-                      {/* Status */}
-                      <View style={cell}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start", backgroundColor: isActive ? p.successSoft : p.surfaceAlt, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 }}>
-                          <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isActive ? p.success : p.textMuted }} />
-                          <Text style={{ color: isActive ? p.success : p.textMuted, fontSize: 10, fontWeight: "600" }}>{isActive ? "Active" : "Inactive"}</Text>
-                        </View>
-                      </View>
-                      {/* Actions */}
-                      <View style={[{ flexDirection: "row", gap: 6 }, cell]}>
-                        <TouchableOpacity onPress={() => openEditModal(worker)} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, borderWidth: 1, borderColor: p.border, backgroundColor: p.surfaceAlt }}>
-                          <Edit size={11} color={p.textMuted} strokeWidth={1.8} />
-                          <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600" }}>Edit</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { setWorkerToDelete(worker); setShowDeleteConfirm(true); }} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, backgroundColor: p.dangerSoft }}>
-                          <Trash2 size={11} color={p.danger} strokeWidth={1.8} />
-                          <Text style={{ color: p.danger, fontSize: 11, fontWeight: "600" }}>Del</Text>
-                        </TouchableOpacity>
+            {/* Column headers */}
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: p.border, backgroundColor: p.surfaceAlt }}>
+              <Text style={{ flex: 3, color: p.textMuted, fontSize: 11, fontWeight: "600" }}>WORKER</Text>
+              <Text style={{ flex: 1.2, color: p.textMuted, fontSize: 11, fontWeight: "600", textAlign: "right" }}>RATE/HR</Text>
+              <Text style={{ flex: 1.2, color: p.textMuted, fontSize: 11, fontWeight: "600", textAlign: "right" }}>HOURS</Text>
+              <Text style={{ flex: 1.4, color: p.textMuted, fontSize: 11, fontWeight: "600", textAlign: "right" }}>EARNINGS</Text>
+              <Text style={{ flex: 1.4, color: p.textMuted, fontSize: 11, fontWeight: "600", textAlign: "center" }}>STATUS</Text>
+              <Text style={{ flex: 1.6, color: p.textMuted, fontSize: 11, fontWeight: "600", textAlign: "right" }}>ACTIONS</Text>
+            </View>
+
+            {filteredWorkers.map((worker, idx) => {
+              const wt = totals[worker.id] || { hours: 0, earnings: 0 };
+              const isActive = worker.status === "active";
+              return (
+                <View
+                  key={worker.id}
+                  style={{
+                    flexDirection: "row", alignItems: "center",
+                    paddingHorizontal: 16, paddingVertical: 13,
+                    borderBottomWidth: idx < filteredWorkers.length - 1 ? 1 : 0,
+                    borderBottomColor: p.border,
+                    backgroundColor: idx % 2 !== 0 ? p.surfaceAlt + "60" : "transparent",
+                  }}
+                >
+                  {/* Worker identity */}
+                  <View style={{ flex: 3, flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: p.infoSoft, alignItems: "center", justifyContent: "center" }}>
+                      <Text style={{ color: p.accent, fontSize: 13, fontWeight: "700" }}>{worker.name?.[0]?.toUpperCase() ?? "W"}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{worker.name}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                        {worker.position ? (
+                          <View style={{ backgroundColor: p.surfaceAlt, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, borderWidth: 1, borderColor: p.border }}>
+                            <Text style={{ color: p.textMuted, fontSize: 10 }}>{worker.position}</Text>
+                          </View>
+                        ) : null}
+                        <Text style={{ color: p.textMuted, fontSize: 10 }} numberOfLines={1}>{worker.email}</Text>
                       </View>
                     </View>
-                  );
-                })}
-              </View>
-            </ScrollView>
+                  </View>
+
+                  {/* Rate */}
+                  <Text style={{ flex: 1.2, color: p.text, fontSize: 12, fontWeight: "600", textAlign: "right" }}>
+                    RM {Number(worker.hourlyRate || 0).toFixed(2)}
+                  </Text>
+
+                  {/* Hours */}
+                  <Text style={{ flex: 1.2, color: p.textMuted, fontSize: 12, textAlign: "right" }}>
+                    {wt.hours.toFixed(1)}h
+                  </Text>
+
+                  {/* Earnings */}
+                  <Text style={{ flex: 1.4, color: p.success, fontSize: 12, fontWeight: "700", textAlign: "right" }}>
+                    RM {wt.earnings.toFixed(0)}
+                  </Text>
+
+                  {/* Status */}
+                  <View style={{ flex: 1.4, alignItems: "center" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: isActive ? p.successSoft : p.surfaceAlt, borderRadius: 99, paddingHorizontal: 9, paddingVertical: 4 }}>
+                      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isActive ? p.success : p.textMuted }} />
+                      <Text style={{ color: isActive ? p.success : p.textMuted, fontSize: 10, fontWeight: "600" }}>{isActive ? "Active" : "Inactive"}</Text>
+                    </View>
+                  </View>
+
+                  {/* Actions */}
+                  <View style={{ flex: 1.6, flexDirection: "row", gap: 6, justifyContent: "flex-end" }}>
+                    <TouchableOpacity onPress={() => openEditModal(worker)} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 5, paddingHorizontal: 9, borderRadius: 7, borderWidth: 1, borderColor: p.border, backgroundColor: p.surfaceAlt }}>
+                      <Edit size={11} color={p.textMuted} strokeWidth={1.8} />
+                      <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600" }}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setWorkerToDelete(worker); setShowDeleteConfirm(true); }} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 5, paddingHorizontal: 9, borderRadius: 7, backgroundColor: p.dangerSoft }}>
+                      <Trash2 size={11} color={p.danger} strokeWidth={1.8} />
+                      <Text style={{ color: p.danger, fontSize: 11, fontWeight: "600" }}>Del</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
           </View>
         )}
 
