@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
 import { collection, collectionGroup, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAdminTheme } from "@/lib/admin/theme";
 
 export default function AdminCalendar() {

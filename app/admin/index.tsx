@@ -601,7 +601,7 @@ export default function AdminDashboard() {
             </View>
             {latestAudit?.issueCount ? (
               <View style={{ gap: 12 }}>
-                {mismatchItems.map(item => (
+                {mismatchItems.map((item: any) => (
                   <View key={item.id} style={listRow}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <View style={[statusDot, { backgroundColor: adminPalette.danger }]} />

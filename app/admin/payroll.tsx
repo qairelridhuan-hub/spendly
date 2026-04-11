@@ -51,7 +51,7 @@ export default function AdminPayroll() {
           totalEarnings: Number(record.totalEarnings ?? 0),
           absenceDeductions: Number(record.absenceDeductions ?? 0),
           status,
-          updatedAt: new Date().toISOString(),
+          updatedAt: serverTimestamp(),
         },
         { merge: true }
       );

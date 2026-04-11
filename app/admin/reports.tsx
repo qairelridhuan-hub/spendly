@@ -31,6 +31,7 @@ export default function AdminReports() {
     statValue,
     chartCard,
     sectionTitle,
+    sectionSub,
     emptyText,
     generateCard,
     generateButton,
@@ -89,6 +90,7 @@ export default function AdminReports() {
         borderColor: adminPalette.border,
       },
       sectionTitle: { color: adminPalette.text, fontWeight: "600" as const },
+      sectionSub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 2 },
       emptyText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
       generateCard: {
         marginTop: 16,

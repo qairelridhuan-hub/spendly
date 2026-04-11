@@ -520,9 +520,10 @@ export default function AdminWorkers() {
         displayName: formData.name.trim(),
         uid: uidOverride || undefined,
       });
-      const authUid = String(authResult.data?.uid || "");
-      const resetLink = String(authResult.data?.resetLink || "");
-      const created = Boolean(authResult.data?.created);
+      const resultData = authResult.data as { uid?: string; resetLink?: string; created?: boolean } | null;
+      const authUid = String(resultData?.uid || "");
+      const resetLink = String(resultData?.resetLink || "");
+      const created = Boolean(resultData?.created);
       if (!authUid) {
         setFormError("Failed to create Auth account.");
         return;

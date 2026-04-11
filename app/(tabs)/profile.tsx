@@ -234,7 +234,8 @@ export default function ProfileScreen() {
       ...prev,
       totalHours: Number(totalHours.toFixed(1)),
       totalDays,
-      totalEarnings: totalHours * userHourlyRate + overtimeHours * config.overtimeRate,
+      // Subtract overtime from total so it isn't double-charged at the regular rate
+      totalEarnings: (totalHours - overtimeHours) * userHourlyRate + overtimeHours * config.overtimeRate,
       overtimeHours: Number(overtimeHours.toFixed(1)),
     }));
   }, [attendanceLogs, overtimeLogs, userHourlyRate, config.overtimeRate]);

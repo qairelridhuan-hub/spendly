@@ -27,6 +27,8 @@ import {
   SlidersHorizontal,
   Moon,
   Sun,
+  MapPin,
+  BadgeCheck,
 } from "lucide-react-native";
 import { auth, db } from "@/lib/firebase";
 import { AdminThemeProvider, useAdminTheme } from "@/lib/admin/theme";
@@ -44,6 +46,13 @@ const navSections = [
       { label: "Calendar", href: "/admin/calendar", icon: Calendar },
       { label: "Workers", href: "/admin/workers", icon: Users },
       { label: "Attendance", href: "/admin/attendance", icon: ClipboardCheck },
+    ],
+  },
+  {
+    label: "Attendance",
+    items: [
+      { label: "Workplace", href: "/admin/attendance-settings", icon: MapPin },
+      { label: "Verification", href: "/admin/attendance-records", icon: BadgeCheck },
     ],
   },
   {
@@ -374,12 +383,12 @@ function AdminLayoutInner() {
                     <TouchableOpacity
                       key={item.href}
                       onPress={() => router.push(item.href as any)}
-                      onHoverIn={
-                        Platform.OS === "web" ? () => setHoveredNav(item.href) : undefined
-                      }
-                      onHoverOut={
-                        Platform.OS === "web" ? () => setHoveredNav(null) : undefined
-                      }
+                      {...(Platform.OS === "web"
+                        ? ({
+                            onMouseEnter: () => setHoveredNav(item.href),
+                            onMouseLeave: () => setHoveredNav(null),
+                          } as any)
+                        : {})}
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
@@ -615,7 +624,7 @@ function AdminLayoutInner() {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() =>
-                  setAdminThemeMode(prev => (prev === "light" ? "dark" : "light"))
+                  setAdminThemeMode(adminThemeMode === "light" ? "dark" : "light")
                 }
                 accessibilityLabel="Dark mode toggle"
                 style={{

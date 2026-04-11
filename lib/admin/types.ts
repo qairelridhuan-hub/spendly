@@ -42,6 +42,9 @@ export type Shift = {
   type: ShiftType;
   status: ShiftStatus;
   createdAt: string;
+  // Displayed on worker calendar/home; defaults to "Shift" / "Assigned" if not set
+  role?: string;
+  location?: string;
 };
 
 export type AttendanceStatus = "pending" | "approved" | "rejected";

@@ -205,6 +205,9 @@ export async function generateShiftsForWorkers(config: WorkConfig) {
           type: "normal",
           status: "work",
           createdAt: new Date().toISOString(),
+          // role and location so worker calendar/home show real values
+          role: "Shift",
+          location: "Assigned",
         };
         const docRef = doc(shiftsRef);
         batch.set(docRef, shift);
