@@ -1,5 +1,4 @@
 import { ScrollView, Text, TextInput, View, TouchableOpacity } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Calendar, Check, ChevronDown, Clock, Edit2, Info, X } from "lucide-react-native";
 import {
   addDoc,
@@ -692,36 +691,9 @@ export default function AdminAttendance() {
   }, [exceptions, exceptionFilter, exceptionWorkerId]);
 
   return (
-    <LinearGradient
-      colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 520,
-          height: 520,
-          borderRadius: 260,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.18,
-          top: -220,
-          right: -160,
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 680,
-          height: 680,
-          borderRadius: 340,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.12,
-          bottom: -320,
-          left: -260,
-        }}
-      />
+    <View style={{ flex: 1, backgroundColor: adminPalette.backgroundStart }}>
+      
+      
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
           <View style={statCard}>
@@ -1247,7 +1219,7 @@ export default function AdminAttendance() {
           </View>
         </View>
       ) : null}
-    </LinearGradient>
+    </View>
   );
 }
 

@@ -9,12 +9,12 @@ type AdminThemeContextValue = {
   setMode: (mode: AdminPaletteMode) => void;
 };
 
-const STORAGE_KEY = "spendly:admin-theme";
+const STORAGE_KEY = "spendly:admin-theme:v2";
 
 const AdminThemeContext = createContext<AdminThemeContextValue | undefined>(undefined);
 
 export function AdminThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<AdminPaletteMode>("light");
+  const [mode, setMode] = useState<AdminPaletteMode>("dark");
 
   useEffect(() => {
     const loadTheme = async () => {
@@ -27,7 +27,7 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
       } catch {
         // ignore storage errors
       }
-      setMode("light");
+      setMode("dark");
     };
     loadTheme();
   }, []);

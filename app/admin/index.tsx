@@ -1,798 +1,382 @@
 import { useEffect, useMemo, useState } from "react";
 import { Platform, View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
-  collection,
-  collectionGroup,
-  limit,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  updateDoc,
-  doc,
+  collection, collectionGroup, limit, onSnapshot,
+  query, orderBy, where, updateDoc, doc,
 } from "firebase/firestore";
 import {
-  Activity,
-  AlertCircle,
-  Calendar,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
-  Users,
-  XCircle,
+  AlertCircle, Calendar, CheckCircle, Clock,
+  DollarSign, Users, XCircle,
 } from "lucide-react-native";
 import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import { getPeriodKey } from "@/lib/reports/report";
 
 export default function AdminDashboard() {
-  const { colors: adminPalette } = useAdminTheme();
+  const { colors: p } = useAdminTheme();
   const router = useRouter();
-  const [workerCount, setWorkerCount] = useState(0);
+
+  const [workerCount,    setWorkerCount]    = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
-  const [breakLogs, setBreakLogs] = useState<any[]>([]);
-  const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
-  const [shifts, setShifts] = useState<any[]>([]);
-  const [workers, setWorkers] = useState<Record<string, any>>({});
-  const [config, setConfig] = useState({ hourlyRate: 0, overtimeRate: 0 });
-  const [latestAudit, setLatestAudit] = useState<any | null>(null);
+  const [breakLogs,      setBreakLogs]      = useState<any[]>([]);
+  const [shifts,         setShifts]         = useState<any[]>([]);
+  const [workers,        setWorkers]        = useState<Record<string, any>>({});
+  const [config,         setConfig]         = useState({ hourlyRate: 0, overtimeRate: 0 });
+  const [latestAudit,    setLatestAudit]    = useState<any | null>(null);
 
   useEffect(() => {
-    const workersQuery = query(
-      collection(db, "users"),
-      where("role", "==", "worker")
-    );
+    const workersQuery = query(collection(db, "users"), where("role", "==", "worker"));
     const unsubWorkers = onSnapshot(workersQuery, snapshot => {
       const map: Record<string, any> = {};
-      snapshot.forEach(docSnap => {
-        map[docSnap.id] = docSnap.data();
-      });
+      snapshot.forEach(d => { map[d.id] = d.data(); });
       setWorkerCount(snapshot.size);
       setWorkers(map);
     });
-
-    const attendanceQuery = collectionGroup(db, "attendance");
-    const unsubAttendance = onSnapshot(attendanceQuery, snapshot => {
-      const list = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        refPath: docSnap.ref.path,
-        ...docSnap.data(),
-      }));
-      setAttendanceLogs(list);
+    const unsubAtt = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
+      setAttendanceLogs(snapshot.docs.map(d => ({ id: d.id, refPath: d.ref.path, ...d.data() })));
     });
-
-    const breaksQuery = collectionGroup(db, "breaks");
-    const unsubBreaks = onSnapshot(breaksQuery, snapshot => {
-      const list = snapshot.docs.map(docSnap => ({
-        workerId: getOwnerId(docSnap),
-        ...docSnap.data(),
-      }));
-      setBreakLogs(list);
+    const unsubBreaks = onSnapshot(collectionGroup(db, "breaks"), snapshot => {
+      setBreakLogs(snapshot.docs.map(d => ({ workerId: getOwnerId(d), ...d.data() })));
     });
-
-    const overtimeQuery = collectionGroup(db, "overtime");
-    const unsubOvertime = onSnapshot(overtimeQuery, snapshot => {
-      const list = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        refPath: docSnap.ref.path,
-        ...docSnap.data(),
-      }));
-      setOvertimeLogs(list);
+    const unsubShifts = onSnapshot(collection(db, "shifts"), snapshot => {
+      setShifts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-
-    const shiftsQuery = collection(db, "shifts");
-    const unsubShifts = onSnapshot(shiftsQuery, snapshot => {
-      const list = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
-      setShifts(list);
-    });
-
-    const configRef = doc(db, "config", "system");
-    const unsubConfig = onSnapshot(configRef, snap => {
+    const unsubCfg = onSnapshot(doc(db, "config", "system"), snap => {
       const data = snap.data() as any;
       if (!data) return;
-      setConfig({
-        hourlyRate: Number(data.hourlyRate ?? 0),
-        overtimeRate: Number(data.overtimeRate ?? 0),
-      });
+      setConfig({ hourlyRate: Number(data.hourlyRate ?? 0), overtimeRate: Number(data.overtimeRate ?? 0) });
     });
-
-    const auditsQuery = query(
-      collection(db, "adminAudits"),
-      orderBy("updatedAt", "desc"),
-      limit(1)
+    const unsubAudit = onSnapshot(
+      query(collection(db, "adminAudits"), orderBy("updatedAt", "desc"), limit(1)),
+      snapshot => {
+        const d = snapshot.docs[0];
+        setLatestAudit(d ? { id: d.id, ...d.data() } : null);
+      }
     );
-    const unsubAudits = onSnapshot(auditsQuery, snapshot => {
-      const docSnap = snapshot.docs[0];
-      setLatestAudit(docSnap ? { id: docSnap.id, ...docSnap.data() } : null);
-    });
-
-    return () => {
-      unsubWorkers();
-      unsubAttendance();
-      unsubBreaks();
-      unsubOvertime();
-      unsubShifts();
-      unsubConfig();
-      unsubAudits();
-    };
+    return () => { unsubWorkers(); unsubAtt(); unsubBreaks(); unsubShifts(); unsubCfg(); unsubAudit(); };
   }, []);
 
   const workingDays = useMemo(() => {
-    const monthDays = new Set(
-      shifts
-        .filter(shift => isThisMonth(shift.date))
-        .map((shift: any) => String(shift.date ?? ""))
-    );
-    return monthDays.size;
+    const s = new Set(shifts.filter(s => isThisMonth(s.date)).map((s: any) => String(s.date ?? "")));
+    return s.size;
   }, [shifts]);
 
   const currentPeriod = getPeriodKey(new Date());
-  const attendancePeriods = useMemo(
-    () => extractAttendancePeriods(attendanceLogs),
-    [attendanceLogs]
-  );
+  const attendancePeriods = useMemo(() => extractAttendancePeriods(attendanceLogs), [attendanceLogs]);
   const activePeriod = useMemo(() => {
-    if (Platform.OS === "web") {
-      return currentPeriod;
-    }
-    if (attendancePeriods.includes(currentPeriod)) {
-      return currentPeriod;
-    }
-    return attendancePeriods[0] || currentPeriod;
+    if (Platform.OS === "web") return currentPeriod;
+    return attendancePeriods.includes(currentPeriod) ? currentPeriod : (attendancePeriods[0] || currentPeriod);
   }, [attendancePeriods, currentPeriod]);
-  const approvedLogs = useMemo(
-    () => attendanceLogs.filter(log => log.status === "approved"),
-    [attendanceLogs]
-  );
-  const breakMinutesByKey = useMemo(
-    () => buildBreakMinutesMap(breakLogs),
-    [breakLogs]
-  );
+
+  const approvedLogs    = useMemo(() => attendanceLogs.filter(l => l.status === "approved"), [attendanceLogs]);
+  const breakMinutesMap = useMemo(() => buildBreakMinutesMap(breakLogs), [breakLogs]);
+
   const { totalHours, totalEarnings } = useMemo(() => {
-    return approvedLogs.reduce(
-      (acc, log) => {
-        const date = String(log.date ?? "");
-        if (!date.startsWith(activePeriod)) return acc;
-        const workerId = String(log.workerId ?? "");
-        const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
-        const hours = getLogHours(log, breakMinutesByKey);
-        acc.totalHours += hours;
-        acc.totalEarnings += getLogEarnings(
-          log,
-          rate,
-          config.overtimeRate,
-          breakMinutesByKey
-        );
-        return acc;
-      },
-      { totalHours: 0, totalEarnings: 0 }
-    );
-  }, [
-    approvedLogs,
-    activePeriod,
-    workers,
-    config.hourlyRate,
-    config.overtimeRate,
-    breakMinutesByKey,
-  ]);
-  const adjustedTotals = useMemo(
-    () => ({
-      totalHours,
-      totalEarnings,
-    }),
-    [totalHours, totalEarnings]
-  );
+    return approvedLogs.reduce((acc, log) => {
+      const date = String(log.date ?? "");
+      if (!date.startsWith(activePeriod)) return acc;
+      const wId   = String(log.workerId ?? "");
+      const rate  = Number(workers[wId]?.hourlyRate ?? config.hourlyRate ?? 0);
+      acc.totalHours    += getLogHours(log, breakMinutesMap);
+      acc.totalEarnings += getLogEarnings(log, rate, config.overtimeRate, breakMinutesMap);
+      return acc;
+    }, { totalHours: 0, totalEarnings: 0 });
+  }, [approvedLogs, activePeriod, workers, config, breakMinutesMap]);
 
-  const cards = useMemo(() => [
-      {
-        label: "Active Workers",
-        value: String(workerCount),
-        icon: Users,
-        color: adminPalette.accentStrong,
-        bg: adminPalette.infoSoft,
-        trend: "up",
-        change: "",
-      },
-      {
-        label: "Total Hours (Month)",
-        value: `${adjustedTotals.totalHours.toFixed(0)}h`,
-        icon: Clock,
-        color: adminPalette.accentStrong,
-        bg: adminPalette.infoSoft,
-        trend: "up",
-        change: "",
-      },
-      {
-        label: "Total Payroll",
-        value: `RM ${adjustedTotals.totalEarnings.toFixed(0)}`,
-        icon: DollarSign,
-        color: adminPalette.accentStrong,
-        bg: adminPalette.infoSoft,
-        trend: "up",
-        change: "",
-      },
-      {
-        label: "Working Days",
-        value: `${workingDays}`,
-        icon: Calendar,
-        color: adminPalette.accentStrong,
-        bg: adminPalette.infoSoft,
-        trend: "neutral",
-        change: "",
-      },
-    ],
-  [
-    workerCount,
-    adjustedTotals.totalHours,
-    adjustedTotals.totalEarnings,
-    workingDays,
-  ]);
-
-  const weeklyData = useMemo(
-    () => buildWeeklyHours(approvedLogs, breakMinutesByKey),
-    [approvedLogs, breakMinutesByKey]
-  );
-  const mismatchItems = useMemo(() => {
+  const weeklyData     = useMemo(() => buildWeeklyHours(approvedLogs, breakMinutesMap), [approvedLogs, breakMinutesMap]);
+  const mismatchItems  = useMemo(() => {
     if (!latestAudit?.issues) return [];
-    return latestAudit.issues
-      .slice(0, 5)
-      .map((issue: any, index: number) => ({
-        id: `${latestAudit.id || "audit"}-${index}`,
-        name: issue.name || issue.workerId || "Worker",
-        detail: `Shifts ${issue.shiftCount ?? 0} • Attendance ${
-          issue.attendanceCount ?? 0
-        }`,
-      }));
+    return latestAudit.issues.slice(0, 5).map((issue: any, i: number) => ({
+      id: `${latestAudit.id}-${i}`,
+      name: issue.name || issue.workerId || "Worker",
+      detail: `Shifts ${issue.shiftCount ?? 0} · Att. ${issue.attendanceCount ?? 0}`,
+    }));
   }, [latestAudit]);
-  const upcomingShifts = useMemo(() => buildUpcomingShifts(shifts, workers), [shifts, workers]);
-  const pendingActions = useMemo(() => attendanceLogs.filter(log => log.status === "pending").slice(0, 3), [attendanceLogs]);
+
+  const upcomingShifts  = useMemo(() => buildUpcomingShifts(shifts, workers), [shifts, workers]);
+  const pendingActions  = useMemo(() => attendanceLogs.filter(l => l.status === "pending").slice(0, 5), [attendanceLogs]);
   const performanceStats = useMemo(() => {
     const map: Record<string, { hours: number; earnings: number }> = {};
     approvedLogs.forEach(log => {
       const date = String(log.date ?? "");
       if (!date.startsWith(currentPeriod)) return;
-      const workerId = String(log.workerId ?? "");
-      if (!workerId) return;
-      const rate = Number(workers[workerId]?.hourlyRate ?? config.hourlyRate ?? 0);
-      const hours = getLogHours(log, breakMinutesByKey);
-      map[workerId] = map[workerId] || { hours: 0, earnings: 0 };
-      map[workerId].hours += hours;
-      map[workerId].earnings += getLogEarnings(
-        log,
-        rate,
-        config.overtimeRate,
-        breakMinutesByKey
-      );
+      const wId = String(log.workerId ?? "");
+      if (!wId) return;
+      const rate = Number(workers[wId]?.hourlyRate ?? config.hourlyRate ?? 0);
+      map[wId] = map[wId] || { hours: 0, earnings: 0 };
+      map[wId].hours    += getLogHours(log, breakMinutesMap);
+      map[wId].earnings += getLogEarnings(log, rate, config.overtimeRate, breakMinutesMap);
     });
     return Object.entries(map)
-      .map(([workerId, totals]) => ({
-        workerId,
-        name:
-          workers[workerId]?.fullName ||
-          workers[workerId]?.displayName ||
-          workers[workerId]?.email ||
-          "Worker",
-        hours: totals.hours,
-        earnings: totals.earnings,
+      .map(([wId, totals]) => ({
+        workerId: wId,
+        name: workers[wId]?.fullName || workers[wId]?.email || "Worker",
+        hours: totals.hours, earnings: totals.earnings,
       }))
-      .sort((a, b) => {
-        if (b.earnings !== a.earnings) return b.earnings - a.earnings;
-        return b.hours - a.hours;
-      })
+      .sort((a, b) => b.earnings - a.earnings)
       .slice(0, 3);
-  }, [
-    approvedLogs,
-    currentPeriod,
-    workers,
-    config.hourlyRate,
-    config.overtimeRate,
-    breakMinutesByKey,
-  ]);
-  const {
-    sectionCard,
-    sectionTitle,
-    sectionSub,
-    sectionLink,
-    sectionHeaderRow,
-    emptyText,
-    chartLabel,
-    listRow,
-    listTitle,
-    listSub,
-    listTime,
-    statusDot,
-    shiftRow,
-    chip,
-    chipText,
-    pendingRow,
-    iconBadge,
-    actionButton,
-    actionButtonText,
-    rankBadge,
-    rankText,
-    progressTrack,
-    progressFill,
-    alertCardWarning,
-    alertTitle,
-    alertSub,
-    sparklineRow,
-    sparklineBar,
-  } = useMemo(
-    () => ({
-      sectionCard: {
-        marginTop: 24,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        shadowColor: "#000",
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 4,
-      },
-      sectionTitle: {
-        color: adminPalette.text,
-        fontWeight: "800" as const,
-        fontSize: 16,
-        letterSpacing: 0.3,
-      },
-      sectionSub: { color: adminPalette.textMuted, fontSize: 13, marginTop: 4 },
-      sectionLink: { color: adminPalette.accent, fontSize: 12 },
-      sectionHeaderRow: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        marginBottom: 14,
-      },
-      emptyText: { color: adminPalette.textMuted, fontSize: 12 },
-      chartLabel: { color: adminPalette.textMuted, fontSize: 12, marginTop: 6 },
-      listRow: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-      },
-      listTitle: { color: adminPalette.text, fontSize: 14, fontWeight: "600" as const },
-      listSub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 2 },
-      listTime: { color: adminPalette.textMuted, fontSize: 11 },
-      statusDot: { width: 8, height: 8, borderRadius: 4 },
-      shiftRow: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        padding: 12,
-        backgroundColor: adminPalette.surfaceAlt,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-      },
-      chip: {
-        backgroundColor: adminPalette.infoSoft,
-        borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-      },
-      chipText: { color: adminPalette.accent, fontSize: 11 },
-      pendingRow: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      iconBadge: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-      },
-      actionButton: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 6,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 999,
-      },
-      actionButtonText: { fontSize: 11, fontWeight: "600" as const },
-      rankBadge: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: adminPalette.infoSoft,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-      },
-      rankText: { color: adminPalette.accent, fontSize: 12, fontWeight: "700" as const },
-      progressTrack: { height: 7, backgroundColor: adminPalette.border, borderRadius: 999 },
-      progressFill: {
-        height: 7,
-        borderRadius: 999,
-        backgroundColor: adminPalette.accent,
-      },
-      alertCardWarning: {
-        flexDirection: "row" as const,
-        gap: 10,
-        backgroundColor: adminPalette.warningSoft,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: adminPalette.warningSoft,
-        padding: 12,
-        alignItems: "flex-start" as const,
-      },
-      alertTitle: { color: adminPalette.warning, fontWeight: "600" as const },
-      alertSub: { color: adminPalette.warning, fontSize: 12, marginTop: 2 },
-      sparklineRow: {
-        height: 18,
-        flexDirection: "row" as const,
-        alignItems: "flex-end" as const,
-        gap: 4,
-        marginBottom: 10,
-      },
-      sparklineBar: {
-        width: 6,
-        borderRadius: 6,
-        backgroundColor: adminPalette.accent,
-        opacity: 0.75,
-      },
-    }),
-    [adminPalette]
-  );
-  const sparklineHeights = [6, 10, 4, 12, 7, 14, 5, 9];
-  const statusColor = (status: string) => {
-    if (status === "approved") return adminPalette.accent;
-    if (status === "absent") return adminPalette.danger;
-    if (status === "pending") return adminPalette.warning;
-    return adminPalette.success;
+  }, [approvedLogs, currentPeriod, workers, config, breakMinutesMap]);
+
+  const maxEarn = performanceStats.reduce((m, s) => Math.max(m, s.earnings), 1);
+
+  // ── Styles ──
+  const card = {
+    backgroundColor: p.surface, borderRadius: 12,
+    borderWidth: 1 as const, borderColor: p.border,
   };
+  const sectionHeader = (title: string, action?: string, onAction?: () => void) => (
+    <View style={{
+      flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const,
+      paddingHorizontal: 16, paddingVertical: 12,
+      borderBottomWidth: 1, borderBottomColor: p.border,
+    }}>
+      <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" as const }}>{title}</Text>
+      {action && (
+        <TouchableOpacity onPress={onAction}>
+          <Text style={{ color: p.accent, fontSize: 12 }}>{action}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   return (
-    <LinearGradient
-      colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 520,
-          height: 520,
-          borderRadius: 260,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.18,
-          top: -220,
-          right: -160,
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 680,
-          height: 680,
-          borderRadius: 340,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.12,
-          bottom: -320,
-          left: -260,
-        }}
-      />
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-          {cards.map(card => {
-            const Icon = card.icon;
+    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+
+        {/* Page header */}
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ color: p.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 }}>
+            Dashboard
+          </Text>
+          <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2 }}>
+            {activePeriod} · Real-time overview
+          </Text>
+        </View>
+
+        {/* ── Stat cards ── */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+          {[
+            { label: "Workers",      value: String(workerCount),                          icon: Users,      },
+            { label: "Hours (Month)", value: `${totalHours.toFixed(0)}h`,                  icon: Clock,      },
+            { label: "Payroll (RM)", value: `${totalEarnings.toFixed(0)}`,                icon: DollarSign, },
+            { label: "Working Days", value: String(workingDays),                          icon: Calendar,   },
+          ].map(stat => {
+            const Icon = stat.icon;
             return (
-              <View
-                key={card.label}
-                style={{
-                  width: "48%",
-                  minWidth: 220,
-                  backgroundColor: adminPalette.surface,
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: adminPalette.border,
-                  borderTopWidth: 3,
-                  borderTopColor: adminPalette.accent,
-                  shadowColor: "#000",
-                  shadowOpacity: 0.22,
-                  shadowRadius: 16,
-                  shadowOffset: { width: 0, height: 10 },
-                  elevation: 4,
-                }}
-              >
-                <View style={sparklineRow}>
-                  {sparklineHeights.map((height, idx) => (
-                    <View
-                      key={`${card.label}-spark-${idx}`}
-                      style={[sparklineBar, { height }]}
-                    />
-                  ))}
+              <View key={stat.label} style={[card, { flex: 1, minWidth: 140, padding: 14 }]}>
+                <View style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  backgroundColor: p.surfaceAlt,
+                  alignItems: "center", justifyContent: "center", marginBottom: 10,
+                }}>
+                  <Icon size={15} color={p.textMuted} strokeWidth={1.8} />
                 </View>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      backgroundColor: card.bg,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Icon size={20} color={card.color} />
-                  </View>
-                  {card.trend === "up" ? (
-                    <TrendingUp size={18} color={adminPalette.success} />
-                  ) : card.trend === "down" ? (
-                    <TrendingDown size={18} color={adminPalette.danger} />
-                  ) : (
-                    <Activity size={18} color={adminPalette.textMuted} />
-                  )}
-                </View>
-                <Text
-                  style={{
-                    color: adminPalette.accentStrong,
-                    fontWeight: "700",
-                    fontSize: 22,
-                    marginTop: 12,
-                  }}
-                >
-                  {card.value}
+                <Text style={{ color: p.text, fontSize: 20, fontWeight: "700", letterSpacing: -0.5 }}>
+                  {stat.value}
                 </Text>
-                <Text
-                  style={{
-                    color: adminPalette.textMuted,
-                    marginTop: 6,
-                    fontSize: 13,
-                  }}
-                >
-                  {card.label}
-                </Text>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginTop: 2 }}>{stat.label}</Text>
               </View>
             );
           })}
         </View>
 
-        <View style={sectionCard}>
-          <View style={{ marginBottom: 16 }}>
-            <Text style={sectionTitle}>Weekly Overview</Text>
-            <Text style={sectionSub}>Hours logged this week</Text>
-          </View>
-          {weeklyData.length === 0 ? (
-            <Text style={emptyText}>No hours logged yet.</Text>
-          ) : (
-            <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-end" }}>
-              {weeklyData.map(item => (
-                <View key={item.day} style={{ flex: 1, alignItems: "center" }}>
-                  <View
-                    style={{
-                      height: Math.max(8, item.hours * 6),
-                      width: "80%",
-                      borderRadius: 8,
-                      backgroundColor: adminPalette.accent,
-                    }}
-                  />
-                  <Text style={chartLabel}>{item.day}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-          <View style={[sectionCard, { flex: 1, minWidth: 260 }]}>
-            <View style={sectionHeaderRow}>
-              <Text style={sectionTitle}>Payroll Mismatch Alerts</Text>
-              <TouchableOpacity onPress={() => router.push("/admin/reports")}>
-                <Text style={sectionLink}>View Report</Text>
-              </TouchableOpacity>
-            </View>
-            {latestAudit?.issueCount ? (
-              <View style={{ gap: 12 }}>
-                {mismatchItems.map((item: any) => (
-                  <View key={item.id} style={listRow}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View style={[statusDot, { backgroundColor: adminPalette.danger }]} />
-                      <View>
-                        <Text style={listTitle}>{item.name}</Text>
-                        <Text style={listSub}>{item.detail}</Text>
-                      </View>
-                    </View>
-                    <Text style={listTime}>{latestAudit.period || "-"}</Text>
+        {/* ── Weekly chart ── */}
+        <View style={[card, { marginBottom: 16 }]}>
+          {sectionHeader("Weekly Hours")}
+          <View style={{ padding: 16 }}>
+            {weeklyData.every(d => d.hours === 0) ? (
+              <Text style={{ color: p.textMuted, fontSize: 12 }}>No hours logged this week</Text>
+            ) : (
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end", height: 80 }}>
+                {weeklyData.map(item => (
+                  <View key={item.day} style={{ flex: 1, alignItems: "center" }}>
+                    <View style={{
+                      height: Math.max(4, Math.min(64, item.hours * 6)),
+                      width: "100%", borderRadius: 4,
+                      backgroundColor: item.hours > 0 ? p.accent : p.border,
+                      opacity: item.hours > 0 ? 0.85 : 0.4,
+                    }} />
+                    <Text style={{ color: p.textMuted, fontSize: 10, marginTop: 5 }}>{item.day}</Text>
                   </View>
                 ))}
               </View>
-            ) : (
-              <Text style={emptyText}>
-                {latestAudit
-                  ? "No mismatches found in the latest audit."
-                  : "No mismatch audits yet."}
-              </Text>
             )}
           </View>
+        </View>
 
-          <View style={[sectionCard, { flex: 1, minWidth: 260 }]}>
-            <View style={sectionHeaderRow}>
-              <Text style={sectionTitle}>Upcoming Shifts</Text>
-              <TouchableOpacity onPress={() => router.push("/admin/setup")}>
-                <Text style={sectionLink}>Manage</Text>
-              </TouchableOpacity>
+        {/* ── Two-col: Mismatches + Upcoming shifts ── */}
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+          {/* Mismatch alerts */}
+          <View style={[card, { flex: 1 }]}>
+            {sectionHeader("Mismatch Alerts", "Report", () => router.push("/admin/reports"))}
+            <View style={{ padding: 12 }}>
+              {!latestAudit?.issueCount ? (
+                <Text style={{ color: p.textMuted, fontSize: 12 }}>
+                  {latestAudit ? "No mismatches found" : "No audit data yet"}
+                </Text>
+              ) : (
+                mismatchItems.map((item: any, idx: number) => (
+                  <View key={item.id} style={{
+                    flexDirection: "row", alignItems: "center", gap: 8,
+                    paddingVertical: 8,
+                    borderBottomWidth: idx < mismatchItems.length - 1 ? 1 : 0,
+                    borderBottomColor: p.border,
+                  }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: p.danger }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" as const }}>{item.name}</Text>
+                      <Text style={{ color: p.textMuted, fontSize: 11 }}>{item.detail}</Text>
+                    </View>
+                    <Text style={{ color: p.textMuted, fontSize: 10 }}>{latestAudit.period || "—"}</Text>
+                  </View>
+                ))
+              )}
             </View>
-            {upcomingShifts.length === 0 ? (
-              <Text style={emptyText}>No upcoming shifts.</Text>
-            ) : (
-              <View style={{ gap: 12 }}>
-                {upcomingShifts.map(shift => (
-                  <View key={shift.id} style={shiftRow}>
+          </View>
+
+          {/* Upcoming shifts */}
+          <View style={[card, { flex: 1 }]}>
+            {sectionHeader("Upcoming Shifts", "Manage", () => router.push("/admin/setup"))}
+            <View style={{ padding: 12 }}>
+              {upcomingShifts.length === 0 ? (
+                <Text style={{ color: p.textMuted, fontSize: 12 }}>No upcoming shifts</Text>
+              ) : (
+                upcomingShifts.map((shift, idx) => (
+                  <View key={shift.id} style={{
+                    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                    paddingVertical: 8,
+                    borderBottomWidth: idx < upcomingShifts.length - 1 ? 1 : 0,
+                    borderBottomColor: p.border,
+                  }}>
                     <View>
-                      <Text style={listTitle}>{shift.worker}</Text>
-                      <Text style={listSub}>{shift.time}</Text>
+                      <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" as const }}>{shift.worker}</Text>
+                      <Text style={{ color: p.textMuted, fontSize: 11 }}>{shift.time}</Text>
                     </View>
-                    <View style={chip}>
-                      <Text style={chipText}>{shift.dateLabel}</Text>
+                    <View style={{
+                      backgroundColor: p.surfaceAlt, borderRadius: 99,
+                      paddingHorizontal: 8, paddingVertical: 3,
+                    }}>
+                      <Text style={{ color: p.textMuted, fontSize: 10 }}>{shift.dateLabel}</Text>
                     </View>
                   </View>
-                ))}
-              </View>
-            )}
+                ))
+              )}
+            </View>
           </View>
         </View>
 
-        <View style={sectionCard}>
-          <View style={sectionHeaderRow}>
-            <View>
-              <Text style={sectionTitle}>Pending Actions</Text>
-              <Text style={sectionSub}>
-                {pendingActions.length} items require your attention
-              </Text>
-            </View>
-          </View>
+        {/* ── Pending actions ── */}
+        <View style={[card, { marginBottom: 16 }]}>
+          {sectionHeader(`Pending Actions (${pendingActions.length})`)}
           {pendingActions.length === 0 ? (
-            <Text style={emptyText}>No pending actions.</Text>
-          ) : (
-            <View style={{ gap: 12 }}>
-              {pendingActions.map(action => (
-                <View key={action.refPath} style={pendingRow}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                    <View
-                      style={[
-                        iconBadge,
-                        { backgroundColor: adminPalette.infoSoft },
-                      ]}
-                    >
-                      <AlertCircle size={18} color={adminPalette.accent} />
-                    </View>
-                    <View>
-                      <Text style={listTitle}>Attendance Review</Text>
-                      <Text style={listSub}>
-                        {workers[action.workerId]?.fullName ||
-                          workers[action.workerId]?.email ||
-                          action.workerId}{" "}
-                        • {action.date || "-"}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        updateDoc(doc(db, action.refPath), { status: "approved" })
-                      }
-                      style={[
-                        actionButton,
-                        { backgroundColor: adminPalette.successSoft },
-                      ]}
-                    >
-                      <CheckCircle size={16} color={adminPalette.success} />
-                      <Text style={[actionButtonText, { color: adminPalette.success }]}>
-                        Approve
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() =>
-                        updateDoc(doc(db, action.refPath), { status: "rejected" })
-                      }
-                      style={[
-                        actionButton,
-                        { backgroundColor: adminPalette.dangerSoft },
-                      ]}
-                    >
-                      <XCircle size={16} color={adminPalette.danger} />
-                      <Text style={[actionButtonText, { color: adminPalette.danger }]}>
-                        Reject
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
+            <View style={{ padding: 16 }}>
+              <Text style={{ color: p.textMuted, fontSize: 12 }}>No pending actions</Text>
             </View>
-          )}
-        </View>
-
-        <View style={sectionCard}>
-          <Text style={sectionTitle}>Top Performers This Month</Text>
-          {performanceStats.length === 0 ? (
-            <Text style={[emptyText, { marginTop: 10 }]}>
-              No performance data yet.
-            </Text>
           ) : (
-            <View style={{ marginTop: 12, gap: 16 }}>
-              {performanceStats.map((worker, index) => (
-                <View key={worker.workerId} style={{ gap: 8 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                      <View style={rankBadge}>
-                        <Text style={rankText}>{index + 1}</Text>
-                      </View>
-                      <Text style={listTitle}>{worker.name}</Text>
-                    </View>
-                    <View style={{ flexDirection: "row", gap: 16 }}>
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Text style={listSub}>Hours</Text>
-                        <Text style={listTitle}>{worker.hours.toFixed(0)}h</Text>
-                      </View>
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Text style={listSub}>Earnings</Text>
-                        <Text style={[listTitle, { color: adminPalette.success }]}>
-                          RM {worker.earnings.toFixed(0)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={progressTrack}>
-                    <View
-                      style={[
-                        progressFill,
-                        {
-                          width: `${Math.min(
-                            100,
-                            (worker.earnings / maxEarnings(performanceStats)) * 100
-                          )}%`,
-                        },
-                      ]}
-                    />
-                  </View>
+            pendingActions.map((action, idx) => (
+              <View key={action.refPath} style={{
+                flexDirection: "row", alignItems: "center", gap: 12,
+                paddingHorizontal: 16, paddingVertical: 11,
+                borderBottomWidth: idx < pendingActions.length - 1 ? 1 : 0,
+                borderBottomColor: p.border,
+              }}>
+                <AlertCircle size={14} color={p.warning} strokeWidth={1.8} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" as const }}>
+                    {workers[action.workerId]?.fullName || workers[action.workerId]?.email || action.workerId}
+                  </Text>
+                  <Text style={{ color: p.textMuted, fontSize: 11 }}>{action.date || "—"}</Text>
                 </View>
-              ))}
-            </View>
-          )}
-        </View>
-
-        <View style={{ gap: 12 }}>
-          {pendingActions.length > 0 ? (
-            <View style={alertCardWarning}>
-              <AlertCircle size={18} color={adminPalette.warning} />
-              <View>
-                <Text style={alertTitle}>Pending attendance reviews</Text>
-                <Text style={alertSub}>Approve or reject attendance logs.</Text>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  <TouchableOpacity
+                    onPress={() => updateDoc(doc(db, action.refPath), { status: "approved" })}
+                    style={{
+                      flexDirection: "row", alignItems: "center", gap: 4,
+                      paddingVertical: 5, paddingHorizontal: 9, borderRadius: 7,
+                      backgroundColor: p.successSoft,
+                    }}
+                  >
+                    <CheckCircle size={12} color={p.success} strokeWidth={2} />
+                    <Text style={{ color: p.success, fontSize: 11, fontWeight: "600" as const }}>Approve</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => updateDoc(doc(db, action.refPath), { status: "rejected" })}
+                    style={{
+                      flexDirection: "row", alignItems: "center", gap: 4,
+                      paddingVertical: 5, paddingHorizontal: 9, borderRadius: 7,
+                      backgroundColor: p.dangerSoft,
+                    }}
+                  >
+                    <XCircle size={12} color={p.danger} strokeWidth={2} />
+                    <Text style={{ color: p.danger, fontSize: 11, fontWeight: "600" as const }}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ) : null}
+            ))
+          )}
         </View>
+
+        {/* ── Top performers ── */}
+        <View style={card}>
+          {sectionHeader("Top Performers This Month")}
+          {performanceStats.length === 0 ? (
+            <View style={{ padding: 16 }}>
+              <Text style={{ color: p.textMuted, fontSize: 12 }}>No performance data yet</Text>
+            </View>
+          ) : (
+            performanceStats.map((worker, idx) => (
+              <View key={worker.workerId} style={{
+                paddingHorizontal: 16, paddingVertical: 12,
+                borderBottomWidth: idx < performanceStats.length - 1 ? 1 : 0,
+                borderBottomColor: p.border,
+                gap: 8,
+              }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={{
+                      width: 22, height: 22, borderRadius: 11,
+                      backgroundColor: p.surfaceAlt,
+                      alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Text style={{ color: p.textMuted, fontSize: 10, fontWeight: "700" as const }}>{idx + 1}</Text>
+                    </View>
+                    <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" as const }}>{worker.name}</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 16 }}>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={{ color: p.textMuted, fontSize: 10 }}>Hours</Text>
+                      <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" as const }}>{worker.hours.toFixed(0)}h</Text>
+                    </View>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={{ color: p.textMuted, fontSize: 10 }}>Earnings</Text>
+                      <Text style={{ color: p.success, fontSize: 12, fontWeight: "600" as const }}>RM {worker.earnings.toFixed(0)}</Text>
+                    </View>
+                  </View>
+                </View>
+                {/* Progress bar */}
+                <View style={{ height: 3, backgroundColor: p.border, borderRadius: 99 }}>
+                  <View style={{
+                    height: 3, borderRadius: 99,
+                    backgroundColor: p.accent,
+                    width: `${Math.min(100, (worker.earnings / maxEarn) * 100)}%` as any,
+                  }} />
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
-const buildWeeklyHours = (
-  logs: any[],
-  breakMinutesByKey: Record<string, number>
-) => {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const buildWeeklyHours = (logs: any[], breakMinutesByKey: Record<string, number>) => {
   const start = startOfWeek(new Date());
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
+  const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999);
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const totals = days.map(day => ({ day, hours: 0 }));
   logs.forEach(log => {
@@ -806,22 +390,16 @@ const buildWeeklyHours = (
 
 const extractAttendancePeriods = (logs: any[]) => {
   const set = new Set<string>();
-  logs.forEach(log => {
-    const date = String(log.date ?? "");
-    if (date.length >= 7) set.add(date.slice(0, 7));
-  });
+  logs.forEach(log => { const d = String(log.date ?? ""); if (d.length >= 7) set.add(d.slice(0, 7)); });
   return Array.from(set).sort((a, b) => b.localeCompare(a));
 };
 
 const buildBreakMinutesMap = (entries: any[]) => {
   const map: Record<string, number> = {};
-  entries.forEach(entry => {
-    const workerId = String(entry.workerId ?? "");
-    const date = String(entry.date ?? "");
-    if (!workerId || !date) return;
-    if (!entry.startTime || !entry.endTime) return;
-    const minutes = calcMinutesDiff(entry.startTime, entry.endTime);
-    map[`${workerId}:${date}`] = (map[`${workerId}:${date}`] ?? 0) + minutes;
+  entries.forEach(e => {
+    const wId = String(e.workerId ?? ""), date = String(e.date ?? "");
+    if (!wId || !date || !e.startTime || !e.endTime) return;
+    map[`${wId}:${date}`] = (map[`${wId}:${date}`] ?? 0) + calcMinutesDiff(e.startTime, e.endTime);
   });
   return map;
 };
@@ -833,40 +411,23 @@ const buildUpcomingShifts = (shifts: any[], workers: Record<string, any>) => {
   return shifts
     .filter(shift => {
       const dateKey = String(shift.date ?? "");
-      if (!dateKey) return false;
-      const status = String(shift.status ?? "");
-      if (["completed", "absent", "off", "leave"].includes(status)) return false;
+      if (!dateKey || ["completed", "absent", "off", "leave"].includes(String(shift.status ?? ""))) return false;
       const date = new Date(`${dateKey}T00:00:00`);
       if (Number.isNaN(date.getTime())) return false;
       if (dateKey > todayKey) return true;
       if (dateKey < todayKey) return false;
       const shiftEnd = parseTimeToMinutes(shift.end);
-      if (shiftEnd !== null && shiftEnd <= nowMinutes) return false;
-      return true;
+      return shiftEnd === null || shiftEnd > nowMinutes;
     })
-    .sort((a, b) =>
-      `${a.date || ""} ${a.start || ""}`.localeCompare(`${b.date || ""} ${b.start || ""}`)
-    )
+    .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`))
     .slice(0, 4)
     .map(shift => ({
       id: shift.id,
-      worker:
-        workers[shift.workerId]?.fullName ||
-        workers[shift.workerId]?.email ||
-        shift.workerId ||
-        "Worker",
-      time: `${shift.start || "--:--"} - ${shift.end || "--:--"}`,
-      dateLabel: shift.date || "-",
+      worker: workers[shift.workerId]?.fullName || workers[shift.workerId]?.email || "Worker",
+      time: `${shift.start || "--:--"} – ${shift.end || "--:--"}`,
+      dateLabel: shift.date || "—",
     }));
 };
-
-const statusLabel = (status: string) => {
-  if (status === "approved") return "Completed shift";
-  if (status === "rejected") return "Rejected entry";
-  if (status === "absent") return "Marked absent";
-  return "Attendance pending";
-};
-
 
 const getOwnerId = (docSnap: any) =>
   docSnap.ref?.parent?.parent?.id || docSnap.data()?.workerId || "";
@@ -878,15 +439,6 @@ const parseTimeToMinutes = (time?: string) => {
   return h * 60 + m;
 };
 
-const getOvertimeHours = (entry: any) => {
-  const stored = Number(entry.hours ?? 0);
-  if (stored > 0) return stored;
-  if (entry.startTime && entry.endTime) {
-    return calcHoursFromTimes(entry.startTime, entry.endTime);
-  }
-  return 0;
-};
-
 const getLogHours = (log: any, breakMinutesByKey: Record<string, number>) => {
   const storedNet = Number(log.netHours ?? log.net_hours ?? 0);
   if (storedNet > 0) return storedNet;
@@ -894,63 +446,35 @@ const getLogHours = (log: any, breakMinutesByKey: Record<string, number>) => {
   if (stored > 0) return stored;
   const breakMinutes = getBreakMinutesForLog(log, breakMinutesByKey);
   if (log.clockInTs && log.clockOutTs) {
-    const minutes = Math.max(
-      0,
-      Math.round((log.clockOutTs - log.clockInTs) / 60000) - breakMinutes
-    );
-    return minutes / 60;
+    return Math.max(0, Math.round((log.clockOutTs - log.clockInTs) / 60000) - breakMinutes) / 60;
   }
-  if (log.clockIn && log.clockOut) {
-    return calcHoursFromTimes(log.clockIn, log.clockOut, breakMinutes);
-  }
+  if (log.clockIn && log.clockOut) return calcHoursFromTimes(log.clockIn, log.clockOut, breakMinutes);
   return 0;
 };
 
-const getLogOvertimeHours = (log: any) => {
-  const stored = Number(log.overtimeHours ?? log.overtime_hours ?? 0);
-  if (stored > 0) return stored;
-  return 0;
-};
+const getLogOvertimeHours = (log: any) => Number(log.overtimeHours ?? log.overtime_hours ?? 0);
 
-const getLogEarnings = (
-  log: any,
-  hourlyRate: number,
-  overtimeRate: number,
-  breakMinutesByKey: Record<string, number>
-) => {
+const getLogEarnings = (log: any, hourlyRate: number, overtimeRate: number, breakMinutesByKey: Record<string, number>) => {
   const finalPay = Number(log.finalPay ?? log.final_pay ?? 0);
   if (finalPay > 0) return finalPay;
   const netHours = getLogHours(log, breakMinutesByKey);
-  const overtimeHours = getLogOvertimeHours(log);
-  const regularHours = Math.max(0, netHours - overtimeHours);
-  const resolvedOvertimeRate = Number(overtimeRate ?? 0) || hourlyRate * 1.5;
-  return regularHours * hourlyRate + overtimeHours * resolvedOvertimeRate;
+  const otHours  = getLogOvertimeHours(log);
+  const regHours = Math.max(0, netHours - otHours);
+  const otRate   = Number(overtimeRate ?? 0) || hourlyRate * 1.5;
+  return regHours * hourlyRate + otHours * otRate;
 };
 
-const getBreakMinutesForLog = (
-  log: any,
-  breakMinutesByKey: Record<string, number>
-) => {
+const getBreakMinutesForLog = (log: any, breakMinutesByKey: Record<string, number>) => {
   const stored = Number(log.breakMinutes ?? 0);
   if (stored > 0) return stored;
-  if (log.breakStart && log.breakEnd) {
-    return Math.max(0, calcMinutesDiff(log.breakStart, log.breakEnd));
-  }
-  const dateKey = `${String(log.workerId ?? "")}:${String(log.date ?? "")}`;
-  return breakMinutesByKey[dateKey] ?? 0;
+  if (log.breakStart && log.breakEnd) return Math.max(0, calcMinutesDiff(log.breakStart, log.breakEnd));
+  return breakMinutesByKey[`${String(log.workerId ?? "")}:${String(log.date ?? "")}`] ?? 0;
 };
 
 const startOfWeek = (date: Date) => {
-  const day = date.getDay();
-  const diff = (day + 6) % 7;
+  const diff = (date.getDay() + 6) % 7;
   const start = new Date(date);
   start.setDate(date.getDate() - diff);
-  start.setHours(0, 0, 0, 0);
-  return start;
-};
-
-const startOfDay = (date: Date) => {
-  const start = new Date(date);
   start.setHours(0, 0, 0, 0);
   return start;
 };
@@ -959,28 +483,17 @@ const isThisMonth = (dateValue: string) => {
   if (!dateValue) return false;
   const date = new Date(`${dateValue}T00:00:00`);
   const now = new Date();
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth()
-  );
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
 };
 
-const maxHours = (stats: { hours: number }[]) =>
-  stats.reduce((max, item) => Math.max(max, item.hours), 1);
-
-const maxEarnings = (stats: { earnings: number }[]) =>
-  stats.reduce((max, item) => Math.max(max, item.earnings), 1);
-
 const calcHoursFromTimes = (start: string, end: string, breakMinutes = 0) => {
-  const startMinutes = parseTimeToMinutes(start);
-  const endMinutes = parseTimeToMinutes(end);
-  if (startMinutes === null || endMinutes === null) return 0;
-  return Math.max(0, endMinutes - startMinutes - breakMinutes) / 60;
+  const s = parseTimeToMinutes(start), e = parseTimeToMinutes(end);
+  if (s === null || e === null) return 0;
+  return Math.max(0, e - s - breakMinutes) / 60;
 };
 
 const calcMinutesDiff = (start: string, end: string) => {
-  const startMinutes = parseTimeToMinutes(start);
-  const endMinutes = parseTimeToMinutes(end);
-  if (startMinutes === null || endMinutes === null) return 0;
-  return Math.max(0, endMinutes - startMinutes);
+  const s = parseTimeToMinutes(start), e = parseTimeToMinutes(end);
+  if (s === null || e === null) return 0;
+  return Math.max(0, e - s);
 };

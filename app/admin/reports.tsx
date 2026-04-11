@@ -1,6 +1,5 @@
 import { Alert, ScrollView, Text, View, TouchableOpacity } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Calendar, Download, FileText, TrendingUp } from "lucide-react-native";
+import { Download, FileText } from "lucide-react-native";
 import { collection, collectionGroup, doc, onSnapshot, query, where } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
@@ -9,7 +8,7 @@ import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 
 export default function AdminReports() {
-  const { colors: adminPalette } = useAdminTheme();
+  const { colors: p } = useAdminTheme();
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [breakLogs, setBreakLogs] = useState<any[]>([]);
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
@@ -18,126 +17,6 @@ export default function AdminReports() {
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
-  );
-  const {
-    headerRow,
-    title,
-    subtitle,
-    exportButton,
-    exportText,
-    statCard,
-    statTitle,
-    statLabel,
-    statValue,
-    chartCard,
-    sectionTitle,
-    sectionSub,
-    emptyText,
-    generateCard,
-    generateButton,
-    generateButtonText,
-    tableHeader,
-    tableHeaderText,
-    tableRow,
-    tableCell,
-    tableCellMuted,
-  } = useMemo(
-    () => ({
-      headerRow: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        alignItems: "center" as const,
-        marginBottom: 16,
-      },
-      title: {
-        color: adminPalette.text,
-        fontSize: 20,
-        fontWeight: "700" as const,
-      },
-      subtitle: { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 },
-      exportButton: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        backgroundColor: adminPalette.brand,
-        borderRadius: 10,
-      },
-      exportText: { color: "#fff", fontWeight: "600" as const, fontSize: 12 },
-      statCard: {
-        flex: 1,
-        minWidth: 220,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-      },
-      statTitle: { color: adminPalette.text, fontWeight: "600" as const },
-      statLabel: { color: adminPalette.textMuted, fontSize: 12, marginTop: 10 },
-      statValue: {
-        color: adminPalette.text,
-        fontSize: 16,
-        fontWeight: "600" as const,
-        marginTop: 4,
-      },
-      chartCard: {
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-      },
-      sectionTitle: { color: adminPalette.text, fontWeight: "600" as const },
-      sectionSub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 2 },
-      emptyText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
-      generateCard: {
-        marginTop: 16,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        justifyContent: "space-between" as const,
-        gap: 12,
-      },
-      generateButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
-        backgroundColor: adminPalette.accentStrong,
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 8,
-      },
-      generateButtonText: { color: "#fff", fontWeight: "600" as const, fontSize: 12 },
-      tableHeader: {
-        flexDirection: "row" as const,
-        backgroundColor: adminPalette.surfaceAlt,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        borderRadius: 10,
-      },
-      tableHeaderText: {
-        flex: 1,
-        color: adminPalette.textMuted,
-        fontSize: 11,
-        fontWeight: "600" as const,
-      },
-      tableRow: {
-        flexDirection: "row" as const,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-      },
-      tableCell: { flex: 1, color: adminPalette.text, fontSize: 12 },
-      tableCellMuted: { flex: 1, color: adminPalette.textMuted, fontSize: 12 },
-    }),
-    [adminPalette]
   );
 
   useEffect(() => {
@@ -329,104 +208,103 @@ export default function AdminReports() {
     );
   };
 
+  const card = { backgroundColor: p.surface, borderRadius: 12, borderWidth: 1 as const, borderColor: p.border };
+
   return (
-    <LinearGradient
-      colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <View style={headerRow}>
+    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+
+        {/* Header */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <View>
-            <Text style={title}>Reports & Analytics</Text>
-            <Text style={subtitle}>
-              Overview of attendance and payroll data
-            </Text>
+            <Text style={{ color: p.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 }}>Reports</Text>
+            <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2 }}>Attendance & payroll analytics</Text>
           </View>
-          <TouchableOpacity style={exportButton} onPress={handleExportReport}>
-            <Download size={18} color="#fff" />
-            <Text style={exportText}>Export PDF</Text>
+          <TouchableOpacity
+            onPress={handleExportReport}
+            style={{
+              flexDirection: "row", alignItems: "center", gap: 6,
+              paddingHorizontal: 12, paddingVertical: 7,
+              borderRadius: 8, borderWidth: 1, borderColor: p.border,
+              backgroundColor: p.surfaceAlt,
+            }}
+          >
+            <Download size={13} color={p.text} strokeWidth={1.8} />
+            <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" }}>Export PDF</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={generateCard}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Download size={18} color={adminPalette.accent} />
-            <View>
-              <Text style={sectionTitle}>Generate report</Text>
-              <Text style={sectionSub}>
-                Create a PDF summary for the selected period
-              </Text>
+        {/* Stat row */}
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+          {[
+            { label: "Total Hours",  value: `${currentSummary.totalHours.toFixed(0)}h` },
+            { label: "Total Payroll", value: `RM ${currentSummary.totalEarnings.toFixed(0)}`, highlight: true },
+            { label: "Avg / Worker", value: `RM ${averagePerWorker(currentSummary)?.toFixed(0) || 0}` },
+            { label: "Absences",    value: String(currentSummary.absenceDeductions ?? 0) },
+          ].map(s => (
+            <View key={s.label} style={[card, { flex: 1, padding: 12 }]}>
+              <Text style={{ color: s.highlight ? p.success : p.text, fontSize: 16, fontWeight: "700" }}>{s.value}</Text>
+              <Text style={{ color: p.textMuted, fontSize: 11, marginTop: 2 }}>{s.label}</Text>
             </View>
-          </View>
-          <TouchableOpacity style={generateButton} onPress={handleExportReport}>
-            <FileText size={16} color="#fff" />
-            <Text style={generateButtonText}>Generate</Text>
-          </TouchableOpacity>
+          ))}
         </View>
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <TrendingUp size={18} color={adminPalette.success} />
-              <Text style={statTitle}>This Month</Text>
-            </View>
-            <Text style={statLabel}>Total Hours</Text>
-            <Text style={statValue}>
-              {currentSummary.totalHours.toFixed(0)} hours
-            </Text>
+        {/* Monthly summary table */}
+        <View style={card}>
+          <View style={{
+            flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+            paddingHorizontal: 16, paddingVertical: 12,
+            borderBottomWidth: 1, borderBottomColor: p.border,
+          }}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Monthly Summary</Text>
+            <TouchableOpacity
+              onPress={handleExportReport}
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <FileText size={12} color={p.accent} strokeWidth={1.8} />
+              <Text style={{ color: p.accent, fontSize: 12 }}>Generate PDF</Text>
+            </TouchableOpacity>
           </View>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <Calendar size={18} color={adminPalette.accent} />
-              <Text style={statTitle}>Payroll</Text>
-            </View>
-            <Text style={statLabel}>Total Payment</Text>
-            <Text style={[statValue, { color: adminPalette.success }]}>
-              RM {currentSummary.totalEarnings.toFixed(0)}
-            </Text>
-          </View>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <TrendingUp size={18} color={adminPalette.accent} />
-              <Text style={statTitle}>Avg Rate</Text>
-            </View>
-            <Text style={statLabel}>Per Worker</Text>
-            <Text style={statValue}>
-              RM {averagePerWorker(currentSummary)?.toFixed(0) || 0}/month
-            </Text>
-          </View>
-        </View>
 
-        <View style={[chartCard, { marginTop: 16 }]}>
-          <Text style={sectionTitle}>Monthly Summary</Text>
+          {/* Table header */}
+          <View style={{
+            flexDirection: "row", paddingHorizontal: 16, paddingVertical: 9,
+            borderBottomWidth: 1, borderBottomColor: p.border,
+            backgroundColor: p.surfaceAlt,
+          }}>
+            {["Month", "Hours", "Overtime", "Absences", "Payroll (RM)"].map(h => (
+              <Text key={h} style={{ flex: 1, color: p.textMuted, fontSize: 11, fontWeight: "600" }}>{h}</Text>
+            ))}
+          </View>
+
           {monthlySummary.length === 0 ? (
-            <Text style={emptyText}>No payroll summaries yet.</Text>
-          ) : (
-            <View style={{ marginTop: 12 }}>
-              <View style={tableHeader}>
-                {["Month", "Total Hours", "Overtime", "Absences", "Total Payroll"].map(label => (
-                  <Text key={label} style={tableHeaderText}>
-                    {label}
-                  </Text>
-                ))}
-              </View>
-              {monthlySummary.map(row => (
-                <View key={row.period} style={tableRow}>
-                  <Text style={tableCell}>{row.period}</Text>
-                  <Text style={tableCellMuted}>{row.totalHours.toFixed(0)}</Text>
-                  <Text style={tableCellMuted}>{row.overtimeHours.toFixed(0)}</Text>
-                  <Text style={tableCellMuted}>{row.absenceDeductions.toFixed(0)}</Text>
-                  <Text style={[tableCell, { color: adminPalette.success }]}>
-                    RM {row.totalEarnings.toFixed(0)}
-                  </Text>
-                </View>
-              ))}
+            <View style={{ padding: 20 }}>
+              <Text style={{ color: p.textMuted, fontSize: 12 }}>No payroll summaries yet</Text>
             </View>
+          ) : (
+            monthlySummary.map((row, idx) => (
+              <View
+                key={row.period}
+                style={{
+                  flexDirection: "row", paddingHorizontal: 16, paddingVertical: 11,
+                  borderBottomWidth: idx < monthlySummary.length - 1 ? 1 : 0,
+                  borderBottomColor: p.border,
+                }}
+              >
+                <Text style={{ flex: 1, color: p.text, fontSize: 12, fontWeight: "600" }}>{row.period}</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 12 }}>{row.totalHours.toFixed(0)}</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 12 }}>{row.overtimeHours.toFixed(0)}</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 12 }}>{row.absenceDeductions.toFixed(0)}</Text>
+                <Text style={{ flex: 1, color: p.success, fontSize: 12, fontWeight: "600" }}>
+                  {row.totalEarnings.toFixed(0)}
+                </Text>
+              </View>
+            ))
           )}
         </View>
 
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 

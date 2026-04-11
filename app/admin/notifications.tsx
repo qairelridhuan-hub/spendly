@@ -1,130 +1,118 @@
 import { ScrollView, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Bell } from "lucide-react-native";
+import { Bell, Info, CheckCircle, AlertTriangle, DollarSign } from "lucide-react-native";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 
 export default function AdminNotifications() {
-  const { colors: adminPalette } = useAdminTheme();
+  const { colors: p } = useAdminTheme();
   const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "notifications"), snapshot => {
-      const list = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
+      const list = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
       setItems(list);
     });
     return unsub;
   }, []);
 
-  const sorted = useMemo(() => {
-    return [...items].sort((a, b) => {
-      const aTime = getTimeValue(a.createdAt);
-      const bTime = getTimeValue(b.createdAt);
-      return bTime - aTime;
-    });
-  }, [items]);
+  const sorted = useMemo(
+    () => [...items].sort((a, b) => getTimeValue(b.createdAt) - getTimeValue(a.createdAt)),
+    [items]
+  );
 
   return (
-    <LinearGradient
-      colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 520,
-          height: 520,
-          borderRadius: 260,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.18,
-          top: -220,
-          right: -160,
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 680,
-          height: 680,
-          borderRadius: 340,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.12,
-          bottom: -320,
-          left: -260,
-        }}
-      />
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <Text style={{ color: adminPalette.text, fontSize: 24, fontWeight: "700" }}>
-          Notifications
-        </Text>
-        <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
-          System alerts and operational reminders.
-        </Text>
+    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
 
-        <View
-          style={{
-            marginTop: 20,
-            backgroundColor: adminPalette.surface,
-            borderRadius: 18,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: adminPalette.border,
-            shadowColor: "#000",
-            shadowOpacity: 0.2,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 10 },
-            elevation: 4,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Bell size={18} color={adminPalette.text} />
-            <Text style={{ color: adminPalette.text, fontWeight: "700" }}>
-              Alerts
+        {/* Header */}
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ color: p.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 }}>
+            Notifications
+          </Text>
+          <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2 }}>
+            System alerts and operational reminders
+          </Text>
+        </View>
+
+        {/* Card */}
+        <View style={{ backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border }}>
+          {/* Card header */}
+          <View style={{
+            flexDirection: "row", alignItems: "center", gap: 8,
+            paddingHorizontal: 16, paddingVertical: 12,
+            borderBottomWidth: 1, borderBottomColor: p.border,
+          }}>
+            <Bell size={14} color={p.textMuted} strokeWidth={1.8} />
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>
+              All Notifications
             </Text>
+            {sorted.length > 0 && (
+              <View style={{
+                marginLeft: "auto",
+                backgroundColor: p.surfaceAlt,
+                borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2,
+              }}>
+                <Text style={{ color: p.textMuted, fontSize: 11 }}>{sorted.length}</Text>
+              </View>
+            )}
           </View>
+
           {sorted.length === 0 ? (
-            <Text style={{ color: adminPalette.textMuted, marginTop: 10 }}>
-              No notifications yet.
-            </Text>
+            <View style={{ padding: 24, alignItems: "center" }}>
+              <Text style={{ color: p.textMuted, fontSize: 13 }}>No notifications yet</Text>
+            </View>
           ) : (
-            <View style={{ marginTop: 12, gap: 10 }}>
-              {sorted.map((item, index) => (
+            sorted.map((item, idx) => {
+              const { icon: Icon, color } = getTypeStyle(item.type, p);
+              return (
                 <View
                   key={item.id}
                   style={{
-                    padding: 12,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: adminPalette.border,
-                    backgroundColor:
-                      index % 2 === 1 ? adminPalette.surfaceAlt : adminPalette.surface,
+                    flexDirection: "row", gap: 12, alignItems: "flex-start",
+                    paddingHorizontal: 16, paddingVertical: 12,
+                    borderBottomWidth: idx < sorted.length - 1 ? 1 : 0,
+                    borderBottomColor: p.border,
                   }}
                 >
-                  <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-                    {item.title || "Notification"}
-                  </Text>
-                  <Text style={{ color: adminPalette.textMuted, marginTop: 4 }}>
-                    {item.message || "-"}
-                  </Text>
-                  <Text style={{ color: adminPalette.textMuted, marginTop: 6, fontSize: 11 }}>
-                    {formatTimestamp(item.createdAt)}
-                  </Text>
+                  <View style={{
+                    width: 30, height: 30, borderRadius: 8,
+                    backgroundColor: p.surfaceAlt,
+                    alignItems: "center", justifyContent: "center",
+                    marginTop: 1, flexShrink: 0,
+                  }}>
+                    <Icon size={14} color={color} strokeWidth={1.8} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <Text style={{ color: p.text, fontSize: 13, fontWeight: "600", flex: 1 }}>
+                        {item.title || "Notification"}
+                      </Text>
+                      <Text style={{ color: p.textMuted, fontSize: 11, marginLeft: 8 }}>
+                        {formatTimestamp(item.createdAt)}
+                      </Text>
+                    </View>
+                    <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2, lineHeight: 17 }}>
+                      {item.message || "—"}
+                    </Text>
+                  </View>
                 </View>
-              ))}
-            </View>
+              );
+            })
           )}
         </View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
+
+const getTypeStyle = (type: string, p: any) => {
+  if (type === "payroll") return { icon: DollarSign, color: p.success };
+  if (type === "attendance") return { icon: CheckCircle, color: p.accent };
+  if (type === "alert" || type === "warning") return { icon: AlertTriangle, color: p.warning };
+  return { icon: Info, color: p.textMuted };
+};
 
 const getTimeValue = (value: any) => {
   if (!value) return 0;
@@ -137,9 +125,6 @@ const formatTimestamp = (value: any) => {
   const ms = getTimeValue(value);
   if (!ms) return "—";
   return new Date(ms).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 };

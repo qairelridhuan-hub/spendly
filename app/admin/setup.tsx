@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown, Clock, Edit, Plus, Trash2, X } from "lucide-react-native";
 import {
   addDoc,
@@ -685,36 +684,9 @@ export default function AdminSetup() {
   }, [shifts, todayKey]);
 
   return (
-    <LinearGradient
-      colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 520,
-          height: 520,
-          borderRadius: 260,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.18,
-          top: -220,
-          right: -160,
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 680,
-          height: 680,
-          borderRadius: 340,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.12,
-          bottom: -320,
-          left: -260,
-        }}
-      />
+    <View style={{ flex: 1, backgroundColor: adminPalette.backgroundStart }}>
+      
+      
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.headerRow}>
           <View>
@@ -1771,7 +1743,7 @@ export default function AdminSetup() {
           </View>
         </View>
       ) : null}
-    </LinearGradient>
+    </View>
   );
 }
 

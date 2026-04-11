@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Edit, Search, Trash2, UserPlus, Users, X } from "lucide-react-native";
 import {
   collection,
@@ -60,297 +59,25 @@ export default function AdminWorkers() {
     () => httpsCallable(functions, "createWorkerAuth"),
     []
   );
-  const {
-    headerRow,
-    searchRow,
-    searchIcon,
-    searchIconButton,
-    searchFieldWrap,
-    searchInput,
-    addButton,
-    addButtonText,
-    emptyCard,
-    emptyTitle,
-    emptySub,
-    tableCard,
-    tableHeader,
-    tableHeaderText,
-    tableRow,
-    tableCell,
-    tableCellMuted,
-    tableDivider,
-    tableScroll,
-    tableScrollContent,
-    tableContent,
-    avatar,
-    avatarText,
-    workerName,
-    workerEmail,
-    statusBadge,
-    statusActive,
-    statusInactive,
-    statusChip,
-    statusChipDot,
-    statusChipText,
-    statusText,
-    iconButton,
-    actionButton,
-    actionButtonText,
-    dangerActionButton,
-    dangerActionButtonText,
-    overlay,
-    modal,
-    modalHeader,
-    modalTitle,
-    modalBody,
-    inputLabel,
-    inputHint,
-    input,
-    valueText,
-    modalActions,
-    secondaryButton,
-    secondaryButtonText,
-    errorText,
-    deleteText,
-  } = useMemo(
-    () => ({
-      headerRow: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        justifyContent: "space-between" as const,
-        gap: 16,
-      },
-      searchRow: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 10,
-      },
-      searchIcon: {
-        position: "absolute" as const,
-        left: 12,
-        top: 12,
-      },
-      searchIconButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        backgroundColor: adminPalette.surface,
-      },
-      searchFieldWrap: {
-        overflow: "hidden" as const,
-      },
-      searchInput: {
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        borderRadius: 10,
-        paddingVertical: 10,
-        paddingLeft: 40,
-        paddingRight: 12,
-        backgroundColor: adminPalette.surface,
-        color: adminPalette.text,
-        width: 260,
-      },
-      addButton: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 10,
-        backgroundColor: adminPalette.brand,
-      },
-      addButtonText: { color: "#fff", fontWeight: "600" as const, fontSize: 12 },
-      emptyCard: {
-        marginTop: 24,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 32,
-        alignItems: "center" as const,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        shadowColor: "#000",
-        shadowOpacity: 0.18,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 3,
-      },
-      emptyTitle: {
-        color: adminPalette.text,
-        fontWeight: "600" as const,
-        marginTop: 12,
-      },
-      emptySub: { color: adminPalette.textMuted, fontSize: 12, marginTop: 6 },
-      tableCard: {
-        marginTop: 24,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        overflow: "hidden" as const,
-        shadowColor: "#000",
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 4,
-      },
-      tableHeader: {
-        flexDirection: "row" as const,
-        backgroundColor: adminPalette.surfaceAlt,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-      },
-      tableHeaderText: {
-        flex: 1,
-        minWidth: 110,
-        color: adminPalette.textMuted,
-        fontSize: 12,
-        fontWeight: "600" as const,
-      },
-      tableRow: {
-        flexDirection: "row" as const,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-        alignItems: "center" as const,
-      },
-      tableCell: { flex: 1, minWidth: 110, color: adminPalette.text, fontSize: 12 },
-      tableCellMuted: {
-        flex: 1,
-        minWidth: 110,
-        color: adminPalette.textMuted,
-        fontSize: 12,
-      },
-      tableDivider: {
-        borderRightWidth: 1,
-        borderRightColor: adminPalette.border,
-        paddingRight: 12,
-        marginRight: 12,
-      },
-      tableScroll: { width: "100%" as const },
-      tableScrollContent: { flexGrow: 1 },
-      tableContent: { minWidth: 980, width: "100%" as const },
-      avatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: adminPalette.infoSoft,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-      },
-      avatarText: { color: adminPalette.accent, fontWeight: "600" as const },
-      workerName: { color: adminPalette.text, fontSize: 12, fontWeight: "600" as const },
-      workerEmail: { color: adminPalette.textMuted, fontSize: 10, marginTop: 2 },
-      statusBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 999,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      statusActive: {
-        backgroundColor: adminPalette.successSoft,
-      },
-      statusInactive: {
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      statusChip: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 6,
-        alignSelf: "flex-start" as const,
-      },
-      statusChipDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-      },
-      statusChipText: { fontSize: 12, fontWeight: "600" as const },
-      statusText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
-      iconButton: {
-        padding: 8,
-        borderRadius: 10,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      actionButton: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 6,
-        paddingVertical: 6,
-        paddingHorizontal: 10,
-        borderRadius: 999,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      actionButtonText: {
-        color: adminPalette.textMuted,
-        fontSize: 11,
-        fontWeight: "600" as const,
-      },
-      dangerActionButton: {
-        backgroundColor: adminPalette.dangerSoft,
-      },
-      dangerActionButtonText: {
-        color: adminPalette.danger,
-      },
-      overlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: "rgba(15, 23, 42, 0.55)",
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-        padding: 20,
-      },
-      modal: {
-        width: "100%" as const,
-        maxWidth: 520,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 20,
-      },
-      modalHeader: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        alignItems: "center" as const,
-        marginBottom: 12,
-      },
-      modalTitle: { color: adminPalette.text, fontWeight: "600" as const },
-      modalBody: { gap: 10 },
-      inputLabel: { color: adminPalette.textMuted, fontSize: 12 },
-      inputHint: { color: adminPalette.textMuted, fontSize: 11 },
-      input: {
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        backgroundColor: adminPalette.surfaceAlt,
-        color: adminPalette.text,
-      },
-      valueText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
-      modalActions: { flexDirection: "row" as const, gap: 12, marginTop: 16 },
-      secondaryButton: {
-        flex: 1,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        borderRadius: 10,
-        paddingVertical: 10,
-        alignItems: "center" as const,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      secondaryButtonText: {
-        color: adminPalette.text,
-        fontWeight: "600" as const,
-        fontSize: 12,
-      },
-      errorText: { color: adminPalette.danger, fontSize: 12 },
-      deleteText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 8 },
-    }),
-    [adminPalette]
-  );
+  // ── Inline style helpers (theme-aware) ──
+  const S = {
+    input: {
+      borderWidth: 1 as const, borderColor: adminPalette.border, borderRadius: 9,
+      paddingHorizontal: 12, paddingVertical: 9,
+      backgroundColor: adminPalette.surfaceAlt, color: adminPalette.text, fontSize: 13,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      alignItems: "center" as const, justifyContent: "center" as const, padding: 20,
+    },
+    modal: {
+      width: "100%" as const, maxWidth: 480,
+      backgroundColor: adminPalette.surface,
+      borderRadius: 14, borderWidth: 1 as const, borderColor: adminPalette.border,
+      overflow: "hidden" as const,
+    },
+  };
 
   const isValidEmail = (value: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -607,248 +334,104 @@ export default function AdminWorkers() {
     setShowEditModal(true);
   };
 
+  const p = adminPalette;
+  const cell = { flex: 1, minWidth: 110 };
+
   return (
-    <LinearGradient
-      colors={[adminPalette.backgroundStart, adminPalette.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 520,
-          height: 520,
-          borderRadius: 260,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.18,
-          top: -220,
-          right: -160,
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          width: 680,
-          height: 680,
-          borderRadius: 340,
-          backgroundColor: adminPalette.surfaceAlt,
-          opacity: 0.12,
-          bottom: -320,
-          left: -260,
-        }}
-      />
+    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       <ScrollView
-        contentContainerStyle={{ padding: 24, paddingBottom: 80 }}
-        onScrollBeginDrag={() => {
-          if (searchOpen) {
-            setSearchOpen(false);
-            Keyboard.dismiss();
-          }
-        }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 60 }}
+        onScrollBeginDrag={() => { if (searchOpen) { setSearchOpen(false); Keyboard.dismiss(); } }}
       >
-        <View style={headerRow}>
-          <View style={{ flex: 1, maxWidth: 420 }}>
-            <View style={searchRow}>
-              <TouchableOpacity
-                style={searchIconButton}
-                onPress={() => setSearchOpen(true)}
-              >
-                <Search size={18} color={adminPalette.textMuted} />
-              </TouchableOpacity>
-              <Animated.View
-                pointerEvents={searchOpen ? "auto" : "none"}
-                style={[
-                  searchFieldWrap,
-                  {
-                    width: searchAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 260],
-                    }),
-                    opacity: searchAnim,
-                    transform: [
-                      {
-                        translateX: searchAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [-8, 0],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <View style={{ position: "relative" }}>
-                  <Search size={18} color={adminPalette.textMuted} style={searchIcon} />
-                  <TextInput
-                    ref={searchInputRef}
-                    placeholder="Search workers..."
-                    placeholderTextColor={adminPalette.textMuted}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    style={searchInput}
-                    onBlur={() => setSearchOpen(false)}
-                    autoFocus={searchOpen}
-                  />
-                </View>
-              </Animated.View>
-            </View>
+        {/* Header */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <View>
+            <Text style={{ color: p.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 }}>Workers</Text>
+            <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2 }}>{workers.length} registered</Text>
           </View>
-          <TouchableOpacity
-            style={addButton}
-            onPress={() => {
-              resetForm();
-              setShowAddModal(true);
-            }}
-          >
-            <UserPlus size={18} color="#fff" />
-            <Text style={addButtonText}>Add Worker</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {/* Search */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Animated.View pointerEvents={searchOpen ? "auto" : "none"} style={{ width: searchAnim.interpolate({ inputRange: [0,1], outputRange: [0, 220] }), opacity: searchAnim, overflow: "hidden" }}>
+                <TextInput
+                  ref={searchInputRef}
+                  placeholder="Search workers..."
+                  placeholderTextColor={p.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onBlur={() => setSearchOpen(false)}
+                  style={[S.input, { width: 220, marginRight: 8 }]}
+                />
+              </Animated.View>
+              <TouchableOpacity onPress={() => setSearchOpen(v => !v)} style={{ width: 34, height: 34, borderRadius: 8, borderWidth: 1, borderColor: p.border, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                <Search size={14} color={p.textMuted} strokeWidth={1.8} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => { resetForm(); setShowAddModal(true); }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: p.accentStrong }}
+            >
+              <UserPlus size={13} color="#fff" strokeWidth={2} />
+              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Add Worker</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
+        {/* Table */}
         {filteredWorkers.length === 0 ? (
-          <View style={emptyCard}>
-            <Users size={44} color={adminPalette.textMuted} />
-            <Text style={emptyTitle}>No Workers Found</Text>
-            <Text style={emptySub}>
-              {searchQuery ? "Try adjusting your search" : "No workers yet."}
-            </Text>
+          <View style={{ backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border, padding: 40, alignItems: "center" }}>
+            <Users size={32} color={p.textMuted} strokeWidth={1.5} />
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "600", marginTop: 10 }}>No Workers Found</Text>
+            <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 4 }}>{searchQuery ? "Try adjusting your search" : "Add your first worker to get started"}</Text>
           </View>
         ) : (
-          <View style={tableCard}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={Platform.OS === "web"}
-              style={tableScroll}
-              contentContainerStyle={tableScrollContent}
-            >
-              <View style={tableContent}>
-                <View style={tableHeader}>
-                  {[
-                    "Worker",
-                    "Position",
-                    "Contact",
-                    "Rate/Hour",
-                    "Total Hours",
-                    "Earnings",
-                    "Status",
-                    "Actions",
-                  ].map((label, index, arr) => (
-                    <Text
-                      key={label}
-                      style={[
-                        tableHeaderText,
-                        label === "Worker" && { minWidth: 220 },
-                        label === "Status" && { minWidth: 140 },
-                        index !== arr.length - 1 ? tableDivider : null,
-                      ]}
-                    >
-                      {label}
-                    </Text>
+          <View style={{ backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border, overflow: "hidden" }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={Platform.OS === "web"} style={{ width: "100%" }}>
+              <View style={{ minWidth: 900 }}>
+                {/* Table head */}
+                <View style={{ flexDirection: "row", paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: p.border, backgroundColor: p.surfaceAlt }}>
+                  {["Worker", "Position", "Contact", "Rate/hr", "Hours", "Earnings", "Status", ""].map(h => (
+                    <Text key={h} style={[{ color: p.textMuted, fontSize: 11, fontWeight: "600" }, cell, h === "Worker" && { minWidth: 200 }]}>{h}</Text>
                   ))}
                 </View>
-                {filteredWorkers.map((worker, index) => {
-                  const workerTotals = totals[worker.id] || { hours: 0, earnings: 0 };
+                {/* Rows */}
+                {filteredWorkers.map((worker, idx) => {
+                  const wt = totals[worker.id] || { hours: 0, earnings: 0 };
+                  const isActive = worker.status === "active";
                   return (
-                    <View
-                      key={worker.id}
-                      style={[
-                        tableRow,
-                        index % 2 === 1
-                          ? { backgroundColor: adminPalette.surfaceAlt }
-                          : null,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          tableCell,
-                          tableDivider,
-                          { flexDirection: "row", gap: 10, minWidth: 220 },
-                        ]}
-                      >
-                        <View style={avatar}>
-                          <Text style={avatarText}>
-                            {worker.name ? worker.name[0] : "W"}
-                          </Text>
+                    <View key={worker.id} style={{ flexDirection: "row", paddingHorizontal: 16, paddingVertical: 11, borderBottomWidth: idx < filteredWorkers.length - 1 ? 1 : 0, borderBottomColor: p.border, alignItems: "center" }}>
+                      {/* Worker */}
+                      <View style={[{ flexDirection: "row", gap: 10, alignItems: "center", minWidth: 200 }, cell]}>
+                        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                          <Text style={{ color: p.accent, fontSize: 11, fontWeight: "700" }}>{worker.name?.[0] ?? "W"}</Text>
                         </View>
                         <View>
-                          <Text style={workerName}>{worker.name}</Text>
-                          <Text style={workerEmail}>
-                            {worker.workerCode ? `${worker.workerCode} • ` : ""}
-                            {worker.email}
-                          </Text>
+                          <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" }}>{worker.name}</Text>
+                          <Text style={{ color: p.textMuted, fontSize: 10, marginTop: 1 }}>{worker.workerCode ? `${worker.workerCode} · ` : ""}{worker.email}</Text>
                         </View>
                       </View>
-                      <Text style={[tableCellMuted, tableDivider]}>
-                        {worker.position || "-"}
-                      </Text>
-                      <Text style={[tableCellMuted, tableDivider]}>
-                        {worker.phone || "-"}
-                      </Text>
-                      <Text style={[tableCell, tableDivider]}>
-                        RM {Number(worker.hourlyRate || 0).toFixed(2)}
-                      </Text>
-                      <Text style={[tableCell, tableDivider]}>
-                        {workerTotals.hours.toFixed(1)}h
-                      </Text>
-                      <Text style={[tableCell, tableDivider]}>
-                        RM {workerTotals.earnings.toFixed(2)}
-                      </Text>
-                      <View style={[tableCell, tableDivider, { minWidth: 140 }]}>
-                        <View
-                          style={[
-                            statusBadge,
-                            statusChip,
-                            worker.status === "active" ? statusActive : statusInactive,
-                          ]}
-                        >
-                          <View
-                            style={[
-                              statusChipDot,
-                              {
-                                backgroundColor:
-                                  worker.status === "active"
-                                    ? adminPalette.success
-                                    : adminPalette.textMuted,
-                              },
-                            ]}
-                          />
-                          <Text
-                            style={[
-                              statusChipText,
-                              {
-                                color:
-                                  worker.status === "active"
-                                    ? adminPalette.success
-                                    : adminPalette.textMuted,
-                              },
-                            ]}
-                          >
-                            {worker.status === "active" ? "Active" : "Inactive"}
-                          </Text>
+                      <Text style={[{ color: p.textMuted, fontSize: 12 }, cell]}>{worker.position || "—"}</Text>
+                      <Text style={[{ color: p.textMuted, fontSize: 12 }, cell]}>{worker.phone || "—"}</Text>
+                      <Text style={[{ color: p.text, fontSize: 12 }, cell]}>RM {Number(worker.hourlyRate || 0).toFixed(2)}</Text>
+                      <Text style={[{ color: p.text, fontSize: 12 }, cell]}>{wt.hours.toFixed(1)}h</Text>
+                      <Text style={[{ color: p.success, fontSize: 12, fontWeight: "600" }, cell]}>RM {wt.earnings.toFixed(0)}</Text>
+                      {/* Status */}
+                      <View style={cell}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start", backgroundColor: isActive ? p.successSoft : p.surfaceAlt, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 }}>
+                          <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isActive ? p.success : p.textMuted }} />
+                          <Text style={{ color: isActive ? p.success : p.textMuted, fontSize: 10, fontWeight: "600" }}>{isActive ? "Active" : "Inactive"}</Text>
                         </View>
                       </View>
-                      <View style={tableCell}>
-                        <View style={{ flexDirection: "row", gap: 8 }}>
-                          <TouchableOpacity
-                            style={actionButton}
-                            onPress={() => openEditModal(worker)}
-                          >
-                            <Edit size={12} color={adminPalette.textMuted} />
-                            <Text style={actionButtonText}>Edit</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[actionButton, dangerActionButton]}
-                            onPress={() => {
-                              setWorkerToDelete(worker);
-                              setShowDeleteConfirm(true);
-                            }}
-                          >
-                            <Trash2 size={12} color={adminPalette.danger} />
-                            <Text style={[actionButtonText, dangerActionButtonText]}>
-                              Delete
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
+                      {/* Actions */}
+                      <View style={[{ flexDirection: "row", gap: 6 }, cell]}>
+                        <TouchableOpacity onPress={() => openEditModal(worker)} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, borderWidth: 1, borderColor: p.border, backgroundColor: p.surfaceAlt }}>
+                          <Edit size={11} color={p.textMuted} strokeWidth={1.8} />
+                          <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600" }}>Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => { setWorkerToDelete(worker); setShowDeleteConfirm(true); }} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, backgroundColor: p.dangerSoft }}>
+                          <Trash2 size={11} color={p.danger} strokeWidth={1.8} />
+                          <Text style={{ color: p.danger, fontSize: 11, fontWeight: "600" }}>Del</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   );
@@ -858,253 +441,109 @@ export default function AdminWorkers() {
           </View>
         )}
 
-        {status ? <Text style={statusText}>{status}</Text> : null}
+        {status ? <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 12 }}>{status}</Text> : null}
       </ScrollView>
 
-      {showAddModal ? (
-        <View style={overlay}>
-          <View style={modal}>
-            <View style={modalHeader}>
-              <Text style={modalTitle}>Add New Worker</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowAddModal(false);
-                  resetForm();
-                }}
-                style={iconButton}
-              >
-                <X size={16} color={adminPalette.textMuted} />
+      {/* ── Add Modal ── */}
+      {showAddModal && (
+        <View style={S.overlay}>
+          <View style={S.modal}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: p.border }}>
+              <Text style={{ color: p.text, fontSize: 14, fontWeight: "700" }}>Add New Worker</Text>
+              <TouchableOpacity onPress={() => { setShowAddModal(false); resetForm(); }} style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                <X size={14} color={p.textMuted} />
               </TouchableOpacity>
             </View>
-            <View style={modalBody}>
-              <Text style={inputLabel}>Auth UID (optional)</Text>
-              <TextInput
-                value={formData.uid}
-                onChangeText={value => setFormData(prev => ({ ...prev, uid: value }))}
-                placeholder="Paste Firebase Auth UID"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputHint}>
-                Leave this empty to auto-create an Auth account and show a reset link.
-              </Text>
-
-              <Text style={inputLabel}>Worker Code</Text>
-              <TextInput
-                value={formData.workerCode}
-                onChangeText={value =>
-                  setFormData(prev => ({ ...prev, workerCode: value }))
-                }
-                placeholder="WKR-001"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-
-              <Text style={inputLabel}>Full Name *</Text>
-              <TextInput
-                value={formData.name}
-                onChangeText={value => setFormData(prev => ({ ...prev, name: value }))}
-                placeholder="Worker full name"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Email *</Text>
-              <TextInput
-                value={formData.email}
-                onChangeText={value => setFormData(prev => ({ ...prev, email: value }))}
-                placeholder="worker@example.com"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Phone</Text>
-              <TextInput
-                value={formData.phone}
-                onChangeText={value => setFormData(prev => ({ ...prev, phone: value }))}
-                placeholder="+60 12-345 6789"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Position</Text>
-              <TextInput
-                value={formData.position}
-                onChangeText={value => setFormData(prev => ({ ...prev, position: value }))}
-                placeholder="Cashier, Server, Cook"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Hourly Rate (RM) *</Text>
-              <TextInput
-                value={formData.hourlyRate}
-                onChangeText={value =>
-                  setFormData(prev => ({ ...prev, hourlyRate: value }))
-                }
-                placeholder="10.00"
-                keyboardType="numeric"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Join Date</Text>
-              <TextInput
-                value={formData.joinDate}
-                onChangeText={value =>
-                  setFormData(prev => ({ ...prev, joinDate: value }))
-                }
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              {formError ? <Text style={errorText}>{formError}</Text> : null}
-            </View>
-            <View style={modalActions}>
-              <TouchableOpacity
-                style={secondaryButton}
-                onPress={() => {
-                  setShowAddModal(false);
-                  resetForm();
-                }}
-              >
-                <Text style={secondaryButtonText}>Cancel</Text>
+            <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+              {[
+                { label: "Auth UID (optional)", key: "uid", placeholder: "Paste Firebase Auth UID", hint: "Leave empty to auto-create account" },
+                { label: "Worker Code", key: "workerCode", placeholder: "WKR-001" },
+                { label: "Full Name *", key: "name", placeholder: "Worker full name" },
+                { label: "Email *", key: "email", placeholder: "worker@example.com" },
+                { label: "Phone", key: "phone", placeholder: "+60 12-345 6789" },
+                { label: "Position", key: "position", placeholder: "Cashier, Server, Cook" },
+                { label: "Hourly Rate (RM) *", key: "hourlyRate", placeholder: "10.00", numeric: true },
+                { label: "Join Date", key: "joinDate", placeholder: "YYYY-MM-DD" },
+              ].map(field => (
+                <View key={field.key}>
+                  <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 4 }}>{field.label}</Text>
+                  <TextInput value={(formData as any)[field.key]} onChangeText={v => setFormData(prev => ({ ...prev, [field.key]: v }))} placeholder={field.placeholder} placeholderTextColor={p.textMuted} keyboardType={field.numeric ? "numeric" : "default"} style={S.input} />
+                  {field.hint && <Text style={{ color: p.textMuted, fontSize: 10, marginTop: 3 }}>{field.hint}</Text>}
+                </View>
+              ))}
+              {formError ? <Text style={{ color: p.danger, fontSize: 12 }}>{formError}</Text> : null}
+            </ScrollView>
+            <View style={{ flexDirection: "row", gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: p.border }}>
+              <TouchableOpacity onPress={() => { setShowAddModal(false); resetForm(); }} style={{ flex: 1, borderWidth: 1, borderColor: p.border, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.surfaceAlt }}>
+                <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={addButton} onPress={handleAddWorker}>
-                <Text style={addButtonText}>Add Worker</Text>
+              <TouchableOpacity onPress={handleAddWorker} style={{ flex: 1, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.accentStrong }}>
+                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Add Worker</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      ) : null}
+      )}
 
-      {showEditModal && selectedWorker ? (
-        <View style={overlay}>
-          <View style={modal}>
-            <View style={modalHeader}>
-              <Text style={modalTitle}>Edit Worker</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowEditModal(false);
-                  setSelectedWorker(null);
-                  resetForm();
-                }}
-                style={iconButton}
-              >
-                <X size={16} color={adminPalette.textMuted} />
+      {/* ── Edit Modal ── */}
+      {showEditModal && selectedWorker && (
+        <View style={S.overlay}>
+          <View style={S.modal}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: p.border }}>
+              <Text style={{ color: p.text, fontSize: 14, fontWeight: "700" }}>Edit Worker</Text>
+              <TouchableOpacity onPress={() => { setShowEditModal(false); setSelectedWorker(null); resetForm(); }} style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                <X size={14} color={p.textMuted} />
               </TouchableOpacity>
             </View>
-            <View style={modalBody}>
-              <Text style={inputLabel}>Worker Code</Text>
-              <TextInput
-                value={formData.workerCode}
-                onChangeText={value =>
-                  setFormData(prev => ({ ...prev, workerCode: value }))
-                }
-                placeholder="WKR-001"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-
-              <Text style={inputLabel}>Full Name *</Text>
-              <TextInput
-                value={formData.name}
-                onChangeText={value => setFormData(prev => ({ ...prev, name: value }))}
-                placeholder="Worker full name"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Email *</Text>
-              <TextInput
-                value={formData.email}
-                onChangeText={value => setFormData(prev => ({ ...prev, email: value }))}
-                placeholder="worker@example.com"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Phone</Text>
-              <TextInput
-                value={formData.phone}
-                onChangeText={value => setFormData(prev => ({ ...prev, phone: value }))}
-                placeholder="+60 12-345 6789"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Position</Text>
-              <TextInput
-                value={formData.position}
-                onChangeText={value => setFormData(prev => ({ ...prev, position: value }))}
-                placeholder="Cashier, Server, Cook"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Hourly Rate (RM) *</Text>
-              <TextInput
-                value={formData.hourlyRate}
-                onChangeText={value =>
-                  setFormData(prev => ({ ...prev, hourlyRate: value }))
-                }
-                placeholder="10.00"
-                keyboardType="numeric"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              <Text style={inputLabel}>Join Date</Text>
-              <TextInput
-                value={formData.joinDate}
-                onChangeText={value =>
-                  setFormData(prev => ({ ...prev, joinDate: value }))
-                }
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={adminPalette.textMuted}
-                style={input}
-              />
-              {formError ? <Text style={errorText}>{formError}</Text> : null}
-            </View>
-            <View style={modalActions}>
-              <TouchableOpacity
-                style={secondaryButton}
-                onPress={() => {
-                  setShowEditModal(false);
-                  setSelectedWorker(null);
-                  resetForm();
-                }}
-              >
-                <Text style={secondaryButtonText}>Cancel</Text>
+            <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+              {[
+                { label: "Worker Code", key: "workerCode", placeholder: "WKR-001" },
+                { label: "Full Name *", key: "name", placeholder: "Worker full name" },
+                { label: "Email *", key: "email", placeholder: "worker@example.com" },
+                { label: "Phone", key: "phone", placeholder: "+60 12-345 6789" },
+                { label: "Position", key: "position", placeholder: "Cashier, Server, Cook" },
+                { label: "Hourly Rate (RM) *", key: "hourlyRate", placeholder: "10.00", numeric: true },
+                { label: "Join Date", key: "joinDate", placeholder: "YYYY-MM-DD" },
+              ].map(field => (
+                <View key={field.key}>
+                  <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 4 }}>{field.label}</Text>
+                  <TextInput value={(formData as any)[field.key]} onChangeText={v => setFormData(prev => ({ ...prev, [field.key]: v }))} placeholder={field.placeholder} placeholderTextColor={p.textMuted} keyboardType={field.numeric ? "numeric" : "default"} style={S.input} />
+                </View>
+              ))}
+              {formError ? <Text style={{ color: p.danger, fontSize: 12 }}>{formError}</Text> : null}
+            </ScrollView>
+            <View style={{ flexDirection: "row", gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: p.border }}>
+              <TouchableOpacity onPress={() => { setShowEditModal(false); setSelectedWorker(null); resetForm(); }} style={{ flex: 1, borderWidth: 1, borderColor: p.border, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.surfaceAlt }}>
+                <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={addButton} onPress={handleEditWorker}>
-                <Text style={addButtonText}>Save Changes</Text>
+              <TouchableOpacity onPress={handleEditWorker} style={{ flex: 1, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.accentStrong }}>
+                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      ) : null}
+      )}
 
-      {showDeleteConfirm && workerToDelete ? (
-        <View style={overlay}>
-          <View style={modal}>
-            <Text style={modalTitle}>Delete Worker</Text>
-            <Text style={deleteText}>
-              Are you sure you want to delete this worker? This action cannot be
-              undone.
+      {/* ── Delete Confirm ── */}
+      {showDeleteConfirm && workerToDelete && (
+        <View style={S.overlay}>
+          <View style={[S.modal, { padding: 20 }]}>
+            <Text style={{ color: p.text, fontSize: 14, fontWeight: "700" }}>Delete Worker</Text>
+            <Text style={{ color: p.textMuted, fontSize: 13, marginTop: 8, lineHeight: 19 }}>
+              Are you sure you want to delete <Text style={{ color: p.text, fontWeight: "600" }}>{workerToDelete.name}</Text>? This cannot be undone.
             </Text>
-            <View style={modalActions}>
-              <TouchableOpacity
-                style={secondaryButton}
-                onPress={() => {
-                  setShowDeleteConfirm(false);
-                  setWorkerToDelete(null);
-                }}
-              >
-                <Text style={secondaryButtonText}>Cancel</Text>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
+              <TouchableOpacity onPress={() => { setShowDeleteConfirm(false); setWorkerToDelete(null); }} style={{ flex: 1, borderWidth: 1, borderColor: p.border, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.surfaceAlt }}>
+                <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[addButton, { backgroundColor: adminPalette.danger }]}
-                onPress={handleDeleteWorker}
-              >
-                <Text style={addButtonText}>Delete</Text>
+              <TouchableOpacity onPress={handleDeleteWorker} style={{ flex: 1, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.danger }}>
+                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      ) : null}
-
-    </LinearGradient>
+      )}
+    </View>
   );
 }
 
