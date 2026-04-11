@@ -225,29 +225,20 @@ export default function AdminPayslip() {
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={{ flex: 1, backgroundColor: c.backgroundStart }}>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
 
         {/* ── Page header ── */}
-        <View style={{ marginBottom: 24 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <View style={{
-              backgroundColor: c.accent + "22",
-              borderRadius: 10, padding: 8,
-              borderWidth: 1, borderColor: c.accent + "44",
-            }}>
-              <Receipt size={18} color={c.accent} />
-            </View>
-            <Text style={{ color: c.text, fontSize: 22, fontWeight: "700" }}>
-              Payslip Dashboard
-            </Text>
-          </View>
-          <Text style={{ color: c.textMuted, fontSize: 13, marginLeft: 2 }}>
-            Cumulative salary payment records for all employees
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ color: c.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 }}>
+            Payslip
+          </Text>
+          <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 2 }}>
+            Salary payment records
           </Text>
         </View>
 
         {/* ── Stat cards ── */}
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
           <StatCard
             icon={<Users size={16} color="#6366f1" />}
             iconBg="#6366f122"
@@ -285,10 +276,10 @@ export default function AdminPayslip() {
         {/* ── Search & Filters ── */}
         <View style={{
           backgroundColor: c.surface,
-          borderRadius: 16,
+          borderRadius: 12,
           borderWidth: 1,
           borderColor: c.border,
-          marginBottom: 16,
+          marginBottom: 12,
           overflow: "hidden",
         }}>
           {/* Search */}
@@ -382,7 +373,7 @@ export default function AdminPayslip() {
         {/* ── Table ── */}
         <View style={{
           backgroundColor: c.surface,
-          borderRadius: 16,
+          borderRadius: 12,
           borderWidth: 1,
           borderColor: c.border,
           overflow: "hidden",
@@ -489,7 +480,7 @@ export default function AdminPayslip() {
               <TouchableOpacity activeOpacity={1}>
                 <View style={{
                   backgroundColor: c.surface,
-                  borderRadius: 20,
+                  borderRadius: 12,
                   borderWidth: 1,
                   borderColor: c.border,
                   overflow: "hidden",
@@ -654,17 +645,17 @@ function StatCard({
   return (
     <View style={{
       flex: 1,
-      minWidth: 140,
+      minWidth: 130,
       backgroundColor: c.surface,
-      borderRadius: 14,
-      padding: 14,
+      borderRadius: 10,
+      padding: 12,
       borderWidth: 1,
       borderColor: c.border,
-      gap: 10,
+      gap: 8,
     }}>
       <View style={{
-        width: 34, height: 34,
-        borderRadius: 10,
+        width: 30, height: 30,
+        borderRadius: 8,
         backgroundColor: iconBg,
         alignItems: "center",
         justifyContent: "center",
@@ -673,7 +664,7 @@ function StatCard({
       </View>
       <View>
         <Text style={{ color: c.textMuted, fontSize: 11 }}>{label}</Text>
-        <Text style={{ color: valueColor, fontSize: 18, fontWeight: "700", marginTop: 2 }}>{value}</Text>
+        <Text style={{ color: valueColor, fontSize: 16, fontWeight: "700", marginTop: 2 }}>{value}</Text>
       </View>
     </View>
   );

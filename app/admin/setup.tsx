@@ -73,7 +73,7 @@ const baseLocationOptions = [
 ];
 
 export default function AdminSetup() {
-  const { colors: adminPalette } = useAdminTheme();
+  const { colors: p } = useAdminTheme();
   const [workSchedules, setWorkSchedules] = useState<Schedule[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -130,7 +130,7 @@ export default function AdminSetup() {
     hourlyRate: "",
     description: "",
   });
-  const styles = useMemo(() => createStyles(adminPalette), [adminPalette]);
+  const styles = useMemo(() => createStyles(p), [p]);
 
   useEffect(() => {
     const schedulesQuery = query(
@@ -646,9 +646,9 @@ export default function AdminSetup() {
   };
 
   const resolveShiftStatusTextColor = (status: string) => {
-    if (status === "completed") return adminPalette.success;
-    if (status === "absent") return adminPalette.danger;
-    return adminPalette.accent;
+    if (status === "completed") return p.success;
+    if (status === "absent") return p.danger;
+    return p.accent;
   };
 
   const toShiftTimestamp = (shift: any) => {
@@ -684,7 +684,7 @@ export default function AdminSetup() {
   }, [shifts, todayKey]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: adminPalette.backgroundStart }}>
+    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       
       
       <ScrollView contentContainerStyle={styles.container}>
@@ -836,7 +836,7 @@ export default function AdminSetup() {
                       >
                         {shiftForm.start || "Select time"}
                       </Text>
-                      <ChevronDown size={14} color={adminPalette.textMuted} />
+                      <ChevronDown size={14} color={p.textMuted} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -865,7 +865,7 @@ export default function AdminSetup() {
                       >
                         {shiftForm.end || "Select time"}
                       </Text>
-                      <ChevronDown size={14} color={adminPalette.textMuted} />
+                      <ChevronDown size={14} color={p.textMuted} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -910,7 +910,7 @@ export default function AdminSetup() {
                                 >
                                   {assignment.role || "Select role"}
                                 </Text>
-                                <ChevronDown size={14} color={adminPalette.textMuted} />
+                                <ChevronDown size={14} color={p.textMuted} />
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -936,7 +936,7 @@ export default function AdminSetup() {
                                 >
                                   {assignment.location || "Select location"}
                                 </Text>
-                                <ChevronDown size={14} color={adminPalette.textMuted} />
+                                <ChevronDown size={14} color={p.textMuted} />
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -1060,7 +1060,7 @@ export default function AdminSetup() {
                     style={[styles.iconButton, styles.dangerButton]}
                     onPress={() => openShiftDelete(shift.id)}
                   >
-                    <Trash2 size={16} color={adminPalette.danger} />
+                    <Trash2 size={16} color={p.danger} />
                   </TouchableOpacity>
                 </View>
               )})}
@@ -1318,7 +1318,7 @@ export default function AdminSetup() {
                 }}
                 style={styles.iconButton}
               >
-                <X size={18} color={adminPalette.textMuted} />
+                <X size={18} color={p.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalContent}>
@@ -1327,7 +1327,7 @@ export default function AdminSetup() {
                 value={formData.name}
                 onChangeText={value => setFormData(prev => ({ ...prev, name: value }))}
                 placeholder="e.g., Morning Shift"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 style={styles.input}
               />
 
@@ -1338,7 +1338,7 @@ export default function AdminSetup() {
                   setFormData(prev => ({ ...prev, description: value }))
                 }
                 placeholder="Optional description"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 style={[styles.input, styles.textArea]}
                 multiline
               />
@@ -1400,7 +1400,7 @@ export default function AdminSetup() {
                 }
                 placeholder="10.00"
                 keyboardType="numeric"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 style={styles.input}
               />
 
@@ -1451,7 +1451,7 @@ export default function AdminSetup() {
                 }}
                 style={styles.iconButton}
               >
-                <X size={18} color={adminPalette.textMuted} />
+                <X size={18} color={p.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalContent}>
@@ -1460,7 +1460,7 @@ export default function AdminSetup() {
                 value={formData.name}
                 onChangeText={value => setFormData(prev => ({ ...prev, name: value }))}
                 placeholder="e.g., Morning Shift"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 style={styles.input}
               />
 
@@ -1471,7 +1471,7 @@ export default function AdminSetup() {
                   setFormData(prev => ({ ...prev, description: value }))
                 }
                 placeholder="Optional description"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 style={[styles.input, styles.textArea]}
                 multiline
               />
@@ -1533,7 +1533,7 @@ export default function AdminSetup() {
                 }
                 placeholder="10.00"
                 keyboardType="numeric"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 style={styles.input}
               />
 
@@ -1644,7 +1644,7 @@ export default function AdminSetup() {
                 }}
                 style={styles.iconButton}
               >
-                <X size={18} color={adminPalette.textMuted} />
+                <X size={18} color={p.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalContent}>
@@ -1748,16 +1748,17 @@ export default function AdminSetup() {
 }
 
 
-const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
-  container: { padding: 24, paddingBottom: 80 },
+const createStyles = (p: AdminPalette) => StyleSheet.create({
+  container: { padding: 20, paddingBottom: 60 },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 16,
+    gap: 12,
+    marginBottom: 16,
   },
-  title: { color: adminPalette.text, fontSize: 20, fontWeight: "700" },
-  subtitle: { color: adminPalette.textMuted, marginTop: 4, fontSize: 12 },
+  title: { color: p.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 },
+  subtitle: { color: p.textMuted, marginTop: 2, fontSize: 12 },
   primaryButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1765,44 +1766,39 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: adminPalette.brand,
+    backgroundColor: p.brand,
   },
   primaryButtonText: { color: "#fff", fontSize: 12, fontWeight: "600" },
   emptyCard: {
-    marginTop: 24,
-    backgroundColor: adminPalette.surface,
-    borderRadius: 16,
-    padding: 32,
+    marginTop: 16,
+    backgroundColor: p.surface,
+    borderRadius: 12,
+    padding: 24,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    gap: 10,
+    borderColor: p.border,
+    gap: 8,
   },
-  emptyTitle: { color: adminPalette.text, fontWeight: "600", fontSize: 16 },
+  emptyTitle: { color: p.text, fontWeight: "600", fontSize: 14 },
   emptyText: {
-    color: adminPalette.textMuted,
+    color: p.textMuted,
     fontSize: 12,
     textAlign: "center",
     marginBottom: 12,
   },
   grid: {
-    marginTop: 24,
+    marginTop: 16,
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
+    gap: 12,
   },
   card: {
-    backgroundColor: adminPalette.surface,
-    borderRadius: 16,
+    backgroundColor: p.surface,
+    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: adminPalette.border,
+    borderColor: p.border,
     width: 300,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1810,15 +1806,15 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     gap: 12,
     marginBottom: 12,
   },
-  cardTitle: { color: adminPalette.text, fontWeight: "600", fontSize: 14 },
-  cardSubtitle: { color: adminPalette.textMuted, fontSize: 12, marginTop: 4 },
+  cardTitle: { color: p.text, fontWeight: "600", fontSize: 14 },
+  cardSubtitle: { color: p.textMuted, fontSize: 12, marginTop: 4 },
   cardActions: { flexDirection: "row", gap: 8 },
   iconButton: {
     padding: 8,
     borderRadius: 10,
-    backgroundColor: adminPalette.surfaceAlt,
+    backgroundColor: p.surfaceAlt,
   },
-  dangerButton: { backgroundColor: adminPalette.dangerSoft },
+  dangerButton: { backgroundColor: p.dangerSoft },
   cardBody: { gap: 8 },
   rowBetween: {
     flexDirection: "row",
@@ -1832,53 +1828,47 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     gap: 12,
   },
   summaryCard: {
-    minWidth: 160,
     flex: 1,
-    backgroundColor: adminPalette.surface,
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: p.surface,
+    borderRadius: 10,
+    padding: 12,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
+    borderColor: p.border,
   },
-  summaryLabel: { color: adminPalette.textMuted, fontSize: 12 },
-  summaryValue: { color: adminPalette.accentStrong, fontSize: 18, fontWeight: "700" },
+  summaryLabel: { color: p.textMuted, fontSize: 11 },
+  summaryValue: { color: p.text, fontSize: 18, fontWeight: "700", marginTop: 2 },
   sortControls: { flexDirection: "row", gap: 8 },
   sortButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surfaceAlt,
+    borderColor: p.border,
+    backgroundColor: p.surfaceAlt,
   },
   sortButtonActive: {
-    borderColor: adminPalette.accent,
-    backgroundColor: adminPalette.infoSoft,
+    borderColor: p.accent,
+    backgroundColor: p.infoSoft,
   },
-  sortButtonText: { color: adminPalette.textMuted, fontSize: 11 },
-  sortButtonTextActive: { color: adminPalette.accent, fontWeight: "700" },
-  label: { color: adminPalette.textMuted, fontSize: 12 },
-  value: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  sortButtonText: { color: p.textMuted, fontSize: 11 },
+  sortButtonTextActive: { color: p.accent, fontWeight: "700" },
+  label: { color: p.textMuted, fontSize: 12 },
+  value: { color: p.text, fontSize: 12, fontWeight: "600" },
   cardFooter: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: adminPalette.border,
+    borderTopColor: p.border,
   },
-  footerLabel: { color: adminPalette.textMuted, fontSize: 11, marginBottom: 8 },
+  footerLabel: { color: p.textMuted, fontSize: 11, marginBottom: 8 },
   dayRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   dayChip: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: adminPalette.infoSoft,
+    backgroundColor: p.infoSoft,
   },
-  dayChipText: { color: adminPalette.accent, fontSize: 10, fontWeight: "600" },
+  dayChipText: { color: p.accent, fontSize: 10, fontWeight: "600" },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(15, 23, 42, 0.55)",
@@ -1889,47 +1879,32 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
   modal: {
     width: "100%",
     maxWidth: 520,
-    backgroundColor: adminPalette.surface,
-    borderRadius: 16,
+    backgroundColor: p.surface,
+    borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.24,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 5,
+    borderColor: p.border,
   },
   dateModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: adminPalette.surface,
-    borderRadius: 16,
+    backgroundColor: p.surface,
+    borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    borderColor: p.border,
   },
   dropdownModal: {
     width: "100%",
     maxWidth: 280,
-    backgroundColor: adminPalette.surface,
-    borderRadius: 16,
+    backgroundColor: p.surface,
+    borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
+    borderColor: p.border,
   },
   calendarTitle: {
-    color: adminPalette.text,
+    color: p.text,
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 8,
@@ -1939,7 +1914,7 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 6,
   },
-  calendarWeekLabel: { width: 36, textAlign: "center", color: adminPalette.textMuted, fontSize: 11 },
+  calendarWeekLabel: { width: 36, textAlign: "center", color: p.textMuted, fontSize: 11 },
   calendarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1951,17 +1926,17 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     height: 36,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: adminPalette.border,
+    borderColor: p.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: adminPalette.surfaceAlt,
+    backgroundColor: p.surfaceAlt,
   },
   calendarCellEmpty: { width: 36, height: 36 },
   calendarCellSelected: {
-    backgroundColor: adminPalette.brand,
-    borderColor: adminPalette.brand,
+    backgroundColor: p.brand,
+    borderColor: p.brand,
   },
-  calendarCellText: { color: adminPalette.text, fontSize: 12 },
+  calendarCellText: { color: p.text, fontSize: 12 },
   calendarCellTextSelected: { color: "#fff", fontWeight: "700" },
   deleteModal: { maxWidth: 420 },
   modalHeader: {
@@ -1970,45 +1945,45 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: adminPalette.text, fontWeight: "600", fontSize: 16 },
+  modalTitle: { color: p.text, fontWeight: "600", fontSize: 16 },
   modalContent: { gap: 12 },
-  inputLabel: { color: adminPalette.textMuted, fontSize: 12 },
+  inputLabel: { color: p.textMuted, fontSize: 12 },
   input: {
     borderWidth: 1,
-    borderColor: adminPalette.border,
+    borderColor: p.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: adminPalette.surfaceAlt,
-    color: adminPalette.text,
+    backgroundColor: p.surfaceAlt,
+    color: p.text,
   },
-  inputText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
-  inputPlaceholderText: { color: adminPalette.textMuted, fontWeight: "500" },
+  inputText: { color: p.text, fontSize: 12, fontWeight: "600" },
+  inputPlaceholderText: { color: p.textMuted, fontWeight: "500" },
   dropdownButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: adminPalette.border,
+    borderColor: p.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: adminPalette.surfaceAlt,
+    backgroundColor: p.surfaceAlt,
   },
   dropdownButtonDisabled: {
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surfaceAlt,
+    borderColor: p.border,
+    backgroundColor: p.surfaceAlt,
     opacity: 0.6,
   },
-  dropdownText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
-  dropdownPlaceholder: { color: adminPalette.textMuted, fontWeight: "500" },
+  dropdownText: { color: p.text, fontSize: 12, fontWeight: "600" },
+  dropdownPlaceholder: { color: p.textMuted, fontWeight: "500" },
   dropdownItem: {
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  dropdownItemText: { color: adminPalette.text, fontSize: 12 },
+  dropdownItemText: { color: p.text, fontSize: 12 },
   dropdownEmptyText: {
-    color: adminPalette.textMuted,
+    color: p.textMuted,
     fontSize: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -2017,23 +1992,23 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surface,
+    borderColor: p.border,
+    backgroundColor: p.surface,
     gap: 8,
   },
-  assignmentName: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  assignmentName: { color: p.text, fontSize: 12, fontWeight: "600" },
   dropdownWrap: { position: "relative" as const, zIndex: 1 },
   dateButton: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surfaceAlt,
+    borderColor: p.border,
+    backgroundColor: p.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
   },
-  dateButtonText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  dateButtonText: { color: p.text, fontSize: 12, fontWeight: "600" },
   textArea: { minHeight: 80, textAlignVertical: "top" },
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   dayButton: {
@@ -2041,48 +2016,48 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surface,
+    borderColor: p.border,
+    backgroundColor: p.surface,
   },
   dayButtonActive: {
-    backgroundColor: adminPalette.brand,
-    borderColor: adminPalette.brand,
+    backgroundColor: p.brand,
+    borderColor: p.brand,
   },
-  dayButtonText: { color: adminPalette.text, fontSize: 12 },
+  dayButtonText: { color: p.text, fontSize: 12 },
   dayButtonTextActive: { color: "#fff", fontWeight: "600" },
   rowGap: { flexDirection: "row", gap: 12 },
   estimateCard: {
-    backgroundColor: adminPalette.infoSoft,
+    backgroundColor: p.infoSoft,
     borderRadius: 12,
     padding: 12,
   },
-  estimateLabel: { color: adminPalette.textMuted, fontSize: 12 },
+  estimateLabel: { color: p.textMuted, fontSize: 12 },
   estimateValue: {
-    color: adminPalette.accent,
+    color: p.accent,
     fontSize: 18,
     fontWeight: "700",
     marginTop: 6,
   },
-  estimateHint: { color: adminPalette.textMuted, fontSize: 11, marginTop: 4 },
-  errorText: { color: adminPalette.danger, fontSize: 12 },
+  estimateHint: { color: p.textMuted, fontSize: 11, marginTop: 4 },
+  errorText: { color: p.danger, fontSize: 12 },
   modalActions: { flexDirection: "row", gap: 12, marginTop: 16 },
   secondaryButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: adminPalette.border,
+    borderColor: p.border,
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: "center",
-    backgroundColor: adminPalette.surfaceAlt,
+    backgroundColor: p.surfaceAlt,
   },
-  secondaryButtonText: { color: adminPalette.text, fontWeight: "600", fontSize: 12 },
-  dangerPrimary: { backgroundColor: adminPalette.danger },
-  deleteText: { color: adminPalette.textMuted, fontSize: 12, marginTop: 8 },
+  secondaryButtonText: { color: p.text, fontWeight: "600", fontSize: 12 },
+  dangerPrimary: { backgroundColor: p.danger },
+  deleteText: { color: p.textMuted, fontSize: 12, marginTop: 8 },
   assignRow: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: adminPalette.border,
+    borderTopColor: p.border,
     flexDirection: "row",
     gap: 12,
     alignItems: "center",
@@ -2092,34 +2067,34 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: adminPalette.surfaceAlt,
+    backgroundColor: p.surfaceAlt,
     borderWidth: 1,
-    borderColor: adminPalette.border,
+    borderColor: p.border,
   },
   workerChipActive: {
-    backgroundColor: adminPalette.infoSoft,
-    borderColor: adminPalette.accent,
+    backgroundColor: p.infoSoft,
+    borderColor: p.accent,
   },
-  workerChipText: { color: adminPalette.textMuted, fontSize: 10 },
-  workerChipTextActive: { color: adminPalette.accent, fontWeight: "600" },
+  workerChipText: { color: p.textMuted, fontSize: 10 },
+  workerChipTextActive: { color: p.accent, fontWeight: "600" },
   assignButton: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: adminPalette.brand,
+    backgroundColor: p.brand,
   },
   assignButtonDisabled: {
-    backgroundColor: adminPalette.border,
+    backgroundColor: p.border,
   },
   assignButtonText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-  assignHint: { color: adminPalette.textMuted, fontSize: 11 },
-  assignStatus: { color: adminPalette.textMuted, fontSize: 12, marginTop: 12 },
+  assignHint: { color: p.textMuted, fontSize: 11 },
+  assignStatus: { color: p.textMuted, fontSize: 12, marginTop: 12 },
   shiftSection: { marginTop: 24 },
   shiftAssignCard: {
     width: "100%",
     marginTop: 16,
   },
-  sectionTitle: { color: adminPalette.text, fontWeight: "700", fontSize: 16 },
+  sectionTitle: { color: p.text, fontWeight: "700", fontSize: 13 },
   shiftList: {
     marginTop: 12,
     gap: 10,
@@ -2131,48 +2106,48 @@ const createStyles = (adminPalette: AdminPalette) => StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surface,
+    borderColor: p.border,
+    backgroundColor: p.surface,
   },
   shiftRowCompleted: {
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surface,
+    borderColor: p.border,
+    backgroundColor: p.surface,
   },
   shiftRowAbsent: {
-    borderColor: adminPalette.danger,
-    backgroundColor: adminPalette.dangerSoft,
+    borderColor: p.danger,
+    backgroundColor: p.dangerSoft,
   },
-  shiftTitle: { color: adminPalette.text, fontWeight: "600", fontSize: 12 },
-  shiftMeta: { color: adminPalette.textMuted, fontSize: 11, marginTop: 4 },
+  shiftTitle: { color: p.text, fontWeight: "600", fontSize: 12 },
+  shiftMeta: { color: p.textMuted, fontSize: 11, marginTop: 4 },
   shiftStatusPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: adminPalette.infoSoft,
+    backgroundColor: p.infoSoft,
     marginRight: 8,
   },
-  shiftStatusCompleted: { backgroundColor: adminPalette.successSoft },
-  shiftStatusAbsent: { backgroundColor: adminPalette.dangerSoft },
-  shiftStatusText: { color: adminPalette.text, fontSize: 10, fontWeight: "700" },
+  shiftStatusCompleted: { backgroundColor: p.successSoft },
+  shiftStatusAbsent: { backgroundColor: p.dangerSoft },
+  shiftStatusText: { color: p.text, fontSize: 10, fontWeight: "700" },
   viewButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: adminPalette.border,
-    backgroundColor: adminPalette.surfaceAlt,
+    borderColor: p.border,
+    backgroundColor: p.surfaceAlt,
   },
-  viewButtonText: { color: adminPalette.textMuted, fontSize: 11, fontWeight: "600" },
+  viewButtonText: { color: p.textMuted, fontSize: 11, fontWeight: "600" },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
-  detailLabel: { color: adminPalette.textMuted, fontSize: 12 },
-  detailValue: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: p.textMuted, fontSize: 12 },
+  detailValue: { color: p.text, fontSize: 12, fontWeight: "600" },
   detailSectionTitle: {
-    color: adminPalette.text,
+    color: p.text,
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 8,

@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Platform,
 } from "react-native";
 import {
   collection,
@@ -69,7 +68,7 @@ type ScheduleSummary = {
 };
 
 export default function AdminSettings() {
-  const { colors: adminPalette } = useAdminTheme();
+  const { colors: p } = useAdminTheme();
   const [workConfig, setWorkConfig] = useState<WorkConfig>({
     workingDaysPerWeek: "",
     hoursPerDay: "",
@@ -128,38 +127,8 @@ export default function AdminSettings() {
       .split(",")
       .map(item => item.trim())
       .filter(Boolean);
-  const cardShadow = {
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
-  };
-  const actionBar = useMemo(
-    () => ({
-      position: Platform.OS === "web" ? ("sticky" as const) : ("relative" as const),
-      top: 0,
-      zIndex: 20,
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      justifyContent: "space-between" as const,
-      gap: 12,
-      padding: 12,
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: adminPalette.border,
-      backgroundColor: adminPalette.surface,
-    }),
-    [adminPalette]
-  );
-  const fieldLabel = useMemo(
-    () => ({
-      color: adminPalette.textMuted,
-      fontSize: 11,
-      marginBottom: 6,
-    }),
-    [adminPalette]
-  );
+  const FL = { color: p.textMuted, fontSize: 11, marginBottom: 6 };
+  const inp = { borderWidth: 1, borderColor: p.border, borderRadius: 8, padding: 10, color: p.text, backgroundColor: p.surfaceAlt, fontSize: 13 };
 
   const getConfigError = () => {
     const days = Number(workConfig.workingDaysPerWeek);
@@ -488,17 +457,6 @@ export default function AdminSettings() {
     }
   };
 
-  const inputStyle = useMemo(
-    () => ({
-      borderWidth: 1,
-      borderColor: adminPalette.border,
-      borderRadius: 12,
-      padding: 12,
-      color: adminPalette.text,
-      backgroundColor: adminPalette.surfaceAlt,
-    }),
-    [adminPalette]
-  );
 
   const example = useMemo(() => {
     const hourlyRate = Number(paymentConfig.hourlyRate || 0);
@@ -541,83 +499,59 @@ export default function AdminSettings() {
     };
   }, [paymentConfig, rulesConfig]);
 
+  const card = { backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border, marginTop: 12 };
+  const cardHeader = { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: p.border };
+
   return (
-    <View style={{ flex: 1, backgroundColor: adminPalette.backgroundStart }}>
-      
-      
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <Text
-          style={{
-            color: adminPalette.text,
-            fontSize: 22,
-            fontWeight: "800",
-            letterSpacing: 0.3,
-          }}
-        >
-          Work Schedule Setup
-        </Text>
-        <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
-          Define work schedules and assign them to workers.
-        </Text>
-        <View style={[actionBar, { marginTop: 16 }]}>
-          <View>
-            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-              Quick actions
-            </Text>
-            <Text style={{ color: adminPalette.textMuted, fontSize: 11 }}>
-              Save changes or generate shifts when ready.
-            </Text>
-          </View>
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <TouchableOpacity
-              onPress={handleSaveConfig}
-              style={{
-                backgroundColor: adminPalette.accent,
-                paddingVertical: 10,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>Save</Text>
+    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+
+        {/* Header */}
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ color: p.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 }}>
+            Settings
+          </Text>
+          <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2 }}>
+            Work schedule & pay rules configuration
+          </Text>
+        </View>
+
+        {/* Action bar */}
+        <View style={{
+          flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+          gap: 10, backgroundColor: p.surface, borderRadius: 10, borderWidth: 1,
+          borderColor: p.border, padding: 12,
+        }}>
+          <Text style={{ color: p.textMuted, fontSize: 12, flex: 1 }}>
+            {status || "Save changes or generate shifts."}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TouchableOpacity onPress={handleSaveConfig} style={{
+              backgroundColor: p.accent, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8,
+            }}>
+              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>Save</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleGenerateSchedule}
-              disabled={generating}
-              style={{
-                backgroundColor: adminPalette.accentStrong,
-                paddingVertical: 10,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                opacity: generating ? 0.7 : 1,
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>
-                {generating ? "Generating..." : "Auto-generate"}
+            <TouchableOpacity onPress={handleGenerateSchedule} disabled={generating} style={{
+              backgroundColor: p.accentStrong, paddingVertical: 8, paddingHorizontal: 14,
+              borderRadius: 8, opacity: generating ? 0.6 : 1,
+            }}>
+              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
+                {generating ? "Generating..." : "Generate"}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View
-          style={{
-            marginTop: 20,
-            backgroundColor: adminPalette.surface,
-            borderRadius: 16,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: adminPalette.border,
-            ...cardShadow,
-          }}
-        >
-          <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
-            Work Configuration
-          </Text>
-          <View style={{ gap: 12 }}>
+        <View style={{ ...card }}>
+          <View style={cardHeader}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "700" }}>Work Configuration</Text>
+          </View>
+          <View style={{ padding: 16, gap: 12 }}>
             <View>
-              <Text style={fieldLabel}>Working days per week</Text>
+              <Text style={FL}>Working days per week</Text>
               <TextInput
                 placeholder="e.g. 5"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 keyboardType="numeric"
                 value={workConfig.workingDaysPerWeek}
                 onChangeText={value =>
@@ -626,14 +560,14 @@ export default function AdminSettings() {
                     workingDaysPerWeek: sanitizeIntInput(value),
                   }))
                 }
-                style={inputStyle}
+                style={inp}
               />
             </View>
             <View>
-              <Text style={fieldLabel}>Working hours per day</Text>
+              <Text style={FL}>Working hours per day</Text>
               <TextInput
                 placeholder="e.g. 8"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 keyboardType="numeric"
                 value={workConfig.hoursPerDay}
                 onChangeText={value =>
@@ -642,14 +576,14 @@ export default function AdminSettings() {
                     hoursPerDay: sanitizeNumberInput(value),
                   }))
                 }
-                style={inputStyle}
+                style={inp}
               />
             </View>
             <View>
-              <Text style={fieldLabel}>Total duration (months)</Text>
+              <Text style={FL}>Total duration (months)</Text>
               <TextInput
                 placeholder="e.g. 6"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 keyboardType="numeric"
                 value={workConfig.durationMonths}
                 onChangeText={value =>
@@ -658,58 +592,48 @@ export default function AdminSettings() {
                     durationMonths: sanitizeIntInput(value),
                   }))
                 }
-                style={inputStyle}
+                style={inp}
               />
             </View>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={fieldLabel}>Preferred start (HH:MM)</Text>
+                <Text style={FL}>Preferred start (HH:MM)</Text>
                 <TextInput
                   placeholder="09:00"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   value={workConfig.preferredStart}
                   onChangeText={value =>
                     setWorkConfig(prev => ({ ...prev, preferredStart: value }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={fieldLabel}>Preferred end (HH:MM)</Text>
+                <Text style={FL}>Preferred end (HH:MM)</Text>
                 <TextInput
                   placeholder="18:00"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   value={workConfig.preferredEnd}
                   onChangeText={value =>
                     setWorkConfig(prev => ({ ...prev, preferredEnd: value }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
           </View>
         </View>
 
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: adminPalette.surface,
-            borderRadius: 16,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: adminPalette.border,
-            ...cardShadow,
-          }}
-        >
-          <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
-            Payment Configuration
-          </Text>
-          <View style={{ gap: 12 }}>
+        <View style={{ ...card }}>
+          <View style={cardHeader}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "700" }}>Payment Configuration</Text>
+          </View>
+          <View style={{ padding: 16, gap: 12 }}>
             <View>
-              <Text style={fieldLabel}>Hourly rate (RM)</Text>
+              <Text style={FL}>Hourly rate (RM)</Text>
               <TextInput
                 placeholder="10.00"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 keyboardType="numeric"
                 value={paymentConfig.hourlyRate}
                 onChangeText={value =>
@@ -718,14 +642,14 @@ export default function AdminSettings() {
                     hourlyRate: sanitizeNumberInput(value),
                   }))
                 }
-                style={inputStyle}
+                style={inp}
               />
             </View>
             <View>
-              <Text style={fieldLabel}>Overtime rate (RM)</Text>
+              <Text style={FL}>Overtime rate (RM)</Text>
               <TextInput
                 placeholder="15.00"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 keyboardType="numeric"
                 value={paymentConfig.overtimeRate}
                 onChangeText={value =>
@@ -734,36 +658,20 @@ export default function AdminSettings() {
                     overtimeRate: sanitizeNumberInput(value),
                   }))
                 }
-                style={inputStyle}
+                style={inp}
               />
             </View>
           </View>
         </View>
 
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: adminPalette.surface,
-            borderRadius: 16,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: adminPalette.border,
-            ...cardShadow,
-          }}
-        >
-          <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
-            Pay & Time Rules
-          </Text>
-          <Text style={{ color: adminPalette.textMuted, marginBottom: 12 }}>
-            These rules decide how hours and pay are calculated.
-          </Text>
+        <View style={{ ...card }}>
+          <View style={cardHeader}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "700" }}>Pay & Time Rules</Text>
+            <Text style={{ color: p.textMuted, fontSize: 11, marginTop: 2 }}>How hours and pay are calculated</Text>
+          </View>
+          <View style={{ padding: 16 }}>
 
-          <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 6 }}>
-            1) Pay type
-          </Text>
-          <Text style={{ color: adminPalette.textMuted, marginBottom: 8, fontSize: 12 }}>
-            Choose how workers are paid.
-          </Text>
+          <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>Pay type</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {(["hourly", "daily", "mixed"] as const).map(type => {
               const active = rulesConfig.payType === type;
@@ -776,11 +684,11 @@ export default function AdminSettings() {
                     paddingHorizontal: 12,
                     borderRadius: 999,
                     borderWidth: 1,
-                    borderColor: active ? adminPalette.accent : adminPalette.border,
-                    backgroundColor: active ? adminPalette.infoSoft : adminPalette.surfaceAlt,
+                    borderColor: active ? p.accent : p.border,
+                    backgroundColor: active ? p.infoSoft : p.surfaceAlt,
                   }}
                 >
-                  <Text style={{ color: active ? adminPalette.accent : adminPalette.textMuted }}>
+                  <Text style={{ color: active ? p.accent : p.textMuted }}>
                     {type}
                   </Text>
                 </TouchableOpacity>
@@ -788,18 +696,16 @@ export default function AdminSettings() {
             })}
           </View>
 
-          <View style={{ gap: 12, marginTop: 12 }}>
-            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-              2) Daily pay (only for daily/mixed)
-            </Text>
+          <View style={{ gap: 12, marginTop: 14 }}>
+            <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>Daily Pay</Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Daily rate (RM)
                 </Text>
                 <TextInput
                   placeholder="0.00"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.dailyRate}
                   onChangeText={value =>
@@ -808,16 +714,16 @@ export default function AdminSettings() {
                       dailyRate: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Minimum hours to qualify
                 </Text>
                 <TextInput
                   placeholder="6"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.dailyMinHours}
                   onChangeText={value =>
@@ -826,24 +732,22 @@ export default function AdminSettings() {
                       dailyMinHours: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
           </View>
 
-          <View style={{ gap: 12, marginTop: 12 }}>
-            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-              3) Overtime
-            </Text>
+          <View style={{ gap: 12, marginTop: 14 }}>
+            <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>Overtime</Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   OT starts after (hours)
                 </Text>
                 <TextInput
                   placeholder="8"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.otAfterHours}
                   onChangeText={value =>
@@ -852,16 +756,16 @@ export default function AdminSettings() {
                       otAfterHours: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   OT multiplier
                 </Text>
                 <TextInput
                   placeholder="1.5"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.otMultiplier}
                   onChangeText={value =>
@@ -870,27 +774,25 @@ export default function AdminSettings() {
                       otMultiplier: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
-            <Text style={{ color: adminPalette.textMuted, fontSize: 11 }}>
+            <Text style={{ color: p.textMuted, fontSize: 11 }}>
               If an overtime rate is set in Payment Configuration, it overrides the multiplier.
             </Text>
           </View>
 
-          <View style={{ gap: 12, marginTop: 12 }}>
-            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-              4) Breaks & rounding
-            </Text>
+          <View style={{ gap: 12, marginTop: 14 }}>
+            <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>Breaks & Rounding</Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Fixed break minutes
                 </Text>
                 <TextInput
                   placeholder="0"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.breakFixedMinutes}
                   onChangeText={value =>
@@ -899,16 +801,16 @@ export default function AdminSettings() {
                       breakFixedMinutes: sanitizeIntInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Rounding minutes
                 </Text>
                 <TextInput
                   placeholder="15"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.roundingMinutes}
                   onChangeText={value =>
@@ -917,7 +819,7 @@ export default function AdminSettings() {
                       roundingMinutes: sanitizeIntInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
@@ -953,13 +855,13 @@ export default function AdminSettings() {
                     paddingHorizontal: 12,
                     borderRadius: 999,
                     borderWidth: 1,
-                    borderColor: item.value ? adminPalette.accent : adminPalette.border,
+                    borderColor: item.value ? p.accent : p.border,
                     backgroundColor: item.value
-                      ? adminPalette.infoSoft
-                      : adminPalette.surfaceAlt,
+                      ? p.infoSoft
+                      : p.surfaceAlt,
                   }}
                 >
-                  <Text style={{ color: item.value ? adminPalette.accent : adminPalette.textMuted }}>
+                  <Text style={{ color: item.value ? p.accent : p.textMuted }}>
                     {item.label}
                   </Text>
                 </TouchableOpacity>
@@ -967,7 +869,7 @@ export default function AdminSettings() {
             </View>
 
             <View style={{ marginTop: 8 }}>
-              <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+              <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                 Rounding mode
               </Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
@@ -984,14 +886,14 @@ export default function AdminSettings() {
                         paddingHorizontal: 12,
                         borderRadius: 999,
                         borderWidth: 1,
-                        borderColor: active ? adminPalette.accent : adminPalette.border,
+                        borderColor: active ? p.accent : p.border,
                         backgroundColor: active
-                          ? adminPalette.infoSoft
-                          : adminPalette.surfaceAlt,
+                          ? p.infoSoft
+                          : p.surfaceAlt,
                       }}
                     >
                       <Text
-                        style={{ color: active ? adminPalette.accent : adminPalette.textMuted }}
+                        style={{ color: active ? p.accent : p.textMuted }}
                       >
                         {mode}
                       </Text>
@@ -1002,7 +904,7 @@ export default function AdminSettings() {
             </View>
 
             <View style={{ marginTop: 8 }}>
-              <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+              <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                 Rounding scope
               </Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
@@ -1019,14 +921,14 @@ export default function AdminSettings() {
                         paddingHorizontal: 12,
                         borderRadius: 999,
                         borderWidth: 1,
-                        borderColor: active ? adminPalette.accent : adminPalette.border,
+                        borderColor: active ? p.accent : p.border,
                         backgroundColor: active
-                          ? adminPalette.infoSoft
-                          : adminPalette.surfaceAlt,
+                          ? p.infoSoft
+                          : p.surfaceAlt,
                       }}
                     >
                       <Text
-                        style={{ color: active ? adminPalette.accent : adminPalette.textMuted }}
+                        style={{ color: active ? p.accent : p.textMuted }}
                       >
                         {scope}
                       </Text>
@@ -1037,18 +939,16 @@ export default function AdminSettings() {
             </View>
           </View>
 
-          <View style={{ gap: 12, marginTop: 12 }}>
-            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-              5) Grace minutes
-            </Text>
+          <View style={{ gap: 12, marginTop: 14 }}>
+            <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>Grace Minutes</Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Late grace (min)
                 </Text>
                 <TextInput
                   placeholder="5"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.lateGraceMinutes}
                   onChangeText={value =>
@@ -1057,16 +957,16 @@ export default function AdminSettings() {
                       lateGraceMinutes: sanitizeIntInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Early leave grace (min)
                 </Text>
                 <TextInput
                   placeholder="5"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.earlyGraceMinutes}
                   onChangeText={value =>
@@ -1075,24 +975,22 @@ export default function AdminSettings() {
                       earlyGraceMinutes: sanitizeIntInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
           </View>
 
           <View style={{ gap: 12, marginTop: 12 }}>
-            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-              6) Multipliers & holidays
-            </Text>
+            <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>Multipliers & Holidays</Text>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Weekend multiplier
                 </Text>
                 <TextInput
                   placeholder="1.25"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.weekendMultiplier}
                   onChangeText={value =>
@@ -1101,16 +999,16 @@ export default function AdminSettings() {
                       weekendMultiplier: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                   Holiday multiplier
                 </Text>
                 <TextInput
                   placeholder="2.0"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.holidayMultiplier}
                   onChangeText={value =>
@@ -1119,20 +1017,20 @@ export default function AdminSettings() {
                       holidayMultiplier: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
             <View>
-              <Text style={{ color: adminPalette.textMuted, fontSize: 11, marginBottom: 6 }}>
+              <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
                 Holiday dates (YYYY-MM-DD, separated by commas)
               </Text>
               <TextInput
                 placeholder="2026-01-01, 2026-01-29"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 value={rulesConfig.holidays}
                 onChangeText={value => setRulesConfig(prev => ({ ...prev, holidays: value }))}
-                style={inputStyle}
+                style={inp}
               />
             </View>
           </View>
@@ -1142,76 +1040,65 @@ export default function AdminSettings() {
               marginTop: 16,
               padding: 12,
               borderRadius: 12,
-              backgroundColor: adminPalette.surfaceAlt,
+              backgroundColor: p.surfaceAlt,
               borderWidth: 1,
-              borderColor: adminPalette.border,
+              borderColor: p.border,
             }}
           >
-            <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
+            <Text style={{ color: p.text, fontWeight: "600" }}>
               Example calculation
             </Text>
-            <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
+            <Text style={{ color: p.textMuted, marginTop: 6 }}>
               09:00–18:05, 60m break, rounding {rulesConfig.roundingMinutes || 15}m
             </Text>
-            <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
+            <Text style={{ color: p.textMuted, marginTop: 6 }}>
               Net hours: {example.netHours}h • OT: {example.overtimeHours}h
             </Text>
-            <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
+            <Text style={{ color: p.textMuted, marginTop: 6 }}>
               Estimated pay: RM {example.totalPay.toFixed(2)}
             </Text>
           </View>
+          </View>
         </View>
 
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: adminPalette.surface,
-            borderRadius: 16,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: adminPalette.border,
-            ...cardShadow,
-          }}
-        >
-          <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
-            Scheduling Limits
-          </Text>
-          <Text style={{ color: adminPalette.textMuted, marginBottom: 12 }}>
-            Guardrails for auto-generated shifts.
-          </Text>
-          <View style={{ gap: 12 }}>
+        <View style={{ ...card }}>
+          <View style={cardHeader}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "700" }}>Scheduling Limits</Text>
+            <Text style={{ color: p.textMuted, fontSize: 11, marginTop: 2 }}>Guardrails for auto-generated shifts</Text>
+          </View>
+          <View style={{ padding: 16, gap: 12 }}>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={fieldLabel}>Allowed start (HH:MM)</Text>
+                <Text style={FL}>Allowed start (HH:MM)</Text>
                 <TextInput
                   placeholder="09:00"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   value={rulesConfig.allowedStart}
                   onChangeText={value =>
                     setRulesConfig(prev => ({ ...prev, allowedStart: value }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={fieldLabel}>Allowed end (HH:MM)</Text>
+                <Text style={FL}>Allowed end (HH:MM)</Text>
                 <TextInput
                   placeholder="18:00"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   value={rulesConfig.allowedEnd}
                   onChangeText={value =>
                     setRulesConfig(prev => ({ ...prev, allowedEnd: value }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={fieldLabel}>Max hours per day</Text>
+                <Text style={FL}>Max hours per day</Text>
                 <TextInput
                   placeholder="10"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.maxHoursPerDay}
                   onChangeText={value =>
@@ -1220,14 +1107,14 @@ export default function AdminSettings() {
                       maxHoursPerDay: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={fieldLabel}>Max hours per week</Text>
+                <Text style={FL}>Max hours per week</Text>
                 <TextInput
                   placeholder="48"
-                  placeholderTextColor={adminPalette.textMuted}
+                  placeholderTextColor={p.textMuted}
                   keyboardType="numeric"
                   value={rulesConfig.maxHoursPerWeek}
                   onChangeText={value =>
@@ -1236,15 +1123,15 @@ export default function AdminSettings() {
                       maxHoursPerWeek: sanitizeNumberInput(value),
                     }))
                   }
-                  style={inputStyle}
+                  style={inp}
                 />
               </View>
             </View>
             <View>
-              <Text style={fieldLabel}>Minimum rest hours between shifts</Text>
+              <Text style={FL}>Minimum rest hours between shifts</Text>
               <TextInput
                 placeholder="12"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 keyboardType="numeric"
                 value={rulesConfig.minRestHours}
                 onChangeText={value =>
@@ -1253,43 +1140,31 @@ export default function AdminSettings() {
                     minRestHours: sanitizeNumberInput(value),
                   }))
                 }
-                style={inputStyle}
+                style={inp}
               />
             </View>
           </View>
         </View>
 
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: adminPalette.surface,
-            borderRadius: 16,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: adminPalette.border,
-            ...cardShadow,
-          }}
-        >
-          <Text style={{ color: adminPalette.text, fontWeight: "600", marginBottom: 12 }}>
-            Worker Assignment
-          </Text>
-          <Text style={{ color: adminPalette.textMuted, marginBottom: 12 }}>
-            Assign workers to a schedule template.
-          </Text>
-          <View style={{ gap: 12 }}>
+        <View style={{ ...card }}>
+          <View style={cardHeader}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "700" }}>Worker Assignment</Text>
+            <Text style={{ color: p.textMuted, fontSize: 11, marginTop: 2 }}>Assign workers to a schedule template</Text>
+          </View>
+          <View style={{ padding: 16, gap: 12 }}>
             <View>
-              <Text style={fieldLabel}>Worker ID (select below)</Text>
+              <Text style={FL}>Worker ID (select below)</Text>
               <TextInput
                 placeholder="Paste or select a worker UID"
-                placeholderTextColor={adminPalette.textMuted}
+                placeholderTextColor={p.textMuted}
                 value={selectedWorkerId}
                 onChangeText={setSelectedWorkerId}
-                style={inputStyle}
+                style={inp}
               />
             </View>
             <View style={{ gap: 10 }}>
               {workers.length === 0 ? (
-                <Text style={{ color: adminPalette.textMuted }}>
+                <Text style={{ color: p.textMuted }}>
                   No workers found yet.
                 </Text>
               ) : (
@@ -1298,10 +1173,10 @@ export default function AdminSettings() {
                     key={worker.id}
                     style={{
                       borderWidth: 1,
-                      borderColor: adminPalette.border,
+                      borderColor: p.border,
                       borderRadius: 14,
                       padding: 12,
-                      backgroundColor: adminPalette.surfaceAlt,
+                      backgroundColor: p.surfaceAlt,
                     }}
                   >
                     <View
@@ -1312,13 +1187,13 @@ export default function AdminSettings() {
                       }}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
+                        <Text style={{ color: p.text, fontWeight: "600" }}>
                           {worker.name}
                         </Text>
-                        <Text style={{ color: adminPalette.textMuted, marginTop: 2 }}>
+                        <Text style={{ color: p.textMuted, marginTop: 2 }}>
                           {worker.email}
                         </Text>
-                        <Text style={{ color: adminPalette.textMuted, marginTop: 6 }}>
+                        <Text style={{ color: p.textMuted, marginTop: 6 }}>
                           UID: {worker.id}
                         </Text>
                       </View>
@@ -1332,15 +1207,15 @@ export default function AdminSettings() {
                             borderWidth: 1,
                             borderColor:
                               selectedWorkerId === worker.id
-                                ? adminPalette.accent
-                                : adminPalette.border,
+                                ? p.accent
+                                : p.border,
                             backgroundColor:
                               selectedWorkerId === worker.id
-                                ? adminPalette.surface
+                                ? p.surface
                                 : "transparent",
                           }}
                         >
-                          <Text style={{ color: adminPalette.text, fontSize: 12 }}>
+                          <Text style={{ color: p.text, fontSize: 12 }}>
                             Select
                           </Text>
                         </TouchableOpacity>
@@ -1350,7 +1225,7 @@ export default function AdminSettings() {
                             paddingVertical: 6,
                             paddingHorizontal: 10,
                             borderRadius: 999,
-                            backgroundColor: adminPalette.accentStrong,
+                            backgroundColor: p.accentStrong,
                           }}
                         >
                           <Text style={{ color: "#fff", fontSize: 12 }}>
@@ -1365,7 +1240,7 @@ export default function AdminSettings() {
             </View>
             <View style={{ gap: 10 }}>
               {schedules.length === 0 ? (
-                <Text style={{ color: adminPalette.textMuted }}>
+                <Text style={{ color: p.textMuted }}>
                   No schedules created yet.
                 </Text>
               ) : (
@@ -1377,20 +1252,20 @@ export default function AdminSettings() {
                       borderWidth: 1,
                       borderColor:
                         selectedScheduleId === schedule.id
-                          ? adminPalette.accent
-                          : adminPalette.border,
+                          ? p.accent
+                          : p.border,
                       borderRadius: 12,
                       padding: 12,
                       backgroundColor:
                         selectedScheduleId === schedule.id
-                          ? adminPalette.infoSoft
-                          : adminPalette.surfaceAlt,
+                          ? p.infoSoft
+                          : p.surfaceAlt,
                     }}
                   >
-                    <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
+                    <Text style={{ color: p.text, fontWeight: "600" }}>
                       {schedule.name}
                     </Text>
-                    <Text style={{ color: adminPalette.textMuted, marginTop: 4 }}>
+                    <Text style={{ color: p.textMuted, marginTop: 4 }}>
                       {schedule.days.length} days • {schedule.startTime} -{" "}
                       {schedule.endTime} • RM {schedule.hourlyRate.toFixed(2)}
                     </Text>
@@ -1401,54 +1276,19 @@ export default function AdminSettings() {
             <TouchableOpacity
               onPress={handleAssignWorker}
               style={{
-                backgroundColor: adminPalette.accentStrong,
-                padding: 12,
-                borderRadius: 12,
+                backgroundColor: p.accent,
+                paddingVertical: 10,
+                borderRadius: 8,
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>
+              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
                 Assign Worker
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity
-          onPress={handleSaveConfig}
-          style={{
-            marginTop: 20,
-            backgroundColor: adminPalette.accent,
-            padding: 14,
-            borderRadius: 12,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Save Settings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleGenerateSchedule}
-          disabled={generating}
-          style={{
-            marginTop: 12,
-            backgroundColor: adminPalette.accentStrong,
-            padding: 14,
-            borderRadius: 12,
-            alignItems: "center",
-            opacity: generating ? 0.7 : 1,
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>
-            {generating ? "Generating..." : "Auto-generate Shifts"}
-          </Text>
-        </TouchableOpacity>
-
-        {status ? (
-          <Text style={{ color: adminPalette.textMuted, marginTop: 12 }}>
-            {status}
-          </Text>
-        ) : null}
       </ScrollView>
     </View>
   );

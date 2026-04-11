@@ -67,284 +67,21 @@ export default function AdminAttendance() {
     holidays: [] as string[],
   });
   const [latestAudit, setLatestAudit] = useState<any | null>(null);
-  const {
-    statCard,
-    statIcon,
-    statTitle,
-    statSub,
-    tableCard,
-    tableHeader,
-    tableTitle,
-    tableRowHeader,
-    tableHeaderText,
-    tableRow,
-    tableCell,
-    tableCellMuted,
-    tableCellStatus,
-    tableActions,
-    actionButton,
-    emptyText,
-    sortControls,
-    sortButton,
-    sortButtonActive,
-    sortButtonText,
-    sortButtonTextActive,
-    exceptionToolbar,
-    exceptionHint,
-    workerButton,
-    workerButtonText,
-    workerMenu,
-    workerMenuItem,
-    workerMenuText,
-    workerMenuTextActive,
-    modalOverlay,
-    modalCard,
-    modalHeader,
-    modalTitle,
-    modalSubtitle,
-    modalRow,
-    modalLabel,
-    modalValue,
-    modalButton,
-    inputField,
-  } = useMemo(
-    () => ({
-      statCard: {
-        flex: 1,
-        minWidth: 240,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        shadowColor: "#000",
-        shadowOpacity: 0.18,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 3,
-      },
-      statIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-      },
-      statTitle: { color: adminPalette.text, fontWeight: "600" },
-      statSub: { color: adminPalette.textMuted, marginTop: 4, fontSize: 12 },
-      tableCard: {
-        marginTop: 24,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        overflow: "visible" as const,
-        shadowColor: "#000",
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 4,
-      },
-      tableHeader: {
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        justifyContent: "space-between" as const,
-        position: "relative" as const,
-        zIndex: 3,
-        overflow: "visible" as const,
-      },
-      tableTitle: { color: adminPalette.text, fontWeight: "600" },
-      tableRowHeader: {
-        flexDirection: "row" as const,
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        backgroundColor: adminPalette.surfaceAlt,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-      },
-      tableHeaderText: {
-        flex: 1,
-        color: adminPalette.textMuted,
-        fontSize: 12,
-        fontWeight: "600" as const,
-      },
-      tableRow: {
-        flexDirection: "row" as const,
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-        alignItems: "center" as const,
-      },
-      tableCell: { flex: 1, color: adminPalette.text, fontSize: 13 },
-      tableCellMuted: { flex: 1, color: adminPalette.textMuted, fontSize: 13 },
-      tableCellStatus: { flex: 1 },
-      tableActions: { flex: 1, alignItems: "flex-start" as const },
-      actionButton: {
-        padding: 8,
-        borderRadius: 10,
-      },
-      emptyText: { color: adminPalette.textMuted, fontSize: 12 },
-      sortControls: { flexDirection: "row", gap: 8 },
-      sortButton: {
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      sortButtonActive: {
-        borderColor: adminPalette.accent,
-        backgroundColor: adminPalette.infoSoft,
-      },
-      sortButtonText: { color: adminPalette.textMuted, fontSize: 11 },
-      sortButtonTextActive: { color: adminPalette.accent, fontWeight: "700" },
-      exceptionToolbar: {
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: adminPalette.border,
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        justifyContent: "space-between" as const,
-        position: "relative" as const,
-        zIndex: 2,
-      },
-      exceptionHint: { color: adminPalette.textMuted, fontSize: 12 },
-      workerButton: {
-        flexDirection: "row" as const,
-        alignItems: "center" as const,
-        gap: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-      workerButtonText: { color: adminPalette.text, fontSize: 12, fontWeight: "600" },
-      workerMenu: {
-        position: "absolute" as const,
-        top: 42,
-        left: 0,
-        minWidth: 180,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        paddingVertical: 6,
-        zIndex: 20,
-        elevation: 10,
-        shadowColor: "#000",
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 6 },
-      },
-      workerMenuItem: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-      },
-      workerMenuText: { color: adminPalette.textMuted, fontSize: 12 },
-      workerMenuTextActive: { color: adminPalette.accent, fontWeight: "700" },
-      modalOverlay: {
-        position: "absolute" as const,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(15, 23, 42, 0.6)",
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-        padding: 24,
-      },
-      modalCard: {
-        width: "100%" as const,
-        maxWidth: 520,
-        backgroundColor: adminPalette.surface,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        shadowColor: "#000",
-        shadowOpacity: 0.24,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 12 },
-        elevation: 5,
-      },
-      modalHeader: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-        alignItems: "center" as const,
-      },
-      modalTitle: {
-        color: adminPalette.text,
-        fontWeight: "700" as const,
-        fontSize: 16,
-      },
-      modalSubtitle: { color: adminPalette.textMuted, marginTop: 6, fontSize: 12 },
-      modalRow: {
-        flexDirection: "row" as const,
-        justifyContent: "space-between" as const,
-      },
-      modalLabel: { color: adminPalette.textMuted, fontSize: 12 },
-      modalValue: { color: adminPalette.text, fontSize: 12, fontWeight: "600" as const },
-      modalButton: {
-        flex: 1,
-        alignItems: "center" as const,
-        paddingVertical: 10,
-        borderRadius: 12,
-      },
-      inputField: {
-        borderWidth: 1,
-        borderColor: adminPalette.border,
-        borderRadius: 12,
-        padding: 10,
-        color: adminPalette.text,
-        backgroundColor: adminPalette.surfaceAlt,
-      },
-    }),
-    [adminPalette]
-  );
-  const getStatusStyle = (status: string) => {
-    if (status === "approved") {
-      return {
-        badge: {
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          borderRadius: 999,
-          backgroundColor: adminPalette.successSoft,
-          fontSize: 12,
-        },
-        text: { color: adminPalette.success },
-      };
-    }
-    if (status === "rejected" || status === "absent") {
-      return {
-        badge: {
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          borderRadius: 999,
-          backgroundColor: adminPalette.dangerSoft,
-          fontSize: 12,
-        },
-        text: { color: adminPalette.danger },
-      };
-    }
-    return {
-      badge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 999,
-        backgroundColor: adminPalette.warningSoft,
-        fontSize: 12,
-      },
-      text: { color: adminPalette.warning },
-    };
+  const p = adminPalette;
+
+  const inputField = {
+    borderWidth: 1 as const, borderColor: p.border, borderRadius: 9,
+    padding: 10, color: p.text, backgroundColor: p.surfaceAlt,
+  };
+  const workerMenuStyle = {
+    position: "absolute" as const, top: 38, left: 0, minWidth: 180,
+    backgroundColor: p.surface, borderRadius: 10, borderWidth: 1 as const,
+    borderColor: p.border, paddingVertical: 4, zIndex: 20, elevation: 10,
+  };
+  const getStatusColor = (status: string) => {
+    if (status === "approved") return { bg: p.successSoft, text: p.success };
+    if (status === "rejected" || status === "absent") return { bg: p.dangerSoft, text: p.danger };
+    return { bg: p.warningSoft, text: p.warning };
   };
 
   useEffect(() => {
@@ -690,535 +427,252 @@ export default function AdminAttendance() {
     return [...list].sort((a, b) => toLogTimestamp(a.log) - toLogTimestamp(b.log)).reverse();
   }, [exceptions, exceptionFilter, exceptionWorkerId]);
 
+  const card = { backgroundColor: p.surface, borderRadius: 12, borderWidth: 1 as const, borderColor: p.border };
+  const pill = (active: boolean) => ({
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99,
+    borderWidth: 1 as const,
+    borderColor: active ? p.accent : p.border,
+    backgroundColor: active ? p.infoSoft : p.surfaceAlt,
+  });
+  const dropBtn = {
+    flexDirection: "row" as const, alignItems: "center" as const, gap: 6,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+    borderWidth: 1 as const, borderColor: p.border, backgroundColor: p.surfaceAlt,
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: adminPalette.backgroundStart }}>
-      
-      
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 80 }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View style={[statIcon, { backgroundColor: adminPalette.infoSoft }]}>
-                <Clock size={18} color={adminPalette.accent} />
-              </View>
-              <View>
-                <Text style={statTitle}>{"Today's Attendance"}</Text>
-                <Text style={statSub}>
-                  {weeklyStats.todayPresent} of {totalWorkers} workers present
-                </Text>
-              </View>
-            </View>
-          </View>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View style={[statIcon, { backgroundColor: adminPalette.warningSoft }]}>
-                <Calendar size={18} color={adminPalette.warning} />
-              </View>
-              <View>
-                <Text style={statTitle}>Pending Approval</Text>
-                <Text style={statSub}>
-                  {weeklyStats.pendingCount} records to review
-                </Text>
-              </View>
-            </View>
-          </View>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View style={[statIcon, { backgroundColor: adminPalette.successSoft }]}>
-                <Check size={18} color={adminPalette.success} />
-              </View>
-              <View>
-                <Text style={statTitle}>This Week</Text>
-                <Text style={statSub}>
-                  {weeklyStats.weeklyHours.toFixed(1)} hours logged
-                </Text>
-              </View>
-            </View>
-          </View>
+    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+
+        {/* Header */}
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ color: p.text, fontSize: 16, fontWeight: "700", letterSpacing: -0.3 }}>Attendance</Text>
+          <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2 }}>Track and manage worker attendance records</Text>
         </View>
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 16 }}>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <View style={[statIcon, { backgroundColor: adminPalette.warningSoft }]}>
-                <Info size={18} color={adminPalette.warning} />
-              </View>
-              <View>
-                <Text style={statTitle}>Latest Audit</Text>
-                <Text style={statSub}>
-                  {latestAudit
-                    ? `${latestAudit.issueCount || 0} issue(s) in ${latestAudit.period || latestAudit.id}`
-                    : "No mismatch audits yet"}
-                </Text>
-              </View>
+        {/* Stat row */}
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+          {[
+            { label: "Present Today",    value: `${weeklyStats.todayPresent}/${totalWorkers}`, color: p.accent },
+            { label: "Pending Review",   value: String(weeklyStats.pendingCount),              color: p.warning },
+            { label: "Hours This Week",  value: `${weeklyStats.weeklyHours.toFixed(1)}h`,      color: p.success },
+            { label: "Exceptions",       value: String(exceptions.length),                     color: p.danger  },
+          ].map(s => (
+            <View key={s.label} style={[card, { flex: 1, padding: 12 }]}>
+              <Text style={{ color: s.color, fontSize: 18, fontWeight: "700" }}>{s.value}</Text>
+              <Text style={{ color: p.textMuted, fontSize: 11, marginTop: 2 }}>{s.label}</Text>
             </View>
-          </View>
-          <View style={statCard}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <View style={[statIcon, { backgroundColor: adminPalette.dangerSoft }]}>
-                <Calendar size={18} color={adminPalette.danger} />
-              </View>
-              <View>
-                <Text style={statTitle}>Exceptions</Text>
-                <Text style={statSub}>
-                  {exceptions.length} record(s) need attention
-                </Text>
-              </View>
-            </View>
-          </View>
+          ))}
         </View>
 
-        <View
-          style={[
-            tableCard,
-            { marginTop: 16 },
-            showWorkerMenu && { marginBottom: 180 },
-          ]}
-        >
-          <View style={tableHeader}>
-            <Text style={tableTitle}>Exceptions Inbox</Text>
-            <View style={sortControls}>
-              {(["all", "late", "early", "incomplete", "no-show"] as const).map(
-                filter => (
-                  <TouchableOpacity
-                    key={filter}
-                    style={[
-                      sortButton,
-                      exceptionFilter === filter && sortButtonActive,
-                    ]}
-                    onPress={() => setExceptionFilter(filter)}
-                  >
-                    <Text
-                      style={[
-                        sortButtonText,
-                        exceptionFilter === filter && sortButtonTextActive,
-                      ]}
-                    >
-                      {filter}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              )}
+        {/* Exceptions Inbox */}
+        <View style={[card, { marginBottom: 16 }]}>
+          {/* Card header */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: p.border, flexWrap: "wrap", gap: 8 }}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Exceptions Inbox</Text>
+            <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
+              {(["all", "late", "early", "incomplete", "no-show"] as const).map(f => (
+                <TouchableOpacity key={f} style={pill(exceptionFilter === f)} onPress={() => setExceptionFilter(f)}>
+                  <Text style={{ color: exceptionFilter === f ? p.accent : p.textMuted, fontSize: 11, fontWeight: "600" }}>{f}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
-          <View style={exceptionToolbar}>
+          {/* Worker filter */}
+          <View style={{ paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: p.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 3 }}>
             <View style={{ position: "relative" }}>
-              <TouchableOpacity
-                style={workerButton}
-                onPress={() => setShowWorkerMenu(prev => !prev)}
-              >
-                <Text style={workerButtonText}>
-                  {workerOptions.find(option => option.id === exceptionWorkerId)?.name ||
-                    "All workers"}
-                </Text>
-                <ChevronDown size={14} color={adminPalette.textMuted} />
+              <TouchableOpacity style={dropBtn} onPress={() => setShowWorkerMenu(v => !v)}>
+                <Text style={{ color: p.text, fontSize: 12 }}>{workerOptions.find(o => o.id === exceptionWorkerId)?.name || "All workers"}</Text>
+                <ChevronDown size={12} color={p.textMuted} />
               </TouchableOpacity>
-              {showWorkerMenu ? (
-                <View style={workerMenu}>
-                  {workerOptions.map(option => (
-                    <TouchableOpacity
-                      key={option.id}
-                      style={workerMenuItem}
-                      onPress={() => {
-                        setExceptionWorkerId(option.id);
-                        setShowWorkerMenu(false);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          workerMenuText,
-                          exceptionWorkerId === option.id && workerMenuTextActive,
-                        ]}
-                      >
-                        {option.name}
-                      </Text>
+              {showWorkerMenu && (
+                <View style={workerMenuStyle}>
+                  {workerOptions.map(opt => (
+                    <TouchableOpacity key={opt.id} style={{ paddingHorizontal: 12, paddingVertical: 8 }} onPress={() => { setExceptionWorkerId(opt.id); setShowWorkerMenu(false); }}>
+                      <Text style={{ color: exceptionWorkerId === opt.id ? p.accent : p.textMuted, fontSize: 12, fontWeight: exceptionWorkerId === opt.id ? "700" : "400" }}>{opt.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-              ) : null}
+              )}
             </View>
-            <Text style={exceptionHint}>Sorted by latest</Text>
+            <Text style={{ color: p.textMuted, fontSize: 11 }}>Sorted by latest</Text>
           </View>
-          {showWorkerMenu ? <View style={menuSpacer} /> : null}
+          {showWorkerMenu && <View style={{ height: 160 }} />}
           {filteredExceptions.length === 0 ? (
-            <View style={{ padding: 20 }}>
-              <Text style={emptyText}>No exceptions found.</Text>
-            </View>
-          ) : (
-            <View>
-              {filteredExceptions.slice(0, 8).map((item, index) => {
-                const log = item.log;
-                const workerName =
-                  workers[log.workerId]?.name || log.workerId || "Worker";
-                return (
-                  <View
-                    key={log.refPath}
-                    style={[
-                      tableRow,
-                      index % 2 === 1 ? { backgroundColor: adminPalette.surfaceAlt } : null,
-                    ]}
-                  >
-                    <View style={{ flex: 2 }}>
-                      <Text style={tableCell}>{workerName}</Text>
-                      <Text style={tableCellMuted}>
-                        {log.date || "-"} • {item.type}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={tableCellMuted}>
-                        {formatTimeValue(log.clockInTs, log.clockIn)} -{" "}
-                        {formatTimeValue(log.clockOutTs, log.clockOut)}
-                      </Text>
-                    </View>
-                    <View style={tableActions}>
-                      <TouchableOpacity
-                        onPress={() => openDetails(log)}
-                        style={[actionButton, { backgroundColor: adminPalette.infoSoft }]}
-                      >
-                        <Info size={16} color={adminPalette.accent} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+            <View style={{ padding: 16 }}><Text style={{ color: p.textMuted, fontSize: 12 }}>No exceptions found</Text></View>
+          ) : filteredExceptions.slice(0, 8).map((item, idx) => {
+            const log = item.log;
+            const wName = workers[log.workerId]?.name || "Worker";
+            return (
+              <View key={log.refPath} style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: idx < Math.min(filteredExceptions.length, 8) - 1 ? 1 : 0, borderBottomColor: p.border, gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" }}>{wName}</Text>
+                  <Text style={{ color: p.textMuted, fontSize: 11 }}>{log.date || "—"} · {item.type}</Text>
+                </View>
+                <Text style={{ color: p.textMuted, fontSize: 11 }}>{formatTimeValue(log.clockInTs, log.clockIn)} – {formatTimeValue(log.clockOutTs, log.clockOut)}</Text>
+                <TouchableOpacity onPress={() => openDetails(log)} style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                  <Info size={13} color={p.accent} strokeWidth={1.8} />
+                </TouchableOpacity>
+              </View>
+            );
+          })}
         </View>
 
-        <View style={tableCard}>
-          <View style={tableHeader}>
-            <Text style={tableTitle}>Attendance Records</Text>
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+        {/* Attendance Records */}
+        <View style={[card, { zIndex: 2 }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: p.border, flexWrap: "wrap", gap: 8, position: "relative", zIndex: 2 }}>
+            <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Attendance Records</Text>
+            <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+              {/* Worker dropdown */}
               <View style={{ position: "relative" }}>
-                <TouchableOpacity
-                  style={workerButton}
-                  onPress={() => {
-                    setShowAttendanceWorkerMenu(prev => !prev);
-                    if (showWorkerMenu) setShowWorkerMenu(false);
-                  }}
-                >
-                  <Text style={workerButtonText}>
-                    {workerOptions.find(option => option.id === attendanceWorkerId)?.name ||
-                      "All workers"}
-                  </Text>
-                  <ChevronDown size={14} color={adminPalette.textMuted} />
+                <TouchableOpacity style={dropBtn} onPress={() => { setShowAttendanceWorkerMenu(v => !v); setShowWorkerMenu(false); }}>
+                  <Text style={{ color: p.text, fontSize: 12 }}>{workerOptions.find(o => o.id === attendanceWorkerId)?.name || "All workers"}</Text>
+                  <ChevronDown size={12} color={p.textMuted} />
                 </TouchableOpacity>
-                {showAttendanceWorkerMenu ? (
-                  <View style={workerMenu}>
-                    {workerOptions.map(option => (
-                      <TouchableOpacity
-                        key={option.id}
-                        style={workerMenuItem}
-                        onPress={() => {
-                          setAttendanceWorkerId(option.id);
-                          setShowAttendanceWorkerMenu(false);
-                        }}
-                      >
-                        <Text
-                          style={[
-                            workerMenuText,
-                            attendanceWorkerId === option.id &&
-                              workerMenuTextActive,
-                          ]}
-                        >
-                          {option.name}
-                        </Text>
+                {showAttendanceWorkerMenu && (
+                  <View style={workerMenuStyle}>
+                    {workerOptions.map(opt => (
+                      <TouchableOpacity key={opt.id} style={{ paddingHorizontal: 12, paddingVertical: 8 }} onPress={() => { setAttendanceWorkerId(opt.id); setShowAttendanceWorkerMenu(false); }}>
+                        <Text style={{ color: attendanceWorkerId === opt.id ? p.accent : p.textMuted, fontSize: 12, fontWeight: attendanceWorkerId === opt.id ? "700" : "400" }}>{opt.name}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
-                ) : null}
+                )}
               </View>
-              <View style={sortControls}>
-                <TouchableOpacity
-                  style={[sortButton, sortOrder === "latest" && sortButtonActive]}
-                  onPress={() => setSortOrder("latest")}
-                >
-                  <Text
-                    style={[
-                      sortButtonText,
-                      sortOrder === "latest" && sortButtonTextActive,
-                    ]}
-                  >
-                    Latest First
-                  </Text>
+              {/* Sort pills */}
+              {(["latest", "oldest"] as const).map(s => (
+                <TouchableOpacity key={s} style={pill(sortOrder === s)} onPress={() => setSortOrder(s)}>
+                  <Text style={{ color: sortOrder === s ? p.accent : p.textMuted, fontSize: 11, fontWeight: "600" }}>{s === "latest" ? "Latest" : "Oldest"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[sortButton, sortOrder === "oldest" && sortButtonActive]}
-                  onPress={() => setSortOrder("oldest")}
-                >
-                  <Text
-                    style={[
-                      sortButtonText,
-                      sortOrder === "oldest" && sortButtonTextActive,
-                    ]}
-                  >
-                    Oldest First
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              ))}
             </View>
           </View>
 
-          {showAttendanceWorkerMenu ? <View style={menuSpacer} /> : null}
+          {/* Table head */}
+          <View style={{ flexDirection: "row", paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: p.border, backgroundColor: p.surfaceAlt }}>
+            {["Worker", "Date", "In", "Out", "Break", "Hours", "OT", "Status", ""].map(h => (
+              <Text key={h} style={{ flex: 1, color: p.textMuted, fontSize: 10, fontWeight: "600" }}>{h}</Text>
+            ))}
+          </View>
+
           {sortedLogs.length === 0 ? (
-            <View style={{ padding: 20 }}>
-              <Text style={emptyText}>No attendance records yet.</Text>
-            </View>
-          ) : (
-            <View>
-              <View style={tableRowHeader}>
-                {[
-                  "Worker",
-                  "Date",
-                  "Clock In",
-                  "Clock Out",
-                  "Break",
-                  "Hours",
-                  "Overtime",
-                  "Status",
-                  "Actions",
-                ].map(label => (
-                  <Text key={label} style={tableHeaderText}>
-                    {label}
-                  </Text>
-                ))}
-              </View>
-              {sortedLogs.map((log, index) => {
-                const statusStyle = getStatusStyle(log.status);
-                const workerName =
-                  workers[log.workerId]?.name || log.workerId || "Worker";
-                const overtimeHours = overtimeMap[`${log.workerId}:${log.date}`] ?? 0;
-                const breakEntry = breakMap[`${log.workerId}:${log.date}`];
-                return (
-                  <View
-                    key={log.refPath}
-                    style={[
-                      tableRow,
-                      index % 2 === 1 ? { backgroundColor: adminPalette.surfaceAlt } : null,
-                    ]}
-                  >
-                    <Text style={tableCell}>{workerName}</Text>
-                    <Text style={tableCellMuted}>{log.date || "-"}</Text>
-                    <Text style={tableCellMuted}>
-                      {formatTimeValue(log.clockInTs, log.clockIn)}
-                    </Text>
-                    <Text style={tableCellMuted}>
-                      {formatTimeValue(log.clockOutTs, log.clockOut)}
-                    </Text>
-                    <Text style={tableCellMuted}>
-                      {log.breakStartTs || log.breakEndTs
-                        ? `${formatTimeValue(log.breakStartTs, log.breakStart)}-${formatTimeValue(
-                            log.breakEndTs,
-                            log.breakEnd
-                          )}`
-                        : log.breakStart
-                        ? log.breakEnd
-                          ? `${log.breakStart}-${log.breakEnd}`
-                          : `${log.breakStart}-...`
-                        : breakEntry
-                        ? `${breakEntry.startTime || "-"}-${breakEntry.endTime || "-"}`
-                        : "-"}
-                    </Text>
-                    <Text style={tableCell}>{getLogHours(log)}h</Text>
-                    <Text style={tableCellMuted}>
-                      {overtimeHours ? `${overtimeHours}h` : "-"}
-                    </Text>
-                    <View style={tableCellStatus}>
-                      <Text style={[statusStyle.badge, statusStyle.text]}>
-                        {String(log.status || "pending")}
-                      </Text>
-                    </View>
-                    <View style={tableActions}>
-                      <View style={{ flexDirection: "row", gap: 8 }}>
-                        <TouchableOpacity
-                          onPress={() => openDetails(log)}
-                          style={[
-                            actionButton,
-                            { backgroundColor: adminPalette.infoSoft },
-                          ]}
-                        >
-                          <Info size={16} color={adminPalette.accent} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => openAdjust(log)}
-                          style={[
-                            actionButton,
-                            { backgroundColor: adminPalette.surfaceAlt },
-                          ]}
-                        >
-                          <Edit2 size={16} color={adminPalette.textMuted} />
-                        </TouchableOpacity>
-                        {log.status === "pending" ? (
-                          <>
-                            <TouchableOpacity
-                              onPress={() => updateStatus(log, "approved")}
-                              style={[
-                                actionButton,
-                                { backgroundColor: adminPalette.successSoft },
-                              ]}
-                            >
-                              <Check size={16} color={adminPalette.success} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => updateStatus(log, "rejected")}
-                              style={[
-                                actionButton,
-                                { backgroundColor: adminPalette.dangerSoft },
-                              ]}
-                            >
-                              <X size={16} color={adminPalette.danger} />
-                            </TouchableOpacity>
-                          </>
-                        ) : null}
-                      </View>
-                    </View>
+            <View style={{ padding: 16 }}><Text style={{ color: p.textMuted, fontSize: 12 }}>No attendance records yet</Text></View>
+          ) : sortedLogs.map((log, idx) => {
+            const sc = getStatusColor(log.status);
+            const wName = workers[log.workerId]?.name || "Worker";
+            const otHours = overtimeMap[`${log.workerId}:${log.date}`] ?? 0;
+            const breakEntry = breakMap[`${log.workerId}:${log.date}`];
+            const breakStr = log.breakStart
+              ? `${log.breakStart}–${log.breakEnd || "..."}`
+              : breakEntry ? `${breakEntry.startTime || "–"}–${breakEntry.endTime || "–"}` : "–";
+            return (
+              <View key={log.refPath} style={{ flexDirection: "row", paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: idx < sortedLogs.length - 1 ? 1 : 0, borderBottomColor: p.border, alignItems: "center" }}>
+                <Text style={{ flex: 1, color: p.text, fontSize: 12, fontWeight: "600" }}>{wName}</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 11 }}>{log.date || "–"}</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 11 }}>{formatTimeValue(log.clockInTs, log.clockIn)}</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 11 }}>{formatTimeValue(log.clockOutTs, log.clockOut)}</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 11 }}>{breakStr}</Text>
+                <Text style={{ flex: 1, color: p.text, fontSize: 11 }}>{getLogHours(log)}h</Text>
+                <Text style={{ flex: 1, color: p.textMuted, fontSize: 11 }}>{otHours ? `${otHours}h` : "–"}</Text>
+                <View style={{ flex: 1 }}>
+                  <View style={{ backgroundColor: sc.bg, borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2, alignSelf: "flex-start" }}>
+                    <Text style={{ color: sc.text, fontSize: 10, fontWeight: "700" }}>{String(log.status || "pending")}</Text>
                   </View>
-                );
-              })}
-            </View>
-          )}
+                </View>
+                <View style={{ flex: 1, flexDirection: "row", gap: 5 }}>
+                  <TouchableOpacity onPress={() => openDetails(log)} style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                    <Info size={12} color={p.accent} strokeWidth={1.8} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => openAdjust(log)} style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                    <Edit2 size={12} color={p.textMuted} strokeWidth={1.8} />
+                  </TouchableOpacity>
+                  {log.status === "pending" && <>
+                    <TouchableOpacity onPress={() => updateStatus(log, "approved")} style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: p.successSoft, alignItems: "center", justifyContent: "center" }}>
+                      <Check size={12} color={p.success} strokeWidth={2} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => updateStatus(log, "rejected")} style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: p.dangerSoft, alignItems: "center", justifyContent: "center" }}>
+                      <X size={12} color={p.danger} strokeWidth={2} />
+                    </TouchableOpacity>
+                  </>}
+                </View>
+              </View>
+            );
+          })}
         </View>
       </ScrollView>
 
-      {showDetails && selectedLog ? (
-        <View style={modalOverlay}>
-          <View style={modalCard}>
-            <View style={modalHeader}>
-              <Text style={modalTitle}>Pay Breakdown</Text>
-              <TouchableOpacity onPress={() => setShowDetails(false)}>
-                <X size={18} color={adminPalette.textMuted} />
+      {/* Details Modal */}
+      {showDetails && selectedLog && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <View style={{ width: "100%", maxWidth: 440, backgroundColor: p.surface, borderRadius: 14, borderWidth: 1, borderColor: p.border, overflow: "hidden" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: p.border }}>
+              <View>
+                <Text style={{ color: p.text, fontSize: 14, fontWeight: "700" }}>Pay Breakdown</Text>
+                <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 1 }}>{workers[selectedLog.workerId]?.name || "Worker"} · {selectedLog.date || "–"}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowDetails(false)} style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                <X size={14} color={p.textMuted} />
               </TouchableOpacity>
             </View>
-            <Text style={modalSubtitle}>
-              {workers[selectedLog.workerId]?.name || selectedLog.workerId || "Worker"} •{" "}
-              {selectedLog.date || "-"}
-            </Text>
-            <View style={{ marginTop: 12, gap: 8 }}>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Raw minutes</Text>
-                <Text style={modalValue}>{selectedLog.rawMinutes ?? 0}m</Text>
-              </View>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Break minutes</Text>
-                <Text style={modalValue}>{selectedLog.breakMinutes ?? 0}m</Text>
-              </View>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Rounded minutes</Text>
-                <Text style={modalValue}>{selectedLog.roundedMinutes ?? 0}m</Text>
-              </View>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Net hours</Text>
-                <Text style={modalValue}>{selectedLog.netHours ?? selectedLog.hours ?? 0}h</Text>
-              </View>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Overtime hours</Text>
-                <Text style={modalValue}>{selectedLog.overtimeHours ?? 0}h</Text>
-              </View>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Base pay</Text>
-                <Text style={modalValue}>{formatCurrency(selectedLog.basePay)}</Text>
-              </View>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Overtime pay</Text>
-                <Text style={modalValue}>{formatCurrency(selectedLog.overtimePay)}</Text>
-              </View>
-              <View style={modalRow}>
-                <Text style={modalLabel}>Final pay</Text>
-                <Text style={modalValue}>{formatCurrency(selectedLog.finalPay)}</Text>
-              </View>
+            <View style={{ padding: 16, gap: 8 }}>
+              {[
+                ["Raw minutes",     `${selectedLog.rawMinutes ?? 0}m`],
+                ["Break minutes",   `${selectedLog.breakMinutes ?? 0}m`],
+                ["Rounded minutes", `${selectedLog.roundedMinutes ?? 0}m`],
+                ["Net hours",       `${selectedLog.netHours ?? selectedLog.hours ?? 0}h`],
+                ["Overtime hours",  `${selectedLog.overtimeHours ?? 0}h`],
+                ["Base pay",        formatCurrency(selectedLog.basePay)],
+                ["Overtime pay",    formatCurrency(selectedLog.overtimePay)],
+                ["Final pay",       formatCurrency(selectedLog.finalPay)],
+              ].map(([label, value]) => (
+                <View key={label} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: p.border }}>
+                  <Text style={{ color: p.textMuted, fontSize: 12 }}>{label}</Text>
+                  <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" }}>{value}</Text>
+                </View>
+              ))}
             </View>
-            <TouchableOpacity
-              style={[modalButton, { backgroundColor: adminPalette.surfaceAlt }]}
-              onPress={() => setShowDetails(false)}
-            >
-              <Text style={{ color: adminPalette.text, fontWeight: "600" }}>Close</Text>
-            </TouchableOpacity>
+            <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: p.border }}>
+              <TouchableOpacity onPress={() => setShowDetails(false)} style={{ borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.surfaceAlt, borderWidth: 1, borderColor: p.border }}>
+                <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      ) : null}
+      )}
 
-      {showAdjust && selectedLog ? (
-        <View style={modalOverlay}>
-          <View style={modalCard}>
-            <View style={modalHeader}>
-              <Text style={modalTitle}>Adjust Attendance</Text>
-              <TouchableOpacity onPress={() => setShowAdjust(false)}>
-                <X size={18} color={adminPalette.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <Text style={modalSubtitle}>
-              {workers[selectedLog.workerId]?.name || selectedLog.workerId || "Worker"} •{" "}
-              {selectedLog.date || "-"}
-            </Text>
-            <View style={{ marginTop: 12, gap: 10 }}>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <TextInput
-                  placeholder="Clock in (HH:MM)"
-                  placeholderTextColor={adminPalette.textMuted}
-                  value={adjustForm.clockIn}
-                  onChangeText={value =>
-                    setAdjustForm(prev => ({ ...prev, clockIn: value }))
-                  }
-                  style={[inputField, { flex: 1 }]}
-                />
-                <TextInput
-                  placeholder="Clock out (HH:MM)"
-                  placeholderTextColor={adminPalette.textMuted}
-                  value={adjustForm.clockOut}
-                  onChangeText={value =>
-                    setAdjustForm(prev => ({ ...prev, clockOut: value }))
-                  }
-                  style={[inputField, { flex: 1 }]}
-                />
+      {/* Adjust Modal */}
+      {showAdjust && selectedLog && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <View style={{ width: "100%", maxWidth: 440, backgroundColor: p.surface, borderRadius: 14, borderWidth: 1, borderColor: p.border, overflow: "hidden" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: p.border }}>
+              <View>
+                <Text style={{ color: p.text, fontSize: 14, fontWeight: "700" }}>Adjust Attendance</Text>
+                <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 1 }}>{workers[selectedLog.workerId]?.name || "Worker"} · {selectedLog.date || "–"}</Text>
               </View>
-              <TextInput
-                placeholder="Break minutes"
-                placeholderTextColor={adminPalette.textMuted}
-                keyboardType="numeric"
-                value={adjustForm.breakMinutes}
-                onChangeText={value =>
-                  setAdjustForm(prev => ({
-                    ...prev,
-                    breakMinutes: value.replace(/[^0-9]/g, ""),
-                  }))
-                }
-                style={inputField}
-              />
-              <TextInput
-                placeholder="Reason for adjustment *"
-                placeholderTextColor={adminPalette.textMuted}
-                value={adjustForm.reason}
-                onChangeText={value =>
-                  setAdjustForm(prev => ({ ...prev, reason: value }))
-                }
-                style={[inputField, { height: 80 }]}
-                multiline
-              />
-              {adjustError ? (
-                <Text style={{ color: adminPalette.danger, fontSize: 12 }}>
-                  {adjustError}
-                </Text>
-              ) : null}
-            </View>
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-              <TouchableOpacity
-                style={[modalButton, { backgroundColor: adminPalette.surfaceAlt }]}
-                onPress={() => setShowAdjust(false)}
-              >
-                <Text style={{ color: adminPalette.text, fontWeight: "600" }}>
-                  Cancel
-                </Text>
+              <TouchableOpacity onPress={() => setShowAdjust(false)} style={{ width: 28, height: 28, borderRadius: 7, backgroundColor: p.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+                <X size={14} color={p.textMuted} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[modalButton, { backgroundColor: adminPalette.accentStrong }]}
-                onPress={handleAdjustSave}
-              >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Save</Text>
+            </View>
+            <View style={{ padding: 16, gap: 10 }}>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TextInput placeholder="Clock in (HH:MM)" placeholderTextColor={p.textMuted} value={adjustForm.clockIn} onChangeText={v => setAdjustForm(prev => ({ ...prev, clockIn: v }))} style={[inputField, { flex: 1 }]} />
+                <TextInput placeholder="Clock out (HH:MM)" placeholderTextColor={p.textMuted} value={adjustForm.clockOut} onChangeText={v => setAdjustForm(prev => ({ ...prev, clockOut: v }))} style={[inputField, { flex: 1 }]} />
+              </View>
+              <TextInput placeholder="Break minutes" placeholderTextColor={p.textMuted} keyboardType="numeric" value={adjustForm.breakMinutes} onChangeText={v => setAdjustForm(prev => ({ ...prev, breakMinutes: v.replace(/[^0-9]/g, "") }))} style={inputField} />
+              <TextInput placeholder="Reason for adjustment *" placeholderTextColor={p.textMuted} value={adjustForm.reason} onChangeText={v => setAdjustForm(prev => ({ ...prev, reason: v }))} style={[inputField, { height: 72 }]} multiline />
+              {adjustError ? <Text style={{ color: p.danger, fontSize: 12 }}>{adjustError}</Text> : null}
+            </View>
+            <View style={{ flexDirection: "row", gap: 10, padding: 12, borderTopWidth: 1, borderTopColor: p.border }}>
+              <TouchableOpacity onPress={() => setShowAdjust(false)} style={{ flex: 1, borderWidth: 1, borderColor: p.border, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.surfaceAlt }}>
+                <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleAdjustSave} style={{ flex: 1, borderRadius: 9, paddingVertical: 9, alignItems: "center", backgroundColor: p.accentStrong }}>
+                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
