@@ -1,18 +1,18 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { Mail, X } from "lucide-react-native";
+import { ArrowLeft, Mail } from "lucide-react-native";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "@/lib/firebase";
-import { AuthWaveBackground } from "@/components/AuthWaveBackground";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -20,27 +20,14 @@ export default function ForgotPassword() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const validateEmail = (email: string) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleReset = async () => {
     setError("");
     setSuccess("");
-
-    if (!email) {
-      setError("Email is required");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
-
+    if (!email) { setError("Email is required"); return; }
+    if (!validateEmail(email)) { setError("Please enter a valid email address"); return; }
     setLoading(true);
-
     try {
       await sendPasswordResetEmail(auth, email.trim());
       setSuccess("Reset link sent. Check your email.");
@@ -57,137 +44,129 @@ export default function ForgotPassword() {
   };
 
   return (
-    <LinearGradient
-      colors={["#0b1220", "#0f1a1a", "#0b0f12"]}
-      style={{ flex: 1 }}
-    >
-      <AuthWaveBackground />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, justifyContent: "center", padding: 24 }}
-      >
-        <View
-          style={{
-            backgroundColor: "rgba(15,23,42,0.9)",
-            borderRadius: 24,
-            padding: 28,
-            borderWidth: 1,
-            borderColor: "rgba(148,163,184,0.2)",
-          }}
+    <View style={styles.screen}>
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.kav}
         >
-          {/* BACK */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ marginBottom: 12 }}
-          >
-            <Text style={{ color: "#B7F34D" }}>← Back to Login</Text>
-          </TouchableOpacity>
+          <View style={styles.inner}>
+            {/* Back button */}
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <ArrowLeft size={20} color="#111827" />
+            </TouchableOpacity>
 
-          {/* CLOSE */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ position: "absolute", top: 16, right: 16 }}
-          >
-            <X size={22} color="#94a3b8" />
-          </TouchableOpacity>
+            <Text style={styles.title}>Reset Password</Text>
+            <Text style={styles.subtitle}>
+              Enter your email address and we'll send you a link to reset your password.
+            </Text>
 
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: "700",
-              marginBottom: 8,
-              color: "#e2e8f0",
-            }}
-          >
-            Reset Password
-          </Text>
+            {/* Email */}
+            <View style={styles.inputWrap}>
+              <Mail size={18} color="#9ca3af" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
 
-          <Text
-            style={{
-              color: "#94a3b8",
-              marginBottom: 24,
-              lineHeight: 20,
-            }}
-          >
-            Enter your email address and we’ll send you a link to reset your
-            password.
-          </Text>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {success ? <Text style={styles.successText}>{success}</Text> : null}
 
-          {/* EMAIL */}
-          <View style={{ position: "relative", marginBottom: 12 }}>
-            <Mail
-              size={20}
-              color="#94a3b8"
-              style={{ position: "absolute", left: 14, top: 16 }}
-            />
-            <TextInput
-              placeholder="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              style={{
-                borderWidth: 1,
-                borderColor: "rgba(148,163,184,0.3)",
-                borderRadius: 12,
-                padding: 14,
-                paddingLeft: 44,
-                color: "#e2e8f0",
-                backgroundColor: "rgba(15,23,42,0.6)",
-              }}
-              placeholderTextColor="#94a3b8"
-            />
+            <TouchableOpacity
+              onPress={handleReset}
+              disabled={loading}
+              style={[styles.primaryBtn, loading && { opacity: 0.6 }]}
+            >
+              <Text style={styles.primaryBtnText}>{loading ? "Sending..." : "Send Reset Link"}</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* ERROR */}
-          {error ? (
-            <Text
-              style={{
-                color: "red",
-                textAlign: "center",
-                marginBottom: 12,
-              }}
-            >
-              {error}
-            </Text>
-          ) : null}
-
-          {success ? (
-            <Text
-              style={{
-                color: "#16a34a",
-                textAlign: "center",
-                marginBottom: 12,
-              }}
-            >
-              {success}
-            </Text>
-          ) : null}
-
-          {/* BUTTON */}
-          <TouchableOpacity
-            onPress={handleReset}
-            disabled={loading}
-            style={{
-              backgroundColor: "#B7F34D",
-              padding: 16,
-              borderRadius: 14,
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            <Text
-              style={{
-                color: "#0b0f12",
-                textAlign: "center",
-                fontSize: 16,
-                fontWeight: "600",
-              }}
-            >
-              {loading ? "Sending..." : "Send Reset Link"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#ffffff" },
+  safe: { flex: 1 },
+  kav: { flex: 1 },
+  inner: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 28,
+    paddingBottom: 24,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 28,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#111827",
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  inputWrap: { position: "relative", marginBottom: 12 },
+  inputIcon: { position: "absolute", left: 14, top: 15, zIndex: 1 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingLeft: 44,
+    paddingRight: 14,
+    fontSize: 14,
+    color: "#111827",
+    backgroundColor: "#f9f9f9",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  successText: {
+    color: "#16a34a",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  primaryBtn: {
+    backgroundColor: "#111827",
+    paddingVertical: 16,
+    borderRadius: 999,
+    alignItems: "center",
+    marginTop: 4,
+    shadowColor: "#000000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  primaryBtnText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+});

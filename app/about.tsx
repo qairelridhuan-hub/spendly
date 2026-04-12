@@ -1,24 +1,22 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { ArrowLeft, ShieldCheck, Sparkles, Target } from "lucide-react-native";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 
 export default function AboutScreen() {
   return (
-    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+    <View style={styles.screen}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={22} color="#e5e7eb" />
+            <ArrowLeft size={22} color="#111827" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>About Spendly</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+
           <View style={styles.heroCard}>
             <Text style={styles.heroTitle}>Spendly</Text>
             <Text style={styles.heroSubtitle}>
@@ -28,7 +26,9 @@ export default function AboutScreen() {
 
           <View style={styles.card}>
             <View style={styles.cardTitleRow}>
-              <Sparkles size={18} color="#b7f34d" />
+              <View style={styles.iconWrap}>
+                <Sparkles size={16} color="#111827" />
+              </View>
               <Text style={styles.cardTitle}>What it does</Text>
             </View>
             <Text style={styles.cardText}>
@@ -40,7 +40,9 @@ export default function AboutScreen() {
 
           <View style={styles.card}>
             <View style={styles.cardTitleRow}>
-              <Target size={18} color="#b7f34d" />
+              <View style={styles.iconWrap}>
+                <Target size={16} color="#111827" />
+              </View>
               <Text style={styles.cardTitle}>Key features</Text>
             </View>
             <View style={styles.featureList}>
@@ -53,7 +55,9 @@ export default function AboutScreen() {
 
           <View style={styles.card}>
             <View style={styles.cardTitleRow}>
-              <ShieldCheck size={18} color="#b7f34d" />
+              <View style={styles.iconWrap}>
+                <ShieldCheck size={16} color="#111827" />
+              </View>
               <Text style={styles.cardTitle}>Your data</Text>
             </View>
             <Text style={styles.cardText}>
@@ -67,86 +71,96 @@ export default function AboutScreen() {
             <Text style={styles.footerText}>Version 1.0</Text>
             <Text style={styles.footerSubText}>Built for Spendly users.</Text>
           </View>
+
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: "#ffffff" },
   safe: { flex: 1 },
-  container: { padding: 16, paddingBottom: 140 },
-  bgBlob: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 999,
-    backgroundColor: "rgba(183,243,77,0.14)",
-    top: -80,
-    right: -60,
-  },
-  bgBlobAlt: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 999,
-    backgroundColor: "rgba(15,23,42,0.6)",
-    bottom: -120,
-    left: -80,
-  },
+  container: { padding: 16, paddingBottom: 60 },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 12,
   },
   backButton: {
     width: 36,
     height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
+  headerTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
   headerSpacer: { width: 36 },
   heroCard: {
-    borderRadius: 20,
-    padding: 18,
-    backgroundColor: "rgba(15, 23, 42, 0.85)",
+    borderRadius: 18,
+    padding: 20,
+    backgroundColor: "#f9f9f9",
     borderWidth: 1,
-    borderColor: "#1f2937",
-    marginBottom: 16,
+    borderColor: "#e5e7eb",
+    marginBottom: 14,
+    shadowColor: "#000000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
-  heroTitle: { fontSize: 22, fontWeight: "800", color: "#e5e7eb" },
-  heroSubtitle: { marginTop: 6, color: "#9ca3af", fontSize: 14 },
+  heroTitle: { fontSize: 22, fontWeight: "800", color: "#111827" },
+  heroSubtitle: { marginTop: 6, color: "#6b7280", fontSize: 14, lineHeight: 20 },
   card: {
     borderRadius: 18,
     padding: 16,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#1f2937",
-    marginBottom: 16,
+    borderColor: "#e5e7eb",
+    marginBottom: 14,
+    shadowColor: "#000000",
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   cardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  cardText: { fontSize: 14, color: "#cbd5f5", lineHeight: 20 },
-  featureList: { gap: 6 },
-  featureItem: { fontSize: 14, color: "#cbd5f5" },
+  iconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: "#111827" },
+  cardText: { fontSize: 14, color: "#6b7280", lineHeight: 22 },
+  featureList: { gap: 8 },
+  featureItem: { fontSize: 14, color: "#6b7280", lineHeight: 20 },
   footerCard: {
     borderRadius: 16,
     padding: 16,
-    backgroundColor: "rgba(183,243,77,0.1)",
+    backgroundColor: "#f9f9f9",
     borderWidth: 1,
-    borderColor: "rgba(183,243,77,0.3)",
+    borderColor: "#e5e7eb",
     alignItems: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  footerText: { fontSize: 14, fontWeight: "700", color: "#b7f34d" },
-  footerSubText: { marginTop: 4, fontSize: 12, color: "#9ca3af" },
+  footerText: { fontSize: 14, fontWeight: "700", color: "#111827" },
+  footerSubText: { marginTop: 4, fontSize: 12, color: "#6b7280" },
 });

@@ -1,19 +1,19 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { Mail, Lock, User } from "lucide-react-native";
+import { ArrowLeft, Lock, Mail, User } from "lucide-react-native";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { auth, db } from "@/lib/firebase";
-import { AuthWaveBackground } from "@/components/AuthWaveBackground";
 
 export default function Register() {
   const [fullName, setFullName] = useState("");
@@ -22,48 +22,22 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const validateEmail = (email: string) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleRegister = async () => {
     setError("");
-
-    if (!fullName.trim() || !email.trim() || !password) {
-      setError("All fields are required");
-      return;
-    }
-
-    if (!validateEmail(email.trim())) {
-      setError("Invalid email address");
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-
+    if (!fullName.trim() || !email.trim() || !password) { setError("All fields are required"); return; }
+    if (!validateEmail(email.trim())) { setError("Invalid email address"); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
     setLoading(true);
-
     try {
-      const credential = await createUserWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
-
-      await updateProfile(credential.user, {
-        displayName: fullName.trim(),
-      });
-
+      const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await updateProfile(credential.user, { displayName: fullName.trim() });
       await setDoc(doc(db, "users", credential.user.uid), {
         fullName: fullName.trim(),
         email: email.trim(),
         createdAt: serverTimestamp(),
       });
-
       router.replace("/(tabs)");
     } catch (err: any) {
       const code = err?.code || "";
@@ -80,181 +54,179 @@ export default function Register() {
   };
 
   return (
-    <LinearGradient colors={["#0b1220", "#0f1a1a", "#0b0f12"]} style={{ flex: 1 }}>
-      <AuthWaveBackground />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1, justifyContent: "center", padding: 24 }}
-      >
-        <View
-          style={{
-            backgroundColor: "rgba(15,23,42,0.9)",
-            borderRadius: 24,
-            padding: 28,
-            borderWidth: 1,
-            borderColor: "rgba(148,163,184,0.2)",
-          }}
+    <View style={styles.screen}>
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.kav}
         >
-          {/* BACK */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ marginBottom: 16 }}
-          >
-            <Text style={{ color: "#B7F34D" }}>← Back to Login</Text>
-          </TouchableOpacity>
+          <View style={styles.inner}>
+            {/* Back button */}
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <ArrowLeft size={20} color="#111827" />
+            </TouchableOpacity>
 
-          {/* LOGO */}
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
-              backgroundColor: "rgba(183,243,77,0.2)",
-              alignItems: "center",
-              justifyContent: "center",
-              alignSelf: "center",
-              marginBottom: 16,
-              borderWidth: 1,
-              borderColor: "rgba(183,243,77,0.6)",
-            }}
-          >
-            <Text style={{ fontSize: 28, color: "#fff" }}>💰</Text>
-          </View>
+            {/* Logo bubble */}
+            <View style={styles.logoBubble}>
+              <Text style={styles.logoEmoji}>💰</Text>
+            </View>
 
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: "700",
-              textAlign: "center",
-              marginBottom: 4,
-              color: "#e2e8f0",
-            }}
-          >
-            Create Account
-          </Text>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Register as a part-time worker</Text>
 
-          <Text
-            style={{
-              textAlign: "center",
-              color: "#94a3b8",
-              marginBottom: 24,
-            }}
-          >
-            Register as a part-time worker
-          </Text>
+            {/* Full Name */}
+            <View style={styles.inputWrap}>
+              <User size={18} color="#9ca3af" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Full Name"
+                value={fullName}
+                onChangeText={setFullName}
+                style={styles.input}
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
 
-          {/* FULL NAME */}
-          <View style={{ position: "relative", marginBottom: 12 }}>
-            <User
-              size={20}
-              color="#94a3b8"
-              style={{ position: "absolute", left: 14, top: 16 }}
-            />
-            <TextInput
-              placeholder="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
-              style={{
-                borderWidth: 1,
-                borderColor: "rgba(148,163,184,0.3)",
-                borderRadius: 12,
-                padding: 14,
-                paddingLeft: 44,
-                color: "#e2e8f0",
-                backgroundColor: "rgba(15,23,42,0.6)",
-              }}
-              placeholderTextColor="#94a3b8"
-            />
-          </View>
+            {/* Email */}
+            <View style={styles.inputWrap}>
+              <Mail size={18} color="#9ca3af" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
 
-          {/* EMAIL */}
-          <View style={{ position: "relative", marginBottom: 12 }}>
-            <Mail
-              size={20}
-              color="#94a3b8"
-              style={{ position: "absolute", left: 14, top: 16 }}
-            />
-            <TextInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              style={{
-                borderWidth: 1,
-                borderColor: "rgba(148,163,184,0.3)",
-                borderRadius: 12,
-                padding: 14,
-                paddingLeft: 44,
-                color: "#e2e8f0",
-                backgroundColor: "rgba(15,23,42,0.6)",
-              }}
-              placeholderTextColor="#94a3b8"
-            />
-          </View>
+            {/* Password */}
+            <View style={styles.inputWrap}>
+              <Lock size={18} color="#9ca3af" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={styles.input}
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
 
-          {/* PASSWORD */}
-          <View style={{ position: "relative", marginBottom: 12 }}>
-            <Lock
-              size={20}
-              color="#94a3b8"
-              style={{ position: "absolute", left: 14, top: 16 }}
-            />
-            <TextInput
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={{
-                borderWidth: 1,
-                borderColor: "rgba(148,163,184,0.3)",
-                borderRadius: 12,
-                padding: 14,
-                paddingLeft: 44,
-                color: "#e2e8f0",
-                backgroundColor: "rgba(15,23,42,0.6)",
-              }}
-              placeholderTextColor="#94a3b8"
-            />
-          </View>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          {/* ERROR */}
-          {error ? (
-            <Text
-              style={{
-                color: "red",
-                textAlign: "center",
-                marginBottom: 12,
-              }}
+            <TouchableOpacity
+              onPress={handleRegister}
+              disabled={loading}
+              style={[styles.primaryBtn, loading && { opacity: 0.6 }]}
             >
-              {error}
-            </Text>
-          ) : null}
+              <Text style={styles.primaryBtnText}>{loading ? "Creating Account..." : "Create Account"}</Text>
+            </TouchableOpacity>
 
-          {/* BUTTON */}
-          <TouchableOpacity
-            onPress={handleRegister}
-            disabled={loading}
-            style={{
-              backgroundColor: "#B7F34D",
-              padding: 16,
-              borderRadius: 14,
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            <Text
-              style={{
-                color: "#0b0f12",
-                textAlign: "center",
-                fontSize: 16,
-                fontWeight: "600",
-              }}
-            >
-              {loading ? "Creating Account..." : "Create Account"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+            <TouchableOpacity style={styles.linkBtn} onPress={() => router.back()}>
+              <Text style={styles.mutedText}>
+                Already have an account? <Text style={styles.linkTextBold}>Login</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#ffffff" },
+  safe: { flex: 1 },
+  kav: { flex: 1 },
+  inner: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 28,
+    paddingBottom: 24,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  logoBubble: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 16,
+    shadowColor: "#000000",
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  logoEmoji: { fontSize: 28 },
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#111827",
+    textAlign: "center",
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#9ca3af",
+    textAlign: "center",
+    marginBottom: 28,
+  },
+  inputWrap: { position: "relative", marginBottom: 12 },
+  inputIcon: { position: "absolute", left: 14, top: 15, zIndex: 1 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingLeft: 44,
+    paddingRight: 14,
+    fontSize: 14,
+    color: "#111827",
+    backgroundColor: "#f9f9f9",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  primaryBtn: {
+    backgroundColor: "#111827",
+    paddingVertical: 16,
+    borderRadius: 999,
+    alignItems: "center",
+    marginTop: 4,
+    marginBottom: 16,
+    shadowColor: "#000000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  primaryBtnText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  linkBtn: { alignItems: "center" },
+  mutedText: { color: "#6b7280", fontSize: 14 },
+  linkTextBold: { color: "#111827", fontWeight: "700" },
+});

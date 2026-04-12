@@ -1350,225 +1350,149 @@ export default function WorkerHomeScreen() {
 
             {/* ⏰ Today Shift */}
             <View style={styles.card}>
+              {/* Header row */}
               <View style={styles.rowBetween}>
-                <Text style={styles.cardTitle}>Today shift</Text>
-                <Animated.View
-                  style={{
-                    transform: [
-                      {
-                        rotate: tickAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ["0deg", "360deg"],
-                        }),
-                      },
-                    ],
-                  }}
-                >
-                  <Clock size={20} color="#6b7280" />
-                </Animated.View>
+                <View>
+                  <Text style={styles.cardTitle}>Today shift</Text>
+                  {todayShift ? (
+                    <Text style={styles.shiftMeta}>
+                      {todayShift.start} - {todayShift.end}{todayShift.location ? ` • ${todayShift.location}` : ""}
+                    </Text>
+                  ) : (
+                    <Text style={styles.shiftMeta}>No shift scheduled today</Text>
+                  )}
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  {todayShift && (
+                    <View style={[
+                      styles.shiftStatusBadge,
+                      todayStatus === "completed" && { backgroundColor: "#f0fdf4" },
+                      todayStatus === "absent" && { backgroundColor: "#fef2f2" },
+                    ]}>
+                      <Text style={[
+                        styles.shiftStatusText,
+                        todayStatus === "completed" && { color: "#16a34a" },
+                        todayStatus === "absent" && { color: "#ef4444" },
+                      ]}>{todayStatus}</Text>
+                    </View>
+                  )}
+                  <Animated.View
+                    style={{
+                      transform: [
+                        {
+                          rotate: tickAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ["0deg", "360deg"],
+                          }),
+                        },
+                      ],
+                    }}
+                  >
+                    <Clock size={18} color="#9ca3af" />
+                  </Animated.View>
+                </View>
               </View>
 
-              {schedule ? (
-                <Text style={styles.shiftMeta}>
-                  {schedule.name} • {schedule.startTime} - {schedule.endTime}
-                </Text>
-              ) : null}
+              {/* Progress bar */}
+              <View style={[styles.progressBarBg, { marginTop: 10, marginBottom: 0 }]}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${Math.round(todayProgress * 100)}%` },
+                    todayStatus === "completed" && styles.progressBarFillComplete,
+                  ]}
+                />
+              </View>
 
-              {todayShift ? (
-                <>
-                  <Text style={styles.shiftTitle}>{todayShift.role}</Text>
-                  <Text style={styles.shiftMeta}>
-                    {todayShift.start} - {todayShift.end} • {todayShift.location}
+              {/* Clock tiles */}
+              <View style={styles.clockRow}>
+                <View style={styles.clockItem}>
+                  <Text style={styles.clockLabel}>Clock in</Text>
+                  <Text style={styles.clockValue}>
+                    {todayAttendance?.clockIn || "--:--"}
                   </Text>
-                  <View style={styles.statusRow}>
-                    <Text
-                      style={[
-                        styles.statusText,
-                        todayStatus === "completed" && styles.statusCompleted,
-                        todayStatus === "absent" && styles.statusAbsent,
-                      ]}
-                    >
-                      {todayStatus}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.viewButton}
-                      onPress={() => {
-                        setActiveShift({
-                          ...todayShift,
-                          status: todayStatus,
-                        });
-                        setShowShiftDetails(true);
-                      }}
-                    >
-                      <Text style={styles.viewButtonText}>View details</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        { width: `${Math.round(todayProgress * 100)}%` },
-                        todayStatus === "completed" && styles.progressBarFillComplete,
-                      ]}
-                    />
-                  </View>
-                  <View style={styles.clockRow}>
-                    <View style={styles.clockItem}>
-                      <Text style={styles.clockLabel}>Clock in</Text>
-                      <Text style={styles.clockValue}>
-                        {todayAttendance?.clockIn || "--:--"}
-                      </Text>
-                    </View>
-                    <View style={styles.clockItem}>
-                      <Text style={styles.clockLabel}>Clock out</Text>
-                      <Text style={styles.clockValue}>
-                        {todayAttendance?.clockOut || "--:--"}
-                      </Text>
-                    </View>
-                    <View style={styles.clockItem}>
-                      <Text style={styles.clockLabel}>Break</Text>
-                      <Text style={styles.clockValue}>
-                        {todayAttendance?.breakStart
-                          ? todayAttendance.breakEnd
-                            ? `${todayAttendance.breakStart}-${todayAttendance.breakEnd}`
-                            : `${todayAttendance.breakStart}-...`
-                          : "--:--"}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.clockActions}>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockPrimary]}
-                      onPress={handleClockIn}
-                      disabled={!!todayAttendance?.clockIn}
-                    >
-                      <Text style={styles.clockButtonTextLight}>Clock in</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockPrimary]}
-                      onPress={handleClockOut}
-                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
-                    >
-                      <Text style={styles.clockButtonTextLight}>Clock out</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockGhost]}
-                      onPress={handleBreakToggle}
-                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
-                    >
-                      <Text style={styles.clockButtonText}>
-                        {todayAttendance?.breakStart && !todayAttendance?.breakEnd
-                          ? "End break"
-                          : "Break"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockReset]}
-                      onPress={handleResetAttendance}
-                    >
-                      <Text style={styles.clockResetText}>Reset</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.smallText}>No shift scheduled today</Text>
-                  <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: "0%" }]} />
-                  </View>
-                  <View style={styles.clockRow}>
-                    <View style={styles.clockItem}>
-                      <Text style={styles.clockLabel}>Clock in</Text>
-                      <Text style={styles.clockValue}>
-                        {todayAttendance?.clockIn || "--:--"}
-                      </Text>
-                    </View>
-                    <View style={styles.clockItem}>
-                      <Text style={styles.clockLabel}>Clock out</Text>
-                      <Text style={styles.clockValue}>
-                        {todayAttendance?.clockOut || "--:--"}
-                      </Text>
-                    </View>
-                    <View style={styles.clockItem}>
-                      <Text style={styles.clockLabel}>Break</Text>
-                      <Text style={styles.clockValue}>
-                        {todayAttendance?.breakStart
-                          ? todayAttendance.breakEnd
-                            ? `${todayAttendance.breakStart}-${todayAttendance.breakEnd}`
-                            : `${todayAttendance.breakStart}-...`
-                          : "--:--"}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.clockActions}>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockPrimary]}
-                      onPress={handleClockIn}
-                      disabled={!!todayAttendance?.clockIn}
-                    >
-                      <Text style={styles.clockButtonTextLight}>Clock in</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockPrimary]}
-                      onPress={handleClockOut}
-                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
-                    >
-                      <Text style={styles.clockButtonTextLight}>Clock out</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockGhost]}
-                      onPress={handleBreakToggle}
-                      disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
-                    >
-                      <Text style={styles.clockButtonText}>
-                        {todayAttendance?.breakStart && !todayAttendance?.breakEnd
-                          ? "End break"
-                          : "Break"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.clockButton, styles.clockReset]}
-                      onPress={handleResetAttendance}
-                    >
-                      <Text style={styles.clockResetText}>Reset</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
+                </View>
+                <View style={styles.clockItem}>
+                  <Text style={styles.clockLabel}>Clock out</Text>
+                  <Text style={styles.clockValue}>
+                    {todayAttendance?.clockOut || "--:--"}
+                  </Text>
+                </View>
+                <View style={[styles.clockItem, { marginRight: 0 }]}>
+                  <Text style={styles.clockLabel}>Break</Text>
+                  <Text style={styles.clockValue}>
+                    {todayAttendance?.breakStart
+                      ? todayAttendance.breakEnd
+                        ? `${todayAttendance.breakStart}-${todayAttendance.breakEnd}`
+                        : `${todayAttendance.breakStart}-...`
+                      : "--:--"}
+                  </Text>
+                </View>
+              </View>
 
+              {/* Action buttons */}
+              <View style={styles.clockActions}>
+                <TouchableOpacity
+                  style={[styles.clockButton, styles.clockPrimary, !!todayAttendance?.clockIn && styles.clockButtonDone]}
+                  onPress={handleClockIn}
+                  disabled={!!todayAttendance?.clockIn}
+                >
+                  <Text style={styles.clockButtonTextLight}>Clock in</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.clockButton, styles.clockPrimary, (!todayAttendance?.clockIn || !!todayAttendance?.clockOut) && styles.clockButtonDone]}
+                  onPress={handleClockOut}
+                  disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
+                >
+                  <Text style={styles.clockButtonTextLight}>Clock out</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.clockButton, styles.clockGhost]}
+                  onPress={handleBreakToggle}
+                  disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
+                >
+                  <Text style={styles.clockButtonText}>
+                    {todayAttendance?.breakStart && !todayAttendance?.breakEnd
+                      ? "End break"
+                      : "Break"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.clockButton, styles.clockReset]}
+                  onPress={handleResetAttendance}
+                >
+                  <Text style={styles.clockResetText}>Reset</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Upcoming shift — compact inline row */}
               <View style={styles.upcomingRow}>
-                {nextShift ? (
-                  <>
-                    <View>
-                      <Text style={styles.upcomingLabel}>Upcoming shift</Text>
-                      <Text style={styles.shiftMeta}>
-                        {formatDateLabel(nextShift.date)} • {nextShift.start} - {nextShift.end}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.detailButton}
-                      onPress={() => {
-                        setActiveShift({
-                          ...nextShift,
-                          status: resolveStatus(
-                            nextShift.status,
-                            attendanceStatusMap[nextShift.date]
-                          ),
-                        });
-                        setShowShiftDetails(true);
-                      }}
-                    >
-                      <Text style={styles.detailButtonText}>View details</Text>
-                      <ChevronRight size={16} color="#e5e7eb" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <View>
-                      <Text style={styles.upcomingLabel}>Upcoming shift</Text>
-                      <Text style={styles.smallText}>No upcoming shift</Text>
-                    </View>
-                  </>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.upcomingLabel}>Upcoming shift</Text>
+                  {nextShift ? (
+                    <Text style={styles.shiftMeta}>
+                      {formatDateLabel(nextShift.date)} • {nextShift.start} - {nextShift.end}
+                    </Text>
+                  ) : (
+                    <Text style={styles.shiftMeta}>No upcoming shift</Text>
+                  )}
+                </View>
+                {nextShift && (
+                  <TouchableOpacity
+                    style={styles.detailButton}
+                    onPress={() => {
+                      setActiveShift({
+                        ...nextShift,
+                        status: resolveStatus(
+                          nextShift.status,
+                          attendanceStatusMap[nextShift.date]
+                        ),
+                      });
+                      setShowShiftDetails(true);
+                    }}
+                  >
+                    <ChevronRight size={16} color="#9ca3af" />
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -3115,12 +3039,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 14,
-    marginBottom: 12,
+    marginBottom: 16,
     shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
     borderWidth: 1,
     borderColor: "#f0f0f0",
   },
@@ -3129,21 +3053,28 @@ const styles = StyleSheet.create({
   smallText: { fontSize: 12, color: "#6b7280" },
   emptyText: { fontSize: 12, color: "#6b7280", textAlign: "center" },
   shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6, color: "#111827" },
-  shiftMeta: { fontSize: 12, color: "#6b7280", marginTop: 4 },
+  shiftMeta: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
+  shiftStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: "#f5f5f5",
+  },
+  shiftStatusText: { fontSize: 11, fontWeight: "600", color: "#6b7280" },
 
   progressBarBg: {
-    height: 6,
-    backgroundColor: "#273244",
-    borderRadius: 6,
-    marginVertical: 8,
+    height: 4,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 999,
+    marginVertical: 10,
     overflow: "hidden",
   },
   progressBarFill: {
-    height: 6,
+    height: 4,
     backgroundColor: "#111827",
-    borderRadius: 6,
+    borderRadius: 999,
   },
-  progressBarFillComplete: { backgroundColor: "#b7f34d" },
+  progressBarFillComplete: { backgroundColor: "#22c55e" },
   statusRow: {
     marginTop: 8,
     flexDirection: "row",
@@ -3164,10 +3095,15 @@ const styles = StyleSheet.create({
   },
   viewButtonText: { color: "#374151", fontSize: 11, fontWeight: "600" },
   detailButton: {
-    marginTop: 8,
-    alignSelf: "flex-start",
-    flexDirection: "row",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -3181,41 +3117,43 @@ const styles = StyleSheet.create({
   clockRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
+    marginTop: 4,
+    gap: 8,
   },
   clockItem: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 12,
     backgroundColor: "#f5f5f5",
     marginRight: 8,
   },
-  clockLabel: { color: "#6b7280", fontSize: 10 },
-  clockValue: { color: "#111827", fontWeight: "700", marginTop: 4, fontSize: 12 },
-  clockActions: { flexDirection: "row", gap: 8, marginTop: 10 },
+  clockLabel: { color: "#9ca3af", fontSize: 10, fontWeight: "500" },
+  clockValue: { color: "#111827", fontWeight: "700", marginTop: 4, fontSize: 13 },
+  clockActions: { flexDirection: "row", gap: 6, marginTop: 10 },
   clockButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    flex: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 999,
     alignItems: "center",
   },
   clockPrimary: { backgroundColor: "#111827" },
-  clockGhost: { backgroundColor: "#f5f5f5" },
+  clockButtonDone: { backgroundColor: "#d1d5db" },
+  clockGhost: { backgroundColor: "#f5f5f5", borderWidth: 1, borderColor: "#e5e7eb" },
   clockReset: { backgroundColor: "#ef4444" },
   clockButtonText: { color: "#374151", fontWeight: "700", fontSize: 12 },
   clockButtonTextLight: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
   clockResetText: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
   upcomingRow: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: "#f0f0f0",
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
   },
-  upcomingLabel: { color: "#6b7280", fontSize: 12, marginBottom: 4 },
+  upcomingLabel: { color: "#6b7280", fontSize: 11, fontWeight: "600", marginBottom: 2 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
