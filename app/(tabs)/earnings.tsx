@@ -263,6 +263,7 @@ export default function EarningsScreen() {
   }, [scheduleId]);
 
   useEffect(() => {
+    if (!userId) return;
     const configRef = doc(db, "config", "system");
     const unsub = onSnapshot(configRef, snap => {
       const data = snap.data() as any;
@@ -274,7 +275,7 @@ export default function EarningsScreen() {
       });
     });
     return unsub;
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {

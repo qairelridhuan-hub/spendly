@@ -1083,6 +1083,7 @@ export default function WorkerHomeScreen() {
   }, [hasPending, spinAnim]);
 
   useEffect(() => {
+    if (!userId) return;
     const configRef = doc(db, "config", "system");
     const unsub = onSnapshot(configRef, snap => {
       const data = snap.data() as any;
@@ -1114,7 +1115,7 @@ export default function WorkerHomeScreen() {
       });
     });
     return unsub;
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
