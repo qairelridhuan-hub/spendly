@@ -3,6 +3,7 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  Gamepad2,
   LogOut,
   X,
 } from "lucide-react-native";
@@ -239,8 +240,7 @@ export default function CalendarScreen() {
   ===================== */
 
   return (
-    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
 
@@ -264,12 +264,19 @@ export default function CalendarScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => router.push("/notifications")}>
-              <Bell size={22} color="#e5e7eb" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={confirmLogout}>
-              <LogOut size={22} color="#e5e7eb" />
-            </TouchableOpacity>
+            <View style={styles.iconPill}>
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/(tabs)/")}>
+                <Gamepad2 size={20} color="#111827" />
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
+                <Bell size={20} color="#111827" />
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
+                <LogOut size={20} color="#111827" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -554,7 +561,7 @@ export default function CalendarScreen() {
           <Text style={[styles.cardTitle, styles.calendarCardTitle]}>Status</Text> 
 
           <View style={styles.legendRow}>
-            <Legend color="#b7f34d" label="Scheduled" />
+            <Legend color="#111827" label="Scheduled" />
             <Legend color="#34d399" label="Completed" />
             <Legend color="#f87171" label="Absent" />
           </View>
@@ -574,7 +581,7 @@ export default function CalendarScreen() {
                   setActiveShift(null);
                 }}
               >
-                <X size={18} color="#9ca3af" />
+                <X size={18} color="#6b7280" />
               </TouchableOpacity>
             </View>
             {activeShift.type === "schedule" ? (
@@ -635,7 +642,7 @@ export default function CalendarScreen() {
           </View>
         </View>
       ) : null}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -776,7 +783,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(183,243,77,0.14)",
+    backgroundColor: "rgba(0,0,0,0)",
     top: -80,
     right: -60,
   },
@@ -785,7 +792,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(15,23,42,0.6)",
+    backgroundColor: "rgba(0,0,0,0)",
     bottom: -120,
     left: -80,
   },
@@ -808,22 +815,30 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   logoImage: { width: 24, height: 24 },
-  appName: { fontWeight: "700", fontSize: 16, color: "#e5e7eb" },
-  subText: { color: "#9ca3af" },
-  headerRight: { flexDirection: "row", gap: 16, alignItems: "center" },
+  appName: { fontWeight: "700", fontSize: 16, color: "#111827" },
+  subText: { color: "#6b7280" },
+  headerRight: { flexDirection: "row", alignItems: "center" },
+  iconPill: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#f5f5f5", borderRadius: 999,
+    borderWidth: 1, borderColor: "#e5e7eb",
+    paddingHorizontal: 4, paddingVertical: 4,
+  },
+  iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
+  iconPillDivider: { width: 1, height: 16, backgroundColor: "#e5e7eb" },
 
   card: {
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     shadowColor: "#000000",
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
   },
   calendarCard: {
     backgroundColor: "#ffffff",
@@ -839,7 +854,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
-    color: "#e5e7eb",
+    color: "#111827",
   },
   calendarCardTitle: {
     color: "#0f172a",
@@ -857,10 +872,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     backgroundColor: "#101826",
   },
-  captionText: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
+  captionText: { fontSize: 12, fontWeight: "700", color: "#111827" },
   calendarCaptionButton: {
     borderColor: "#e2e8f0",
     backgroundColor: "#f8fafc",
@@ -870,7 +885,7 @@ const styles = StyleSheet.create({
   dropdown: {
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     borderRadius: 12,
     backgroundColor: "#101826",
     overflow: "hidden",
@@ -886,7 +901,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e2e8f0",
   },
   dropdownRowActive: {
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#111827",
   },
   dropdownText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
   dropdownTextActive: { color: "#0b1220" },
@@ -895,7 +910,7 @@ const styles = StyleSheet.create({
   weekText: {
     textAlign: "center",
     fontWeight: "600",
-    color: "#9ca3af",
+    color: "#6b7280",
     fontSize: 12,
   },
   calendarWeekText: { color: "#64748b" },
@@ -907,10 +922,10 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     padding: 8,
     justifyContent: "space-between",
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     position: "relative",
   },
   calendarDayCell: {
@@ -919,18 +934,18 @@ const styles = StyleSheet.create({
   },
 
   selectedDay: {
-    borderColor: "#b7f34d",
+    borderColor: "#111827",
     backgroundColor: "#f1f5f9",
   },
   todayCell: {
-    borderColor: "#b7f34d",
+    borderColor: "#111827",
   },
 
-  dayText: { color: "#e5e7eb", fontWeight: "600" },
+  dayText: { color: "#111827", fontWeight: "600" },
   calendarDayText: { color: "#0f172a" },
-  todayText: { color: "#b7f34d", fontWeight: "700" },
+  todayText: { color: "#111827", fontWeight: "700" },
   selectedDayText: {
-    color: "#b7f34d",
+    color: "#111827",
     fontWeight: "700",
   },
 
@@ -941,7 +956,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   dotNone: { backgroundColor: "transparent" },
-  dotScheduled: { backgroundColor: "#b7f34d" },
+  dotScheduled: { backgroundColor: "#111827" },
   dotCompleted: { backgroundColor: "#34d399" },
   dotAbsent: { backgroundColor: "#f87171" },
   tooltip: {
@@ -964,7 +979,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  emptyText: { color: "#9ca3af" },
+  emptyText: { color: "#6b7280" },
 
   shiftRow: {
     flexDirection: "row",
@@ -976,26 +991,26 @@ const styles = StyleSheet.create({
   },
   shiftLeft: { flex: 1 },
   shiftRight: { alignItems: "flex-end", gap: 6 },
-  shiftTitle: { fontWeight: "700", fontSize: 15, color: "#e5e7eb" },
+  shiftTitle: { fontWeight: "700", fontSize: 15, color: "#111827" },
   shiftMetaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  shiftMeta: { color: "#9ca3af", marginTop: 2 },
-  shiftLocation: { color: "#e5e7eb", fontWeight: "600" },
+  shiftMeta: { color: "#6b7280", marginTop: 2 },
+  shiftLocation: { color: "#111827", fontWeight: "600" },
   detailButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "#1b2636",
+    backgroundColor: "#f5f5f5",
   },
-  detailButtonText: { color: "#e5e7eb", fontWeight: "600", fontSize: 11 },
+  detailButtonText: { color: "#111827", fontWeight: "600", fontSize: 11 },
   statusPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: "#1b2636",
+    backgroundColor: "#f5f5f5",
   },
-  statusPillText: { fontSize: 10, fontWeight: "700", color: "#e5e7eb" },
-  statusPillActive: { backgroundColor: "#1b2636" },
-  statusPillScheduled: { backgroundColor: "#1b2636" },
+  statusPillText: { fontSize: 10, fontWeight: "700", color: "#111827" },
+  statusPillActive: { backgroundColor: "#f5f5f5" },
+  statusPillScheduled: { backgroundColor: "#f5f5f5" },
   statusPillCompleted: { backgroundColor: "#12251b" },
   statusPillAbsent: { backgroundColor: "#2a1114" },
 
@@ -1010,7 +1025,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   selectedDateText: {
-    color: "#9ca3af",
+    color: "#6b7280",
     marginBottom: 8,
   },
 
@@ -1036,7 +1051,7 @@ const styles = StyleSheet.create({
   detailModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
   },
@@ -1046,12 +1061,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: "#e5e7eb", fontWeight: "700" },
+  modalTitle: { color: "#111827", fontWeight: "700" },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  detailLabel: { color: "#9ca3af", fontSize: 12 },
-  detailValue: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: "#6b7280", fontSize: 12 },
+  detailValue: { color: "#111827", fontSize: 12, fontWeight: "600" },
 });

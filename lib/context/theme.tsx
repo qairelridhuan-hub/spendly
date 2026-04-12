@@ -29,18 +29,18 @@ const STORAGE_KEY = "spendly:theme";
 
 const themes: Record<ThemeMode, ThemeColors> = {
   light: {
-    backgroundStart: "#f8fafc",
-    backgroundEnd: "#eef2f7",
+    backgroundStart: "#ffffff",
+    backgroundEnd: "#f5f5f5",
     surface: "#ffffff",
-    surfaceAlt: "#f1f5f9",
-    text: "#0f172a",
-    textMuted: "#64748b",
-    border: "#e2e8f0",
-    accent: "#0ea5e9",
-    accentStrong: "#0f172a",
-    success: "#22c55e",
-    danger: "#ef4444",
-    warning: "#f97316",
+    surfaceAlt: "#f5f5f5",
+    text: "#111827",
+    textMuted: "#6b7280",
+    border: "#e5e7eb",
+    accent: "#111827",
+    accentStrong: "#374151",
+    success: "#16a34a",
+    danger: "#dc2626",
+    warning: "#d97706",
   },
   dark: {
     backgroundStart: "#0b1220",
@@ -61,17 +61,17 @@ const themes: Record<ThemeMode, ThemeColors> = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>("dark");
+  const [mode, setMode] = useState<ThemeMode>("light");
 
   useEffect(() => {
     const loadTheme = async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored === "light" || stored === "dark") {
-          setMode("dark");
+          setMode(stored);
           return;
         }
-        setMode("dark");
+        setMode("light");
       } catch {
         // ignore storage errors
         setMode("dark");

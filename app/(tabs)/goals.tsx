@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
+  Gamepad2,
   LogOut,
   Plus,
   Target,
@@ -36,6 +37,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar } from "@/lib/context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -499,8 +501,7 @@ export default function GoalsScreen() {
   }, [filter, goals, timeFilter, statusFilter]);
 
   return (
-    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ===== HEADER ===== */}
         <View style={styles.header}>
@@ -523,14 +524,20 @@ export default function GoalsScreen() {
           </View>
 
           <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => router.push("/notifications")}>
-            <Bell size={22} color="#e5e7eb" />
-            <View style={styles.notifDot} />
-          </TouchableOpacity>
-
-            <TouchableOpacity onPress={confirmLogout}>
-              <LogOut size={22} color="#e5e7eb" />
-            </TouchableOpacity>
+            <View style={styles.iconPill}>
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/(tabs)/")}>
+                <Gamepad2 size={20} color="#111827" />
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
+                <Bell size={20} color="#111827" />
+                <View style={styles.notifDot} />
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
+                <LogOut size={20} color="#111827" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -547,7 +554,7 @@ export default function GoalsScreen() {
             style={styles.addButton}
             onPress={openCreateModal}
           >
-            <Plus size={26} color="#0b1220" />
+            <Plus size={26} color="#111827" />
           </TouchableOpacity>
         </View>
 
@@ -750,7 +757,7 @@ export default function GoalsScreen() {
                         <Text style={styles.paceButtonText}>
                           {unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1)}
                         </Text>
-                        <ChevronDown size={14} color="#9ca3af" />
+                        <ChevronDown size={14} color="#6b7280" />
                       </TouchableOpacity>
                       {isPaceMenuOpen ? (
                         <View style={styles.paceMenu}>
@@ -840,7 +847,7 @@ export default function GoalsScreen() {
         {/* EMPTY STATE */}
         {goals.length === 0 && (
           <View style={styles.emptyCard}>
-            <Target size={40} color="#b7f34d" />
+            <Target size={40} color="#111827" />
             <Text style={styles.emptyTitle}>No goals yet</Text>
             <Text style={styles.emptyText}>
               Start by creating your first financial goal
@@ -860,15 +867,16 @@ export default function GoalsScreen() {
            ADD GOAL MODAL
         ===================== */}
         {showAddGoal && (
-          <View style={styles.overlay}>
+          <BlurView intensity={40} tint="dark" style={styles.overlay}>
             <SafeAreaView style={styles.modal} edges={["bottom"]}>
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {/* Header */}
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
                   {editingGoalId ? "Edit Goal" : "Create New Goal"}
                 </Text>
                 <TouchableOpacity onPress={closeModal}>
-                  <X size={22} color="#9ca3af" />
+                  <X size={22} color="#6b7280" />
                 </TouchableOpacity>
               </View>
 
@@ -1014,8 +1022,9 @@ export default function GoalsScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+              </ScrollView>
             </SafeAreaView>
-          </View>
+          </BlurView>
         )}
         <Modal
           visible={showDatePicker}
@@ -1052,7 +1061,7 @@ export default function GoalsScreen() {
           </View>
         </Modal>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -1072,7 +1081,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(183,243,77,0.14)",
+    backgroundColor: "rgba(0,0,0,0)",
     top: -80,
     right: -60,
   },
@@ -1081,7 +1090,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(15,23,42,0.6)",
+    backgroundColor: "rgba(0,0,0,0)",
     bottom: -120,
     left: -80,
   },
@@ -1112,13 +1121,17 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   logoImage: { width: 24, height: 24 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  subText: { fontSize: 13, color: "#9ca3af" },
-  headerRight: {
-    flexDirection: "row",
-    gap: 18,
-    alignItems: "center",
+  appName: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  subText: { fontSize: 13, color: "#6b7280" },
+  headerRight: { flexDirection: "row", alignItems: "center" },
+  iconPill: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#f5f5f5", borderRadius: 999,
+    borderWidth: 1, borderColor: "#e5e7eb",
+    paddingHorizontal: 4, paddingVertical: 4,
   },
+  iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
+  iconPillDivider: { width: 1, height: 16, backgroundColor: "#e5e7eb" },
   notifDot: {
     position: "absolute",
     top: -2,
@@ -1136,46 +1149,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  title: { fontSize: 22, fontWeight: "700", color: "#e5e7eb" },
-  subtitle: { fontSize: 14, color: "#9ca3af" },
+  title: { fontSize: 22, fontWeight: "700", color: "#111827" },
+  subtitle: { fontSize: 14, color: "#6b7280" },
 
   addButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#ffffff",
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 
   emptyCard: {
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 24,
     alignItems: "center",
     shadowColor: "#000000",
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
   },
-  emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
+  emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700", color: "#111827" },
   emptyText: {
     marginTop: 6,
     fontSize: 14,
-    color: "#9ca3af",
+    color: "#6b7280",
     textAlign: "center",
   },
   createButton: {
     marginTop: 16,
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#111827",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
   },
-  createText: { color: "#0b1220", fontWeight: "700" },
+  createText: { color: "#ffffff", fontWeight: "700" },
   filterRow: {
     flexDirection: "row",
     gap: 10,
@@ -1186,66 +1206,67 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#273244",
-    backgroundColor: "#101826",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f5f5f5",
   },
   filterMenuButtonActive: {
-    backgroundColor: "#b7f34d",
-    borderColor: "#b7f34d",
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
-  filterMenuText: { color: "#e5e7eb", fontWeight: "600", fontSize: 12 },
-  filterMenuTextActive: { color: "#0b1220" },
+  filterMenuText: { color: "#6b7280", fontWeight: "600", fontSize: 12 },
+  filterMenuTextActive: { color: "#ffffff" },
   filterMenu: {
     marginBottom: 16,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#273244",
-    backgroundColor: "#101826",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#ffffff",
     gap: 10,
   },
-  filterMenuTitle: { color: "#9ca3af", fontSize: 12, fontWeight: "600" },
+  filterMenuTitle: { color: "#6b7280", fontSize: 12, fontWeight: "600" },
   filterMenuRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   filterMenuChip: {
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#273244",
-    backgroundColor: "#101826",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f5f5f5",
   },
   filterMenuChipActive: {
-    backgroundColor: "#b7f34d",
-    borderColor: "#b7f34d",
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
-  filterMenuChipText: { color: "#9ca3af", fontSize: 12, fontWeight: "600" },
-  filterMenuChipTextActive: { color: "#0b1220" },
+  filterMenuChipText: { color: "#6b7280", fontSize: 12, fontWeight: "600" },
+  filterMenuChipTextActive: { color: "#ffffff" },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#273244",
-    backgroundColor: "#101826",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f5f5f5",
   },
   filterChipActive: {
-    backgroundColor: "#b7f34d",
-    borderColor: "#b7f34d",
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
-  filterText: { fontSize: 12, color: "#9ca3af", fontWeight: "600" },
-  filterTextActive: { color: "#0b1220" },
+  filterText: { fontSize: 12, color: "#6b7280", fontWeight: "600" },
+  filterTextActive: { color: "#ffffff" },
   goalList: { gap: 14 },
   goalCard: {
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     shadowColor: "#000000",
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    marginBottom: 14,
   },
   goalHeader: {
     flexDirection: "row",
@@ -1254,53 +1275,53 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   goalHeaderRight: { alignItems: "flex-end", gap: 8 },
-  goalName: { fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
-  goalMeta: { color: "#9ca3af" },
+  goalName: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  goalMeta: { color: "#6b7280" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
   editSavedButton: { paddingVertical: 2 },
-  editSavedText: { color: "#b7f34d", fontSize: 12, fontWeight: "600" },
+  editSavedText: { color: "#111827", fontSize: 12, fontWeight: "600" },
   goalActions: { flexDirection: "row", gap: 8 },
   iconButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#101826",
+    backgroundColor: "#ffffff",
   },
   priorityChip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  priorityText: { fontSize: 10, fontWeight: "700", color: "#e5e7eb" },
-  priorityhigh: { backgroundColor: "#2a1114" },
-  prioritymedium: { backgroundColor: "#2a200f" },
-  prioritylow: { backgroundColor: "#12251b" },
+  priorityText: { fontSize: 10, fontWeight: "700", color: "#374151" },
+  priorityhigh: { backgroundColor: "#fee2e2" },
+  prioritymedium: { backgroundColor: "#fef3c7" },
+  prioritylow: { backgroundColor: "#dcfce7" },
   streakRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  streakText: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
-  streakHint: { fontSize: 12, color: "#9ca3af" },
+  streakText: { fontSize: 12, fontWeight: "700", color: "#111827" },
+  streakHint: { fontSize: 12, color: "#6b7280" },
   progressRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  progressLabel: { color: "#9ca3af", fontSize: 12 },
+  progressLabel: { color: "#6b7280", fontSize: 12 },
   progressBar: {
     height: 8,
-    backgroundColor: "#273244",
+    backgroundColor: "#e5e7eb",
     borderRadius: 8,
     overflow: "hidden",
   },
   progressFill: {
     height: 8,
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#111827",
   },
   milestoneRow: {
     flexDirection: "row",
@@ -1312,17 +1333,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#273244",
+    backgroundColor: "#d1d5db",
   },
-  milestoneDotActive: { backgroundColor: "#b7f34d" },
-  milestoneText: { fontSize: 10, color: "#9ca3af" },
+  milestoneDotActive: { backgroundColor: "#111827" },
+  milestoneText: { fontSize: 10, color: "#6b7280" },
   collectionHeader: {
     marginTop: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  collectionTitle: { fontSize: 13, fontWeight: "700", color: "#e5e7eb" },
+  collectionTitle: { fontSize: 13, fontWeight: "700", color: "#111827" },
   paceDropdown: { position: "relative" },
   paceButton: {
     flexDirection: "row",
@@ -1332,44 +1353,44 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#273244",
-    backgroundColor: "#101826",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f5f5f5",
   },
-  paceButtonText: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
+  paceButtonText: { color: "#111827", fontSize: 12, fontWeight: "600" },
   paceMenu: {
     position: "absolute",
     top: 34,
     right: 0,
     minWidth: 120,
-    backgroundColor: "#101826",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     paddingVertical: 6,
     zIndex: 10,
   },
   paceMenuItem: { paddingHorizontal: 10, paddingVertical: 8 },
-  paceMenuText: { color: "#9ca3af", fontSize: 12 },
-  paceMenuTextActive: { color: "#b7f34d", fontWeight: "700" },
+  paceMenuText: { color: "#6b7280", fontSize: 12 },
+  paceMenuTextActive: { color: "#111827", fontWeight: "700" },
   summaryCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#273244",
-    backgroundColor: "#101826",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f9f9f9",
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  summaryLabel: { color: "#9ca3af", fontSize: 12 },
-  summaryValue: { color: "#e5e7eb", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  summaryLabel: { color: "#6b7280", fontSize: 12 },
+  summaryValue: { color: "#111827", fontSize: 14, fontWeight: "700", marginTop: 2 },
   planCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#273244",
-    backgroundColor: "#141c2a",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#ffffff",
   },
   planRow: {
     flexDirection: "row",
@@ -1377,21 +1398,23 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   planItem: { flex: 1 },
-  planLabel: { color: "#9ca3af", fontSize: 12 },
-  planValue: { color: "#e5e7eb", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  planLabel: { color: "#6b7280", fontSize: 12 },
+  planValue: { color: "#111827", fontSize: 14, fontWeight: "700", marginTop: 2 },
   planDivider: {
     height: 1,
-    backgroundColor: "#273244",
+    backgroundColor: "#e5e7eb",
     marginVertical: 10,
   },
   noteBox: {
     marginTop: 12,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#101826",
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
-  noteLabel: { fontSize: 11, color: "#9ca3af", fontWeight: "700" },
-  noteText: { marginTop: 6, color: "#e5e7eb", fontSize: 12 },
+  noteLabel: { fontSize: 11, color: "#6b7280", fontWeight: "700" },
+  noteText: { marginTop: 6, color: "#111827", fontSize: 12 },
   miniChart: {
     flexDirection: "row",
     gap: 8,
@@ -1404,7 +1427,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   miniBar: {
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#111827",
     borderRadius: 8,
   },
   goalFooter: {
@@ -1412,8 +1435,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 12,
   },
-  goalFootLabel: { color: "#9ca3af", fontSize: 12 },
-  goalFootValue: { fontWeight: "700", marginTop: 2, color: "#e5e7eb" },
+  goalFootLabel: { color: "#6b7280", fontSize: 12 },
+  goalFootValue: { fontWeight: "700", marginTop: 2, color: "#111827" },
   earningsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1427,14 +1450,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
   },
   modal: {
-    backgroundColor: "#141c2a",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 16,
+    maxHeight: "75%",
+    marginBottom: 80,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1442,30 +1465,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#e5e7eb" },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
 
-  inputGroup: { marginBottom: 12 },
-  label: { fontSize: 13, color: "#9ca3af", marginBottom: 6 },
+  inputGroup: { marginBottom: 10 },
+  label: { fontSize: 13, color: "#6b7280", marginBottom: 6 },
   input: {
-    backgroundColor: "#101826",
+    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#273244",
-    color: "#e5e7eb",
+    borderColor: "#e5e7eb",
+    color: "#111827",
   },
   inputDisabled: {
     opacity: 0.6,
   },
   dateButton: {
-    backgroundColor: "#101826",
+    backgroundColor: "#f5f5f5",
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
   },
   dateButtonText: {
-    color: "#e5e7eb",
+    color: "#111827",
   },
   priorityRow: {
     flexDirection: "row",
@@ -1476,17 +1499,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     alignItems: "center",
-    backgroundColor: "#101826",
+    backgroundColor: "#f5f5f5",
   },
   priorityButtonActive: {
-    backgroundColor: "#b7f34d",
-    borderColor: "#b7f34d",
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
-  priorityButtonText: { color: "#9ca3af", fontWeight: "600" },
-  priorityButtonTextActive: { color: "#0b1220" },
-  notesInput: { minHeight: 80, textAlignVertical: "top" },
+  priorityButtonText: { color: "#6b7280", fontWeight: "600" },
+  priorityButtonTextActive: { color: "#ffffff" },
+  notesInput: { minHeight: 60, textAlignVertical: "top" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(15,23,42,0.35)",
@@ -1497,7 +1520,7 @@ const styles = StyleSheet.create({
   dateModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
   },
@@ -1522,18 +1545,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#1b2636",
+    backgroundColor: "#f5f5f5",
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     alignItems: "center",
   },
-  cancelText: { color: "#e5e7eb", fontWeight: "600" },
+  cancelText: { color: "#111827", fontWeight: "600" },
   createBtn: {
     flex: 1,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#111827",
     alignItems: "center",
   },
-  createBtnText: { color: "#0b1220", fontWeight: "700" },
+  createBtnText: { color: "#ffffff", fontWeight: "700" },
 });

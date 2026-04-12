@@ -1028,38 +1028,6 @@ export default function WorkerHomeScreen() {
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(bottomBlobX, {
-            toValue: 1,
-            duration: 2800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(bottomBlobX, {
-            toValue: 0,
-            duration: 2800,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(bottomBlobY, {
-            toValue: 1,
-            duration: 3600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(bottomBlobY, {
-            toValue: 0,
-            duration: 3600,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bottomBlobX, bottomBlobY]);
 
   useEffect(() => {
     if (!hasPending) {
@@ -1216,50 +1184,7 @@ export default function WorkerHomeScreen() {
      UI
   ===================== */
   return (
-    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
-      <Animated.View
-        style={[
-          styles.bgBlobBottom,
-          {
-            transform: [
-              {
-                translateX: bottomBlobX.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-120, 120],
-                }),
-              },
-              {
-                translateY: bottomBlobY.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-90, 90],
-                }),
-              },
-            ],
-          },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.bgBlobBottomAlt,
-          {
-            transform: [
-              {
-                translateX: bottomBlobX.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [140, -140],
-                }),
-              },
-              {
-                translateY: bottomBlobY.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [120, -120],
-                }),
-              },
-            ],
-          },
-        ]}
-      />
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* 🔝 HEADER */}
         <View style={styles.header}>
@@ -1282,43 +1207,26 @@ export default function WorkerHomeScreen() {
           </View>
 
           <View style={styles.headerRight}>
-            <TouchableOpacity
-              onPress={() => {
-                setShowGameSplash(false);
-                setShowGameGate(true);
-              }}
-            >
-              <Animated.View style={styles.gameIconWrap}>
-                <Animated.View
-                  style={[
-                    styles.gameIconGlow,
-                    {
-                      opacity: gameGlow.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.15, 0.45],
-                      }),
-                      transform: [
-                        {
-                          scale: gameGlow.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.9, 1.15],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                />
-                <Gamepad2 size={22} color="#e5e7eb" />
-              </Animated.View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push("/notifications")}>
-              <Bell size={22} color="#e5e7eb" />
-              <View style={styles.dot} />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleLogout}>
-              <LogOut size={22} color="#e5e7eb" />
-            </TouchableOpacity>
+            <View style={styles.iconPill}>
+              <TouchableOpacity
+                style={styles.iconPillBtn}
+                onPress={() => {
+                  setShowGameSplash(false);
+                  setShowGameGate(true);
+                }}
+              >
+                <Gamepad2 size={20} color="#111827" />
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
+                <Bell size={20} color="#111827" />
+                {pendingCount > 0 && <View style={styles.dot} />}
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={handleLogout}>
+                <LogOut size={20} color="#111827" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -1334,13 +1242,7 @@ export default function WorkerHomeScreen() {
             }}
           >
             {/* 💰 Earnings Summary */}
-            <LinearGradient
-              colors={["#0f172a", "#1b2636"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.salarySummary}
-            >
-              <View style={styles.salaryAccent} />
+            <View style={[styles.salarySummary, { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb" }]}>
               <View style={styles.salaryTopRow}>
                 <View>
                   <Text style={styles.salaryTitle}>{titleText}</Text>
@@ -1444,7 +1346,7 @@ export default function WorkerHomeScreen() {
               >
                 <Text style={styles.salaryDetailsText}>View details</Text>
               </TouchableOpacity>
-            </LinearGradient>
+            </View>
 
             {/* ⏰ Today Shift */}
             <View style={styles.card}>
@@ -1462,7 +1364,7 @@ export default function WorkerHomeScreen() {
                     ],
                   }}
                 >
-                  <Clock size={20} color="#b7f34d" />
+                  <Clock size={20} color="#6b7280" />
                 </Animated.View>
               </View>
 
@@ -2279,7 +2181,7 @@ export default function WorkerHomeScreen() {
           </View>
         </View>
       ) : null}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -2761,7 +2663,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(183,243,77,0.14)",
+    backgroundColor: "rgba(0,0,0,0)",
     top: -80,
     right: -60,
   },
@@ -2770,7 +2672,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(15,23,42,0.6)",
+    backgroundColor: "rgba(0,0,0,0)",
     bottom: -120,
     left: -80,
   },
@@ -2779,7 +2681,7 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 999,
-    backgroundColor: "rgba(183,243,77,0.16)",
+    backgroundColor: "rgba(0,0,0,0)",
     bottom: -80,
     left: -70,
   },
@@ -2788,7 +2690,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 999,
-    backgroundColor: "rgba(15,23,42,0.55)",
+    backgroundColor: "rgba(0,0,0,0)",
     bottom: -60,
     left: 20,
   },
@@ -2820,9 +2722,30 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   logoImage: { width: 24, height: 24 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  greeting: { fontSize: 13, color: "#9ca3af" },
-  headerRight: { flexDirection: "row", gap: 16, alignItems: "center" },
+  appName: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  greeting: { fontSize: 13, color: "#6b7280" },
+  headerRight: { flexDirection: "row", alignItems: "center" },
+  iconPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  iconPillBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconPillDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: "#e5e7eb",
+  },
   gameIconWrap: {
     width: 34,
     height: 34,
@@ -2834,7 +2757,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "rgba(183,243,77,0.35)",
+    backgroundColor: "rgba(0,0,0,0)",
   },
   gameGateOverlay: {
     position: "absolute",
@@ -3045,7 +2968,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(34,197,94,0.4)",
   },
-  gameSplashText: { color: "#e2e8f0", fontWeight: "700", fontSize: 12 },
+  gameSplashText: { color: "#374151", fontWeight: "700", fontSize: 12 },
   dot: {
     position: "absolute",
     top: -2,
@@ -3064,16 +2987,14 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 12,
     overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   salaryAccent: {
-    position: "absolute",
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: "#f59e0b",
-    right: -90,
-    top: -70,
-    transform: [{ rotate: "-15deg" }],
+    display: "none",
   },
   salaryTopRow: {
     flexDirection: "row",
@@ -3085,12 +3006,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 10,
   },
-  salaryTitle: { color: "#e2e8f0", fontSize: 14 },
-  salaryAmount: { color: "#ffffff", fontSize: 30, fontWeight: "700" },
-  salarySub: { color: "rgba(226,232,240,0.8)", fontSize: 12, marginTop: 4 },
-  salaryHint: { color: "rgba(226,232,240,0.9)", fontSize: 12 },
+  salaryTitle: { color: "#6b7280", fontSize: 13 },
+  salaryAmount: { color: "#111827", fontSize: 30, fontWeight: "700" },
+  salarySub: { color: "#6b7280", fontSize: 12, marginTop: 4 },
+  salaryHint: { color: "#6b7280", fontSize: 12 },
   salaryMenuButton: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#f0f0f0",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
@@ -3098,17 +3019,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  salaryMenuButtonText: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  salaryMenuButtonText: { color: "#111827", fontSize: 12, fontWeight: "600" },
   salaryMenuAnchor: { alignItems: "flex-end" },
   salaryIconWrap: {
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: "#fbbf24",
+    backgroundColor: "#f0f0f0",
     alignItems: "center",
     justifyContent: "center",
   },
-  salaryStatusText: { color: "#e2e8f0", fontSize: 13 },
+  salaryStatusText: { color: "#6b7280", fontSize: 13 },
   statusDotPaid: {
     width: 8,
     height: 8,
@@ -3120,7 +3041,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.35)",
+    backgroundColor: "#e5e7eb",
     overflow: "hidden",
     marginRight: 6,
   },
@@ -3128,7 +3049,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#111827",
   },
   salaryPillRow: {
     flexDirection: "row",
@@ -3137,78 +3058,78 @@ const styles = StyleSheet.create({
   },
   salaryMetricCard: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "#f5f5f5",
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 16,
+    borderRadius: 12,
   },
   salaryMetricCardAlt: {
-    backgroundColor: "rgba(253, 186, 116, 0.25)",
+    backgroundColor: "#f0f0f0",
   },
-  salaryMetricLabel: { color: "#e2e8f0", fontSize: 11 },
-  salaryMetricValue: { color: "#ffffff", fontWeight: "700", marginTop: 4 },
+  salaryMetricLabel: { color: "#6b7280", fontSize: 11 },
+  salaryMetricValue: { color: "#111827", fontWeight: "700", marginTop: 4 },
   salaryDetailsButton: {
     alignSelf: "flex-start",
     marginTop: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#111827",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
   },
-  salaryDetailsText: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  salaryDetailsText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
   salaryMenu: {
     marginTop: 6,
-    backgroundColor: "#141c2a",
-    borderRadius: 14,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     overflow: "hidden",
     minWidth: 160,
     shadowColor: "#000000",
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
   salaryMenuTop: {
     marginTop: 8,
-    backgroundColor: "#141c2a",
-    borderRadius: 14,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     overflow: "hidden",
     minWidth: 180,
     shadowColor: "#000000",
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
   salaryMenuItem: {
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
-  salaryMenuText: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
+  salaryMenuText: { color: "#374151", fontSize: 12, fontWeight: "600" },
 
   card: {
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
     shadowColor: "#000000",
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#f0f0f0",
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  cardHint: { fontSize: 12, color: "#9ca3af", marginTop: 4 },
-  smallText: { fontSize: 12, color: "#9ca3af" },
-  emptyText: { fontSize: 12, color: "#9ca3af", textAlign: "center" },
-  shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6, color: "#e5e7eb" },
-  shiftMeta: { fontSize: 12, color: "#9ca3af", marginTop: 4 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  cardHint: { fontSize: 12, color: "#6b7280", marginTop: 4 },
+  smallText: { fontSize: 12, color: "#6b7280" },
+  emptyText: { fontSize: 12, color: "#6b7280", textAlign: "center" },
+  shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6, color: "#111827" },
+  shiftMeta: { fontSize: 12, color: "#6b7280", marginTop: 4 },
 
   progressBarBg: {
     height: 6,
@@ -3219,7 +3140,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: 6,
-    backgroundColor: "#b7f34d",
+    backgroundColor: "#111827",
     borderRadius: 6,
   },
   progressBarFillComplete: { backgroundColor: "#b7f34d" },
@@ -3230,16 +3151,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
-  statusText: { fontSize: 12, color: "#9ca3af", fontWeight: "600" },
-  statusCompleted: { color: "#b7f34d" },
+  statusText: { fontSize: 12, color: "#6b7280", fontWeight: "600" },
+  statusCompleted: { color: "#111827" },
   statusAbsent: { color: "#ef4444" },
   viewButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "#1b2636",
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
-  viewButtonText: { color: "#e5e7eb", fontSize: 11, fontWeight: "600" },
+  viewButtonText: { color: "#374151", fontSize: 11, fontWeight: "600" },
   detailButton: {
     marginTop: 8,
     alignSelf: "flex-start",
@@ -3249,9 +3172,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: "#1b2636",
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
-  detailButtonText: { color: "#e5e7eb", fontWeight: "600", fontSize: 12 },
+  detailButtonText: { color: "#374151", fontWeight: "600", fontSize: 12 },
   disabledButton: { opacity: 0.5 },
   clockRow: {
     flexDirection: "row",
@@ -3263,11 +3188,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: "#1b2636",
+    backgroundColor: "#f5f5f5",
     marginRight: 8,
   },
-  clockLabel: { color: "#9ca3af", fontSize: 10 },
-  clockValue: { color: "#e5e7eb", fontWeight: "700", marginTop: 4, fontSize: 12 },
+  clockLabel: { color: "#6b7280", fontSize: 10 },
+  clockValue: { color: "#111827", fontWeight: "700", marginTop: 4, fontSize: 12 },
   clockActions: { flexDirection: "row", gap: 8, marginTop: 10 },
   clockButton: {
     paddingVertical: 8,
@@ -3275,25 +3200,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-  clockPrimary: { backgroundColor: "#b7f34d" },
-  clockGhost: { backgroundColor: "#1b2636" },
+  clockPrimary: { backgroundColor: "#111827" },
+  clockGhost: { backgroundColor: "#f5f5f5" },
   clockReset: { backgroundColor: "#ef4444" },
-  clockButtonText: { color: "#e5e7eb", fontWeight: "700", fontSize: 12 },
-  clockButtonTextLight: { color: "#0b1220", fontWeight: "700", fontSize: 12 },
+  clockButtonText: { color: "#374151", fontWeight: "700", fontSize: 12 },
+  clockButtonTextLight: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
   clockResetText: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
   upcomingRow: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#273244",
+    borderTopColor: "#e5e7eb",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  upcomingLabel: { color: "#9ca3af", fontSize: 12, marginBottom: 4 },
+  upcomingLabel: { color: "#6b7280", fontSize: 12, marginBottom: 4 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.55)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -3302,9 +3227,16 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     maxHeight: "85%",
-    backgroundColor: "#141c2a",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
+    shadowColor: "#000000",
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
   modalHeader: {
     flexDirection: "row",
@@ -3312,7 +3244,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: "#e5e7eb", fontWeight: "700" },
+  modalTitle: { color: "#111827", fontWeight: "700" },
   detailScrollContent: {
     paddingBottom: 8,
   },
@@ -3342,8 +3274,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  detailLabel: { color: "#9ca3af", fontSize: 12 },
-  detailValue: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: "#6b7280", fontSize: 12 },
+  detailValue: { color: "#111827", fontSize: 12, fontWeight: "600" },
   monthList: {
     marginTop: 12,
     flexDirection: "row",
@@ -3359,8 +3291,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   monthButtonActiveLight: {
-    backgroundColor: "#b7f34d",
-    borderColor: "#b7f34d",
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
   monthButtonTextLight: { color: "#334155", fontSize: 12 },
   monthButtonTextActiveLight: { color: "#0b1220", fontWeight: "700" },
@@ -3369,20 +3301,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
   },
   monthButtonActive: {
-    backgroundColor: "#b7f34d",
-    borderColor: "#b7f34d",
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
-  monthButtonText: { color: "#9ca3af", fontSize: 12 },
+  monthButtonText: { color: "#6b7280", fontSize: 12 },
   monthButtonTextActive: { color: "#0b1220", fontWeight: "700" },
   pastSalaryCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#273244",
+    borderColor: "#e5e7eb",
     backgroundColor: "#101826",
   },
   pastSalaryCardLight: {
@@ -3392,19 +3324,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
     backgroundColor: "#ffffff",
+    shadowColor: "#000000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   pastSalaryLabel: { color: "#64748b", fontSize: 12 },
   pastSalaryValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
   breakdownBlock: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#273244",
+    borderTopColor: "rgba(255,255,255,0.15)",
     paddingTop: 12,
   },
   breakdownTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#e5e7eb",
+    color: "rgba(255,255,255,0.8)",
     marginBottom: 6,
   },
   breakdownRow: {
@@ -3413,9 +3350,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 6,
   },
-  breakdownDate: { color: "#e5e7eb", fontSize: 12, fontWeight: "600" },
-  breakdownSub: { color: "#9ca3af", fontSize: 11, marginTop: 2 },
-  breakdownAmount: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
+  breakdownDate: { color: "#111827", fontSize: 12, fontWeight: "600" },
+  breakdownSub: { color: "#6b7280", fontSize: 11, marginTop: 2 },
+  breakdownAmount: { color: "#111827", fontSize: 12, fontWeight: "700" },
 
 
 });

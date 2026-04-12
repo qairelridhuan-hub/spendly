@@ -410,512 +410,327 @@ export default function ProfileScreen() {
   const { level, nextXp, progress } = useMemo(() => getLevelProgress(xp), [xp]);
 
   return (
-    <LinearGradient
-      colors={[colors.backgroundStart, colors.backgroundEnd]}
-      style={{ flex: 1 }}
-    >
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+    <View style={styles.screen}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
-        {/* Profile Header */}
-        <View
-          style={[
-            styles.profileCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.profileRow}>
-            <View
-              style={[
-                styles.avatarWrap,
-                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-              ]}
-            >
-              {photoUrl ? (
-                <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
-              ) : (
-                <Text style={styles.avatarFallback}>👤</Text>
-              )}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.profileName, { color: colors.text }]}>
-                {displayName}
-              </Text>
-              <Text style={[styles.profileEmail, { color: colors.textMuted }]}>
-                {email || "No email"}
-              </Text>
-            </View>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+
+          {/* ── HEADER ── */}
+          <View style={styles.pageHeader}>
+            <Text style={styles.pageTitle}>Profile</Text>
           </View>
 
-          <View style={styles.profileMetaRow}>
-            <View style={[styles.metaChip, { borderColor: colors.border }]}>
-              <Target size={14} color={colors.textMuted} />
-              <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                {stats.goalsCount} Goals
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Stats Grid */}
-        <View
-          style={[
-            styles.sectionCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Statistics
-          </Text>
-          <View style={styles.statGrid}>
-            {statsList.map(stat => (
-              <View
-                key={stat.label}
-                style={[
-                  styles.statCard,
-                  { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-                ]}
-              >
-                <Text style={[styles.statValue, { color: colors.text }]}>
-                  {stat.value}
-                </Text>
-                <Text
-                  style={[styles.statLabel, { color: colors.textMuted }]}
-                >
-                  {stat.label}
-                </Text>
+          {/* ── PROFILE CARD ── */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileRow}>
+              <View style={styles.avatarWrap}>
+                {photoUrl ? (
+                  <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarInitial}>
+                      {displayName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
               </View>
-            ))}
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.sectionCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.badgeHeader}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Sparkles size={16} color={colors.accent} />
-              <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
-                Level Progress
-              </Text>
-            </View>
-            <Text style={[styles.levelMeta, { color: colors.textMuted }]}>
-              Level {level}
-            </Text>
-          </View>
-          <Text style={[styles.levelHint, { color: colors.textMuted }]}>
-            {xp} XP · {Math.max(0, nextXp - xp)} XP to level up
-          </Text>
-          <View style={[styles.levelTrack, { backgroundColor: colors.border }]}>
-            <View
-              style={[
-                styles.levelFill,
-                { width: `${progress}%`, backgroundColor: colors.accent },
-              ]}
-            />
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.sectionCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.badgeHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Awards & Badges
-            </Text>
-            <View style={[styles.badgeCount, { borderColor: colors.border }]}>
-              <Text style={[styles.badgeCountText, { color: colors.textMuted }]}>
-                {completedChallengeCount}/{challengeCount} earned
-              </Text>
-            </View>
-          </View>
-          <View style={styles.badgeGrid}>
-            {buildBadgeList({
-              goalsCompleted: stats.goalsCompleted,
-              goalsCount: stats.goalsCount,
-              completedChallenges: completedChallengeCount,
-              streakDays: getConsecutiveStreakDays(attendanceLogs),
-            }).map(badge => (
-              <View
-                key={badge.id}
-                style={[
-                  styles.badgeCard,
-                  {
-                    backgroundColor: badge.unlocked
-                      ? colors.surfaceAlt
-                      : colors.surface,
-                    borderColor: badge.unlocked ? colors.accent : colors.border,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.badgeIcon,
-                    {
-                      backgroundColor: badge.unlocked
-                        ? colors.accent
-                        : colors.surfaceAlt,
-                    },
-                  ]}
-                >
-                  <Award size={14} color={badge.unlocked ? "#fff" : colors.textMuted} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileName}>{displayName}</Text>
+                <Text style={styles.profileEmail}>{email || "No email"}</Text>
+                <View style={styles.profileMetaRow}>
+                  <View style={styles.metaChip}>
+                    <Target size={12} color="#6b7280" />
+                    <Text style={styles.metaText}>{stats.goalsCount} Goals</Text>
+                  </View>
+                  <View style={styles.metaChip}>
+                    <Sparkles size={12} color="#6b7280" />
+                    <Text style={styles.metaText}>Lv {level}</Text>
+                  </View>
                 </View>
-                <Text style={[styles.badgeTitle, { color: colors.text }]}>
-                  {badge.title}
-                </Text>
-                <Text style={[styles.badgeDesc, { color: colors.textMuted }]}>
-                  {badge.description}
-                </Text>
               </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Settings */}
-        <View
-          style={[
-            styles.sectionCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Settings
-          </Text>
-
-          <View style={styles.settingList}>
-            <TouchableOpacity
-              style={[
-                styles.settingRow,
-                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-              ]}
-              onPress={openEdit}
-            >
-              <View style={styles.settingLeft}>
-                <User size={18} color={colors.textMuted} />
-                <Text style={[styles.settingText, { color: colors.text }]}>
-                  Edit Profile
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            <View
-              style={[
-                styles.settingRow,
-                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-              ]}
-            >
-              <View style={styles.settingLeft}>
-                <Mail size={18} color={colors.textMuted} />
-                <Text style={[styles.settingText, { color: colors.text }]}>
-                  Notifications
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.settingRow,
-                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-              ]}
-              onPress={handleGenerateReport}
-            >
-              <View style={styles.settingLeft}>
-                <FileText size={18} color={colors.textMuted} />
-                <Text style={[styles.settingText, { color: colors.text }]}>
-                  Generate Report (PDF)
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Edit Profile */}
-        {editOpen ? (
-          <View
-            style={[
-              styles.sectionCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Edit Profile
-            </Text>
-            <View style={styles.formStack}>
-              <View>
-                <Text style={{ color: colors.textMuted, marginBottom: 6 }}>
-                  Username
-                </Text>
-                <TextInput
-                  value={nameInput}
-                  onChangeText={setNameInput}
-                  placeholder="Full name"
-                  placeholderTextColor={colors.textMuted}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 12,
-                    padding: 12,
-                    color: colors.text,
-                    backgroundColor: colors.surfaceAlt,
-                  }}
-                />
-              </View>
-              <View>
-                <Text style={{ color: colors.textMuted, marginBottom: 6 }}>
-                  Email
-                </Text>
-                <TextInput
-                  value={emailInput}
-                  onChangeText={setEmailInput}
-                  placeholder="Email address"
-                  placeholderTextColor={colors.textMuted}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 12,
-                    padding: 12,
-                    color: colors.text,
-                    backgroundColor: colors.surfaceAlt,
-                  }}
-                />
-              </View>
-              <View>
-                <Text style={{ color: colors.textMuted, marginBottom: 6 }}>
-                  Profile Picture URL
-                </Text>
-                <TextInput
-                  value={photoInput}
-                  onChangeText={setPhotoInput}
-                  placeholder="https://..."
-                  placeholderTextColor={colors.textMuted}
-                  autoCapitalize="none"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 12,
-                    padding: 12,
-                    color: colors.text,
-                    backgroundColor: colors.surfaceAlt,
-                  }}
-                />
-              </View>
-              {editError ? (
-                <Text style={{ color: colors.danger }}>{editError}</Text>
-              ) : null}
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    backgroundColor: colors.surfaceAlt,
-                    alignItems: "center",
-                  }}
-                  onPress={() => setEditOpen(false)}
-                  disabled={saving}
-                >
-                  <Text style={{ color: colors.textMuted, fontWeight: "600" }}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    borderRadius: 12,
-                    backgroundColor: colors.accentStrong,
-                    alignItems: "center",
-                    opacity: saving ? 0.7 : 1,
-                  }}
-                  onPress={handleSaveProfile}
-                  disabled={saving}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>
-                    {saving ? "Saving..." : "Save"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={styles.editAvatarBtn} onPress={openEdit}>
+                <User size={16} color="#6b7280" />
+              </TouchableOpacity>
             </View>
           </View>
-        ) : (
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-            onPress={openEdit}
-          >
-            <Text style={{ color: colors.text, textAlign: "center", fontWeight: "600" }}>
-              Edit Profile
-            </Text>
+
+          {/* ── STATS ── */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionLabel}>STATISTICS</Text>
+            <View style={styles.statGrid}>
+              {statsList.map(stat => (
+                <View key={stat.label} style={styles.statCard}>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* ── LEVEL PROGRESS ── */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionRow}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Sparkles size={15} color="#111827" />
+                <Text style={styles.sectionLabel}>LEVEL PROGRESS</Text>
+              </View>
+              <Text style={styles.levelBadge}>Level {level}</Text>
+            </View>
+            <Text style={styles.levelHint}>{xp} XP · {Math.max(0, nextXp - xp)} XP to next level</Text>
+            <View style={styles.levelTrack}>
+              <View style={[styles.levelFill, { width: `${progress}%` }]} />
+            </View>
+          </View>
+
+          {/* ── BADGES ── */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionLabel}>AWARDS & BADGES</Text>
+              <View style={styles.badgeCountChip}>
+                <Text style={styles.badgeCountText}>{completedChallengeCount}/{challengeCount} earned</Text>
+              </View>
+            </View>
+            <View style={styles.badgeGrid}>
+              {buildBadgeList({
+                goalsCompleted: stats.goalsCompleted,
+                goalsCount: stats.goalsCount,
+                completedChallenges: completedChallengeCount,
+                streakDays: getConsecutiveStreakDays(attendanceLogs),
+              }).map(badge => (
+                <View key={badge.id} style={[styles.badgeCard, badge.unlocked && styles.badgeCardUnlocked]}>
+                  <View style={[styles.badgeIcon, badge.unlocked && styles.badgeIconUnlocked]}>
+                    <Award size={14} color={badge.unlocked ? "#ffffff" : "#9ca3af"} />
+                  </View>
+                  <Text style={styles.badgeTitle}>{badge.title}</Text>
+                  <Text style={styles.badgeDesc}>{badge.description}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* ── SETTINGS ── */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionLabel}>SETTINGS</Text>
+            <View style={styles.settingList}>
+              <TouchableOpacity style={styles.settingRow} onPress={openEdit}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconWrap}><User size={16} color="#111827" /></View>
+                  <Text style={styles.settingText}>Edit Profile</Text>
+                </View>
+                <Text style={styles.settingArrow}>›</Text>
+              </TouchableOpacity>
+              <View style={styles.settingDivider} />
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconWrap}><Mail size={16} color="#111827" /></View>
+                  <Text style={styles.settingText}>Notifications</Text>
+                </View>
+              </View>
+              <View style={styles.settingDivider} />
+              <TouchableOpacity style={styles.settingRow} onPress={handleGenerateReport}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconWrap}><FileText size={16} color="#111827" /></View>
+                  <Text style={styles.settingText}>Generate Report (PDF)</Text>
+                </View>
+                <Text style={styles.settingArrow}>›</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ── EDIT PROFILE FORM ── */}
+          {editOpen && (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionLabel}>EDIT PROFILE</Text>
+              <View style={styles.formStack}>
+                <View>
+                  <Text style={styles.fieldLabel}>Username</Text>
+                  <TextInput value={nameInput} onChangeText={setNameInput} placeholder="Full name" placeholderTextColor="#9ca3af" style={styles.input} />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Email</Text>
+                  <TextInput value={emailInput} onChangeText={setEmailInput} placeholder="Email address" placeholderTextColor="#9ca3af" autoCapitalize="none" keyboardType="email-address" style={styles.input} />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Profile Picture URL</Text>
+                  <TextInput value={photoInput} onChangeText={setPhotoInput} placeholder="https://..." placeholderTextColor="#9ca3af" autoCapitalize="none" style={styles.input} />
+                </View>
+                {editError ? <Text style={styles.errorText}>{editError}</Text> : null}
+                <View style={{ flexDirection: "row", gap: 12 }}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditOpen(false)} disabled={saving}>
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.saveBtn, { opacity: saving ? 0.7 : 1 }]} onPress={handleSaveProfile} disabled={saving}>
+                    <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save"}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* ── LOGOUT ── */}
+          <TouchableOpacity style={styles.logoutBtn} onPress={confirmLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
-        )}
 
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-          onPress={confirmLogout}
-        >
-          <Text style={{ color: colors.danger, textAlign: "center", fontWeight: "600" }}>
-            Logout
-          </Text>
-        </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingTop: 16,
-    paddingBottom: 120,
-  },
+  screen: { flex: 1, backgroundColor: "#ffffff" },
   safe: { flex: 1 },
-  bgBlob: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 999,
-    backgroundColor: "rgba(183,243,77,0.14)",
-    top: -80,
-    right: -60,
-  },
-  bgBlobAlt: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 999,
-    backgroundColor: "rgba(15,23,42,0.6)",
-    bottom: -120,
-    left: -80,
-  },
+  container: { padding: 16, paddingTop: 8, paddingBottom: 120 },
+
+  pageHeader: { marginBottom: 16 },
+  pageTitle: { fontSize: 24, fontWeight: "700", color: "#111827" },
+
+  /* Profile Card */
   profileCard: {
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  profileRow: {
-    flexDirection: "row",
-    gap: 14,
-    marginBottom: 14,
-    alignItems: "center",
-  },
-  avatarWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-  },
-  avatarImage: { width: 72, height: 72 },
-  avatarFallback: { fontSize: 32 },
-  profileName: { fontSize: 20, fontWeight: "700" },
-  profileEmail: { marginTop: 4, fontSize: 12 },
-  profileMetaRow: { flexDirection: "row", gap: 10, flexWrap: "wrap" },
-  metaChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  metaText: { fontSize: 11, fontWeight: "600" },
-  sectionCard: {
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
+    marginBottom: 14,
     borderWidth: 1,
-    marginBottom: 16,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000000",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  sectionTitle: { fontWeight: "700", marginBottom: 12 },
-  statGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  profileRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  avatarWrap: { width: 64, height: 64, borderRadius: 32, overflow: "hidden" },
+  avatarImage: { width: 64, height: 64 },
+  avatarPlaceholder: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center", justifyContent: "center",
+  },
+  avatarInitial: { fontSize: 26, fontWeight: "700", color: "#111827" },
+  profileName: { fontSize: 17, fontWeight: "700", color: "#111827" },
+  profileEmail: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  profileMetaRow: { flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" },
+  metaChip: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "#f5f5f5", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999,
+  },
+  metaText: { fontSize: 11, color: "#6b7280", fontWeight: "600" },
+  editAvatarBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: "#f5f5f5", alignItems: "center", justifyContent: "center",
+    borderWidth: 1, borderColor: "#e5e7eb",
+  },
+
+  /* Section Card */
+  sectionCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000000",
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  sectionLabel: {
+    fontSize: 11, fontWeight: "700", color: "#9ca3af",
+    letterSpacing: 0.8, marginBottom: 14,
+  },
+  sectionRow: {
+    flexDirection: "row", justifyContent: "space-between",
+    alignItems: "center", marginBottom: 10,
+  },
+
+  /* Stats */
+  statGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   statCard: {
-    width: "47%",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
+    width: "47%", backgroundColor: "#f9f9f9",
+    borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: "#f0f0f0",
     alignItems: "center",
   },
-  statValue: { fontWeight: "700" },
-  statLabel: { fontSize: 11, marginTop: 4, textAlign: "center" },
-  settingList: { gap: 12 },
-  settingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+  statValue: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  statLabel: { fontSize: 11, color: "#6b7280", marginTop: 4, textAlign: "center" },
+
+  /* Level */
+  levelBadge: {
+    backgroundColor: "#111827", color: "#ffffff",
+    fontSize: 11, fontWeight: "700",
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999,
   },
-  settingLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  settingText: { fontSize: 13 },
-  formStack: { gap: 12 },
-  actionButton: {
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 16,
+  levelHint: { fontSize: 12, color: "#6b7280", marginBottom: 10 },
+  levelTrack: { height: 6, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden" },
+  levelFill: { height: 6, backgroundColor: "#111827", borderRadius: 999 },
+
+  /* Badges */
+  badgeCountChip: {
+    backgroundColor: "#f5f5f5", paddingHorizontal: 10,
+    paddingVertical: 4, borderRadius: 999,
   },
-  badgeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  badgeCount: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  badgeCountText: { fontSize: 11, fontWeight: "600" },
-  badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  badgeCountText: { fontSize: 11, color: "#6b7280", fontWeight: "600" },
+  badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   badgeCard: {
-    width: "47%",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
+    width: "47%", backgroundColor: "#f9f9f9",
+    borderRadius: 14, padding: 12,
+    borderWidth: 1, borderColor: "#f0f0f0",
   },
+  badgeCardUnlocked: { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
   badgeIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
+    width: 30, height: 30, borderRadius: 10,
+    backgroundColor: "#e5e7eb",
+    alignItems: "center", justifyContent: "center", marginBottom: 8,
   },
-  badgeTitle: { fontSize: 13, fontWeight: "700" },
-  badgeDesc: { fontSize: 11, marginTop: 4 },
-  levelMeta: { fontSize: 12, fontWeight: "600" },
-  levelHint: { fontSize: 12, marginBottom: 10 },
-  levelTrack: {
-    height: 8,
-    borderRadius: 999,
-    overflow: "hidden",
+  badgeIconUnlocked: { backgroundColor: "#111827" },
+  badgeTitle: { fontSize: 12, fontWeight: "700", color: "#111827" },
+  badgeDesc: { fontSize: 11, color: "#6b7280", marginTop: 3 },
+
+  /* Settings */
+  settingList: {},
+  settingRow: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between", paddingVertical: 12,
   },
-  levelFill: {
-    height: 8,
-    borderRadius: 999,
+  settingDivider: { height: 1, backgroundColor: "#f0f0f0" },
+  settingLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  settingIconWrap: {
+    width: 34, height: 34, borderRadius: 10,
+    backgroundColor: "#f5f5f5", alignItems: "center", justifyContent: "center",
   },
+  settingText: { fontSize: 14, color: "#111827", fontWeight: "500" },
+  settingArrow: { fontSize: 20, color: "#9ca3af", lineHeight: 22 },
+
+  /* Edit Form */
+  formStack: { gap: 12 },
+  fieldLabel: { fontSize: 12, color: "#6b7280", marginBottom: 6, fontWeight: "600" },
+  input: {
+    borderWidth: 1, borderColor: "#e5e7eb",
+    borderRadius: 12, padding: 12,
+    color: "#111827", backgroundColor: "#f9f9f9", fontSize: 14,
+  },
+  errorText: { color: "#ef4444", fontSize: 12 },
+  cancelBtn: {
+    flex: 1, padding: 13, borderRadius: 12,
+    backgroundColor: "#f5f5f5", borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center",
+  },
+  cancelBtnText: { color: "#6b7280", fontWeight: "600" },
+  saveBtn: {
+    flex: 1, padding: 13, borderRadius: 12,
+    backgroundColor: "#111827", alignItems: "center",
+  },
+  saveBtnText: { color: "#ffffff", fontWeight: "700" },
+
+  /* Logout */
+  logoutBtn: {
+    padding: 14, borderRadius: 14,
+    backgroundColor: "#fff1f2", borderWidth: 1, borderColor: "#fecdd3",
+    alignItems: "center", marginBottom: 16,
+  },
+  logoutText: { color: "#ef4444", fontWeight: "700", fontSize: 14 },
 });
 
 const buildBadgeList = ({

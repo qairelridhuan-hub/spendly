@@ -14,6 +14,7 @@ import {
   Bell,
   Calendar,
   DollarSign,
+  Gamepad2,
   LogOut,
   PieChart,
   TrendingUp,
@@ -368,8 +369,7 @@ export default function EarningsScreen() {
   });
 
   return (
-    <LinearGradient colors={["#0b1220", "#111827"]} style={styles.screen}>
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
           {/* ===== HEADER ===== */}
@@ -392,23 +392,25 @@ export default function EarningsScreen() {
             </View>
 
             <View style={styles.headerRight}>
-              <TouchableOpacity onPress={() => router.push("/notifications")}>
-                <Bell size={22} color="#e5e7eb" />
-                <View style={styles.notifDot} />
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={confirmLogout}>
-                <LogOut size={22} color="#e5e7eb" />
-              </TouchableOpacity>
+              <View style={styles.iconPill}>
+                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/(tabs)/")}>
+                  <Gamepad2 size={20} color="#111827" />
+                </TouchableOpacity>
+                <View style={styles.iconPillDivider} />
+                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
+                  <Bell size={20} color="#111827" />
+                  <View style={styles.notifDot} />
+                </TouchableOpacity>
+                <View style={styles.iconPillDivider} />
+                <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
+                  <LogOut size={20} color="#111827" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
           {/* ===== HERO CARD ===== */}
-          <LinearGradient
-            colors={["#0f172a", "#111827"]}
-            style={styles.heroCard}
-          >
-            <View style={styles.heroAccent} />
+          <View style={[styles.heroCard, { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb" }]}>
             <View style={styles.heroTopRow}>
               <View>
                 <Text style={styles.heroLabel}>Total Earnings</Text>
@@ -456,7 +458,7 @@ export default function EarningsScreen() {
             >
               <Text style={styles.heroDetailText}>View approved details</Text>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
 
           {/* ===== QUICK STATS GRID ===== */}
           <View style={styles.quickGrid}>
@@ -605,10 +607,7 @@ export default function EarningsScreen() {
           </View>
 
           {/* ===== Smart Suggestion ===== */}
-          <LinearGradient
-            colors={["#fff7ed", "#fef3c7"]}
-            style={styles.tipCard}
-          >
+          <View style={[styles.tipCard, { backgroundColor: "#fffbeb" }]}>
             <Text style={styles.tipTitle}>💡 Smart Suggestion</Text>
             <Text style={styles.tipText}>{suggestion.title}</Text>
             <View style={styles.tipRow}>
@@ -620,7 +619,7 @@ export default function EarningsScreen() {
                 <Text style={styles.tipButtonText}>View goals</Text>
               </TouchableOpacity>
             ) : null}
-          </LinearGradient>
+          </View>
         </ScrollView>
       </SafeAreaView>
 
@@ -677,7 +676,7 @@ export default function EarningsScreen() {
           </View>
         </View>
       ) : null}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -1085,13 +1084,17 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   logoImage: { width: 24, height: 24 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  subText: { fontSize: 13, color: "#9ca3af" },
-  headerRight: {
-    flexDirection: "row",
-    gap: 18,
-    alignItems: "center",
+  appName: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  subText: { fontSize: 13, color: "#6b7280" },
+  headerRight: { flexDirection: "row", alignItems: "center" },
+  iconPill: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#f5f5f5", borderRadius: 999,
+    borderWidth: 1, borderColor: "#e5e7eb",
+    paddingHorizontal: 4, paddingVertical: 4,
   },
+  iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
+  iconPillDivider: { width: 1, height: 16, backgroundColor: "#e5e7eb" },
   notifDot: {
     position: "absolute",
     top: -2,
@@ -1106,7 +1109,7 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 999,
-    backgroundColor: "rgba(183,243,77,0.14)",
+    backgroundColor: "rgba(0,0,0,0)",
     top: -80,
     right: -60,
   },
@@ -1115,7 +1118,7 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 999,
-    backgroundColor: "rgba(15,23,42,0.6)",
+    backgroundColor: "rgba(0,0,0,0)",
     bottom: -120,
     left: -80,
   },
@@ -1124,17 +1127,14 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
     overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   heroAccent: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "#f59e0b",
-    right: -80,
-    top: -60,
-    transform: [{ rotate: "-18deg" }],
-    opacity: 0.9,
+    display: "none",
   },
   heroTopRow: {
     flexDirection: "row",
@@ -1142,18 +1142,18 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 10,
   },
-  heroLabel: { color: "#f8fafc", fontSize: 12, letterSpacing: 0.6 },
-  heroAmount: { color: "#ffffff", fontSize: 28, fontWeight: "700" },
-  heroSub: { color: "rgba(248,250,252,0.8)", marginTop: 2, fontSize: 12 },
+  heroLabel: { color: "#6b7280", fontSize: 12, letterSpacing: 0.6 },
+  heroAmount: { color: "#111827", fontSize: 28, fontWeight: "700" },
+  heroSub: { color: "#6b7280", marginTop: 2, fontSize: 12 },
   heroIconWrap: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#fbbf24",
+    backgroundColor: "#f0f0f0",
     alignItems: "center",
     justifyContent: "center",
   },
-  heroHint: { color: "rgba(226,232,240,0.9)", fontSize: 12 },
+  heroHint: { color: "#6b7280", fontSize: 12 },
   heroBottomRow: {
     flexDirection: "row",
     gap: 10,
@@ -1161,25 +1161,25 @@ const styles = StyleSheet.create({
   },
   heroPill: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "#f5f5f5",
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 14,
   },
   heroPillAlt: {
-    backgroundColor: "rgba(253, 186, 116, 0.25)",
+    backgroundColor: "#f0f0f0",
   },
-  heroPillLabel: { color: "#e2e8f0", fontSize: 11 },
-  heroPillValue: { color: "#ffffff", fontWeight: "700", marginTop: 4 },
+  heroPillLabel: { color: "#6b7280", fontSize: 11 },
+  heroPillValue: { color: "#111827", fontWeight: "700", marginTop: 4 },
   heroDetailButton: {
     alignSelf: "flex-start",
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#111827",
     borderRadius: 999,
   },
-  heroDetailText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
+  heroDetailText: { color: "#ffffff", fontWeight: "600", fontSize: 12 },
   quickGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1194,6 +1194,11 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: "#e2e8f0",
+    shadowColor: "#000000",
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   quickIcon: {
     width: 28,
@@ -1213,11 +1218,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    shadowColor: "#0f172a",
+    shadowColor: "#000000",
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1277,6 +1282,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#fde68a",
     marginBottom: 20,
+    shadowColor: "#000000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   tipTitle: { fontSize: 14, fontWeight: "700", color: "#7c2d12" },
   tipText: { color: "#9a3412", marginTop: 8, lineHeight: 18 },
