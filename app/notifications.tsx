@@ -23,6 +23,7 @@ import { auth, db } from "@/lib/firebase";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useTheme } from "@/lib/context";
 import { router } from "expo-router";
+import { cardShadow } from "@/lib/shadows";
 
 export default function NotificationsScreen() {
   const { colors } = useTheme();
@@ -239,6 +240,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
+    ...cardShadow,
   },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   cardTitle: { fontWeight: "700" },

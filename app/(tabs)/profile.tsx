@@ -34,6 +34,7 @@ import {
   getLevelProgress,
   getTotalXp,
 } from "@/lib/game/stats";
+import { cardShadow } from "@/lib/shadows";
 
 type Stats = {
   totalDays: number;
@@ -594,11 +595,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    shadowColor: "#000000",
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    ...cardShadow,
   },
   profileRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   avatarWrap: { width: 64, height: 64, borderRadius: 32, overflow: "hidden" },
@@ -631,11 +628,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    shadowColor: "#000000",
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    ...cardShadow,
   },
   sectionLabel: {
     fontSize: 11, fontWeight: "700", color: "#9ca3af",
@@ -653,6 +646,7 @@ const styles = StyleSheet.create({
     borderRadius: 14, padding: 14,
     borderWidth: 1, borderColor: "#f0f0f0",
     alignItems: "center",
+    ...cardShadow,
   },
   statValue: { fontSize: 18, fontWeight: "700", color: "#111827" },
   statLabel: { fontSize: 11, color: "#6b7280", marginTop: 4, textAlign: "center" },
@@ -678,6 +672,7 @@ const styles = StyleSheet.create({
     width: "47%", backgroundColor: "#f9f9f9",
     borderRadius: 14, padding: 12,
     borderWidth: 1, borderColor: "#f0f0f0",
+    ...cardShadow,
   },
   badgeCardUnlocked: { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
   badgeIcon: {

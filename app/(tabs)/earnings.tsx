@@ -27,6 +27,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar } from "@/lib/context";
 import { useFocusEffect } from "@react-navigation/native";
+import { cardShadow } from "@/lib/shadows";
 
 type WeeklyEntry = { week: string; earnings: number };
 type BudgetItem = {
@@ -1135,11 +1136,7 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
     overflow: "hidden",
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    ...cardShadow,
   },
   heroAccent: {
     display: "none",
@@ -1226,11 +1223,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    ...cardShadow,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1290,11 +1283,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#fde68a",
     marginBottom: 20,
-    shadowColor: "#000000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    ...cardShadow,
   },
   tipTitle: { fontSize: 14, fontWeight: "700", color: "#7c2d12" },
   tipText: { color: "#9a3412", marginTop: 8, lineHeight: 18 },

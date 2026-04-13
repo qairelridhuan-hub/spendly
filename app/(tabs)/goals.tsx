@@ -42,6 +42,7 @@ import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar } from "@/lib/context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
+import { cardShadow } from "@/lib/shadows";
 
 type GoalPriority = "high" | "medium" | "low";
 
@@ -1181,13 +1182,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+    ...cardShadow,
   },
   emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700", color: "#111827" },
   emptyText: {
@@ -1269,12 +1266,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
     marginBottom: 14,
+    ...cardShadow,
   },
   goalHeader: {
     flexDirection: "row",
@@ -1389,6 +1382,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
     flexDirection: "row",
     justifyContent: "space-between",
+    ...cardShadow,
   },
   summaryLabel: { color: "#6b7280", fontSize: 12 },
   summaryValue: { color: "#111827", fontSize: 14, fontWeight: "700", marginTop: 2 },
@@ -1399,6 +1393,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "#ffffff",
+    ...cardShadow,
   },
   planRow: {
     flexDirection: "row",

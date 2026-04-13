@@ -38,6 +38,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFonts } from "expo-font";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar, useTheme } from "@/lib/context";
+import { cardShadow } from "@/lib/shadows";
 
 type AttendancePolicy = {
   payType: string;
@@ -2707,6 +2708,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(34,197,94,0.35)",
     alignItems: "center",
+    ...cardShadow,
   },
   gameGateCloseButton: {
     position: "absolute",
@@ -2895,6 +2897,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
     borderWidth: 1,
     borderColor: "rgba(34,197,94,0.4)",
+    ...cardShadow,
   },
   gameSplashText: { color: "#374151", fontWeight: "700", fontSize: 12 },
   dot: {
@@ -2989,6 +2992,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 12,
+    ...cardShadow,
   },
   salaryMetricCardAlt: {
     backgroundColor: "#f0f0f0",
@@ -3043,13 +3047,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     marginBottom: 16,
-    shadowColor: "#000000",
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
     borderWidth: 1,
     borderColor: "#f0f0f0",
+    ...cardShadow,
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
   cardHint: { fontSize: 12, color: "#6b7280", marginTop: 4 },
@@ -3261,11 +3261,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
     backgroundColor: "#ffffff",
-    shadowColor: "#000000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...cardShadow,
   },
   pastSalaryLabel: { color: "#64748b", fontSize: 12 },
   pastSalaryValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },

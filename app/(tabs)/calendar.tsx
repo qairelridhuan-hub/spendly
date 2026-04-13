@@ -26,6 +26,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "@/lib/firebase";
 import { useCalendar, useTheme } from "@/lib/context";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
+import { cardShadow } from "@/lib/shadows";
 
 /* =====================
    LAYOUT CONSTANTS
@@ -841,22 +842,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+    ...cardShadow,
   },
   calendarCard: {
     backgroundColor: "#ffffff",
     borderColor: "#e2e8f0",
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 1,
   },
 
   cardTitle: {
