@@ -26,6 +26,8 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import { getPeriodKey } from "@/lib/reports/report";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 type Worker = {
   id: string;
@@ -54,6 +56,7 @@ export default function AdminWorkers() {
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null);
   const [formError, setFormError] = useState("");
+  const [error, setError] = useState("");
   const createWorkerAuth = useMemo(
     () => httpsCallable(functions, "createWorkerAuth"),
     []
@@ -120,6 +123,7 @@ export default function AdminWorkers() {
   });
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/workers");
     const workersQuery = query(
       collection(db, "users"),
       where("role", "==", "worker")
@@ -140,13 +144,13 @@ export default function AdminWorkers() {
         };
       });
       setWorkers(list);
-    });
+    }, onSnapError);
 
     const attendanceQuery = collectionGroup(db, "attendance");
     const unsubAttendance = onSnapshot(attendanceQuery, snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data() as any);
       setAttendanceLogs(list);
-    });
+    }, onSnapError);
 
     return () => {
       unsubWorkers();
@@ -341,6 +345,7 @@ export default function AdminWorkers() {
         contentContainerStyle={{ padding: 20, paddingBottom: 60 }}
         onScrollBeginDrag={() => { if (searchOpen) { setSearchOpen(false); Keyboard.dismiss(); } }}
       >
+        <AdminErrorBanner message={error} />
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <View>

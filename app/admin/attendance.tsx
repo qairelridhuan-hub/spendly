@@ -16,6 +16,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 import { useEffect, useMemo, useState } from "react";
 import { useAdminTheme } from "@/lib/admin/theme";
 
@@ -67,6 +69,7 @@ export default function AdminAttendance() {
     holidays: [] as string[],
   });
   const [latestAudit, setLatestAudit] = useState<any | null>(null);
+  const [error, setError] = useState("");
   const p = adminPalette;
 
   const inputField = {
@@ -85,6 +88,7 @@ export default function AdminAttendance() {
   };
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/attendance");
     const unsub = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
@@ -93,11 +97,12 @@ export default function AdminAttendance() {
         ...docSnap.data(),
       }));
       setLogs(list);
-    });
+    }, onSnapError);
     return unsub;
   }, []);
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/attendance");
     const unsubBreaks = onSnapshot(collectionGroup(db, "breaks"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
@@ -105,7 +110,7 @@ export default function AdminAttendance() {
         ...docSnap.data(),
       }));
       setBreakLogs(list);
-    });
+    }, onSnapError);
     const unsubOvertime = onSnapshot(collectionGroup(db, "overtime"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
@@ -113,7 +118,7 @@ export default function AdminAttendance() {
         ...docSnap.data(),
       }));
       setOvertimeLogs(list);
-    });
+    }, onSnapError);
     return () => {
       unsubBreaks();
       unsubOvertime();
@@ -121,6 +126,7 @@ export default function AdminAttendance() {
   }, []);
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/attendance");
     const workersQuery = query(
       collection(db, "users"),
       where("role", "==", "worker")
@@ -135,11 +141,12 @@ export default function AdminAttendance() {
         };
       });
       setWorkers(map);
-    });
+    }, onSnapError);
     return unsub;
   }, []);
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/attendance");
     const auditQuery = query(
       collection(db, "adminAudits"),
       orderBy("updatedAt", "desc"),
@@ -148,11 +155,12 @@ export default function AdminAttendance() {
     const unsub = onSnapshot(auditQuery, snapshot => {
       const docSnap = snapshot.docs[0];
       setLatestAudit(docSnap ? { id: docSnap.id, ...docSnap.data() } : null);
-    });
+    }, onSnapError);
     return unsub;
   }, []);
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/attendance");
     const configRef = doc(db, "config", "system");
     const unsub = onSnapshot(configRef, snap => {
       const data = snap.data() as any;
@@ -179,7 +187,7 @@ export default function AdminAttendance() {
         holidayMultiplier: Number(data.holidayMultiplier ?? prev.holidayMultiplier),
         holidays: Array.isArray(data.holidays) ? data.holidays : prev.holidays,
       }));
-    });
+    }, onSnapError);
     return unsub;
   }, []);
 
@@ -443,6 +451,7 @@ export default function AdminAttendance() {
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+        <AdminErrorBanner message={error} />
 
         {/* Header */}
         <View style={{ marginBottom: 20 }}>

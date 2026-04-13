@@ -27,6 +27,8 @@ import {
 import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import type { AdminPalette } from "@/lib/admin/palette";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 type Schedule = {
   id: string;
@@ -107,6 +109,7 @@ export default function AdminSetup() {
   const [showEndTimeMenu, setShowEndTimeMenu] = useState(false);
   const [configRoles, setConfigRoles] = useState<string[]>([]);
   const [configLocations, setConfigLocations] = useState<string[]>([]);
+  const [error, setError] = useState("");
   const [shiftForm, setShiftForm] = useState({
     date: "",
     start: "09:00",
@@ -133,6 +136,7 @@ export default function AdminSetup() {
   const styles = useMemo(() => createStyles(p), [p]);
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/setup");
     const schedulesQuery = query(
       collection(db, "workSchedules"),
       orderBy("createdAt", "desc")
@@ -152,7 +156,7 @@ export default function AdminSetup() {
         } as Schedule;
       });
       setWorkSchedules(list);
-    });
+    }, onSnapError);
     const workersQuery = query(
       collection(db, "users"),
       where("role", "==", "worker")
@@ -178,7 +182,7 @@ export default function AdminSetup() {
         };
       });
       setWorkerMap(map);
-    });
+    }, onSnapError);
     const shiftsQuery = query(
       collection(db, "shifts"),
       orderBy("date", "desc")
@@ -189,7 +193,7 @@ export default function AdminSetup() {
         ...docSnap.data(),
       }));
       setShifts(list);
-    });
+    }, onSnapError);
     const unsubAttendance = onSnapshot(
       collectionGroup(db, "attendance"),
       snapshot => {
@@ -202,7 +206,8 @@ export default function AdminSetup() {
           map[`${workerId}:${date}`] = data;
         });
         setAttendanceMap(map);
-      }
+      },
+      onSnapError
     );
     const configRef = doc(db, "config", "system");
     const unsubConfig = onSnapshot(configRef, snap => {
@@ -211,7 +216,7 @@ export default function AdminSetup() {
       setConfigLocations(
         Array.isArray(data?.locations) ? data.locations.map(String) : []
       );
-    });
+    }, onSnapError);
 
     return () => {
       unsub();
@@ -688,6 +693,7 @@ export default function AdminSetup() {
       
       
       <ScrollView contentContainerStyle={styles.container}>
+        <AdminErrorBanner message={error} />
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.title}>Work Schedule Setup</Text>

@@ -26,6 +26,7 @@ import { db } from "@/lib/firebase";
 import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 import { useAdminTheme } from "@/lib/admin/theme";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 type AttendanceLog = {
   date?: string;
@@ -60,27 +61,29 @@ export default function AdminReportsWeb() {
     hoursPerDay: 0,
     overtimeRate: 0,
   });
+  const [error, setError] = useState("");
   const styles = useMemo(() => createStyles(adminPalette), [adminPalette]);
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/reports.web");
     const unsubAttendance = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data() as AttendanceLog);
       setAttendanceLogs(list);
-    });
+    }, onSnapError);
     const unsubBreaks = onSnapshot(collectionGroup(db, "breaks"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         workerId: getOwnerId(docSnap),
         ...docSnap.data(),
       }));
       setBreakLogs(list);
-    });
+    }, onSnapError);
     const unsubOvertime = onSnapshot(collectionGroup(db, "overtime"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         workerId: getOwnerId(docSnap),
         ...docSnap.data(),
       }));
       setOvertimeLogs(list);
-    });
+    }, onSnapError);
     const workersQuery = query(
       collection(db, "users"),
       where("role", "==", "worker")
@@ -95,7 +98,7 @@ export default function AdminReportsWeb() {
         };
       });
       setWorkers(map);
-    });
+    }, onSnapError);
     const configRef = doc(db, "config", "system");
     const unsubConfig = onSnapshot(configRef, snap => {
       const data = snap.data() as any;
@@ -105,7 +108,7 @@ export default function AdminReportsWeb() {
         hoursPerDay: Number(data.hoursPerDay ?? 0),
         overtimeRate: Number(data.overtimeRate ?? 0),
       });
-    });
+    }, onSnapError);
     return () => {
       unsubAttendance();
       unsubBreaks();
@@ -409,6 +412,12 @@ export default function AdminReportsWeb() {
           Generate report
         </button>
       </div>
+      {error ? (
+        <div style={styles.errorBanner}>
+          <div style={styles.errorTitle}>Data error</div>
+          <div style={styles.errorText}>{error}</div>
+        </div>
+      ) : null}
 
       <div style={styles.summaryGrid}>
         <div style={styles.summaryCard}>
@@ -1223,6 +1232,23 @@ const createStyles = (
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 24,
+  },
+  errorBanner: {
+    border: `1px solid ${adminPalette.accentStrong}`,
+    background: adminPalette.surfaceAlt,
+    padding: "10px 12px",
+    borderRadius: 12,
+    marginBottom: 18,
+  },
+  errorTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: adminPalette.accentStrong,
+  },
+  errorText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: adminPalette.text,
   },
   generateButton: {
     padding: "10px 16px",

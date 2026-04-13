@@ -18,6 +18,8 @@ import {
 import { db } from "@/lib/firebase";
 import { generateShiftsForWorkers, getSystemConfig } from "@/lib/admin/firestore";
 import { useAdminTheme } from "@/lib/admin/theme";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 type WorkConfig = {
   workingDaysPerWeek: string;
@@ -109,6 +111,7 @@ export default function AdminSettings() {
   const [schedules, setSchedules] = useState<ScheduleSummary[]>([]);
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
   const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
 
   const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
@@ -276,6 +279,7 @@ export default function AdminSettings() {
   };
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/settings");
     const configRef = doc(db, "config", "system");
     const unsubConfig = onSnapshot(configRef, snap => {
       const data = snap.data() as any;
@@ -315,7 +319,7 @@ export default function AdminSettings() {
         maxHoursPerWeek: String(data.maxHoursPerWeek ?? ""),
         minRestHours: String(data.minRestHours ?? ""),
       });
-    });
+    }, onSnapError);
 
     const workersQuery = query(
       collection(db, "users"),
@@ -331,7 +335,7 @@ export default function AdminSettings() {
         };
       });
       setWorkers(list);
-    });
+    }, onSnapError);
 
     const schedulesQuery = query(collection(db, "workSchedules"));
     const unsubSchedules = onSnapshot(schedulesQuery, snapshot => {
@@ -347,7 +351,7 @@ export default function AdminSettings() {
         } as ScheduleSummary;
       });
       setSchedules(list);
-    });
+    }, onSnapError);
 
     return () => {
       unsubConfig();
@@ -505,6 +509,7 @@ export default function AdminSettings() {
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+        <AdminErrorBanner message={error} />
 
         {/* Header */}
         <View style={{ marginBottom: 16 }}>

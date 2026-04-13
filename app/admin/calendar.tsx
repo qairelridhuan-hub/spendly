@@ -4,6 +4,8 @@ import { collection, collectionGroup, onSnapshot, query, where } from "firebase/
 import { db } from "@/lib/firebase";
 import { useEffect, useMemo, useState } from "react";
 import { useAdminTheme } from "@/lib/admin/theme";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 export default function AdminCalendar() {
   const { colors: p } = useAdminTheme();
@@ -11,11 +13,13 @@ export default function AdminCalendar() {
   const [shifts, setShifts] = useState<any[]>([]);
   const [attendanceMap, setAttendanceMap] = useState<Record<string, string>>({});
   const [workers, setWorkers] = useState<Record<string, { name?: string }>>({});
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/calendar");
     const unsub = onSnapshot(collection(db, "shifts"), snapshot => {
       setShifts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    }, onSnapError);
     const unsubAtt = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
       const map: Record<string, string> = {};
       snapshot.forEach(d => {
@@ -24,7 +28,7 @@ export default function AdminCalendar() {
         if (key !== "_") map[key] = String(data.status ?? "pending");
       });
       setAttendanceMap(map);
-    });
+    }, onSnapError);
     const unsubWorkers = onSnapshot(
       query(collection(db, "users"), where("role", "==", "worker")),
       snapshot => {
@@ -34,7 +38,8 @@ export default function AdminCalendar() {
           map[d.id] = { name: data.fullName || data.displayName || data.email };
         });
         setWorkers(map);
-      }
+      },
+      onSnapError
     );
     return () => { unsub(); unsubAtt(); unsubWorkers(); };
   }, []);
@@ -73,6 +78,7 @@ export default function AdminCalendar() {
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+        <AdminErrorBanner message={error} />
 
         {/* Header */}
         <View style={{ marginBottom: 20 }}>

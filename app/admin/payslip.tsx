@@ -33,6 +33,8 @@ import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import { buildPayslipHtml } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,9 +80,11 @@ export default function AdminPayslip() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [previewRecord, setPreviewRecord] = useState<PayslipRow | null>(null);
   const previewAnim = useRef(new Animated.Value(0)).current;
+  const [error, setError] = useState("");
 
   // ── Firebase ──
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/payslip");
     const wq = query(collection(db, "users"), where("role", "==", "worker"));
     const unsubW = onSnapshot(wq, snap => {
       const map: Record<string, Worker> = {};
@@ -96,7 +100,7 @@ export default function AdminPayslip() {
         };
       });
       setWorkers(map);
-    });
+    }, onSnapError);
     const unsubP = onSnapshot(collectionGroup(db, "payroll"), snap => {
       setPayrollRecords(
         snap.docs.map(d => {
@@ -114,7 +118,7 @@ export default function AdminPayslip() {
           };
         })
       );
-    });
+    }, onSnapError);
     return () => { unsubW(); unsubP(); };
   }, []);
 
@@ -226,6 +230,7 @@ export default function AdminPayslip() {
   return (
     <View style={{ flex: 1, backgroundColor: c.backgroundStart }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+        <AdminErrorBanner message={error} />
 
         {/* ── Page header ── */}
         <View style={{ marginBottom: 16 }}>

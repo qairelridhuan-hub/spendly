@@ -6,6 +6,8 @@ import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 export default function AdminReports() {
   const { colors: p } = useAdminTheme();
@@ -14,30 +16,32 @@ export default function AdminReports() {
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [workers, setWorkers] = useState<Record<string, { name: string; hourlyRate: number }>>({});
   const [config, setConfig] = useState({ hourlyRate: 0, overtimeRate: 0 });
+  const [error, setError] = useState("");
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
   );
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/reports");
     const unsubAttendance = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data());
       setAttendanceLogs(list);
-    });
+    }, onSnapError);
     const unsubBreaks = onSnapshot(collectionGroup(db, "breaks"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         workerId: getOwnerId(docSnap),
         ...docSnap.data(),
       }));
       setBreakLogs(list);
-    });
+    }, onSnapError);
     const unsubOvertime = onSnapshot(collectionGroup(db, "overtime"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         workerId: getOwnerId(docSnap),
         ...docSnap.data(),
       }));
       setOvertimeLogs(list);
-    });
+    }, onSnapError);
     const workersQuery = query(
       collection(db, "users"),
       where("role", "==", "worker")
@@ -52,7 +56,7 @@ export default function AdminReports() {
         };
       });
       setWorkers(map);
-    });
+    }, onSnapError);
     const configRef = doc(db, "config", "system");
     const unsubConfig = onSnapshot(configRef, snap => {
       const data = snap.data() as any;
@@ -61,7 +65,7 @@ export default function AdminReports() {
         hourlyRate: Number(data.hourlyRate ?? 0),
         overtimeRate: Number(data.overtimeRate ?? 0),
       });
-    });
+    }, onSnapError);
     return () => {
       unsubAttendance();
       unsubBreaks();
@@ -213,6 +217,7 @@ export default function AdminReports() {
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+        <AdminErrorBanner message={error} />
 
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>

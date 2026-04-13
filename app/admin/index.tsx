@@ -11,6 +11,8 @@ import {
 } from "lucide-react-native";
 import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 import { getPeriodKey } from "@/lib/reports/report";
 
 export default function AdminDashboard() {
@@ -24,35 +26,38 @@ export default function AdminDashboard() {
   const [workers,        setWorkers]        = useState<Record<string, any>>({});
   const [config,         setConfig]         = useState({ hourlyRate: 0, overtimeRate: 0 });
   const [latestAudit,    setLatestAudit]    = useState<any | null>(null);
+  const [error,          setError]          = useState("");
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/dashboard");
     const workersQuery = query(collection(db, "users"), where("role", "==", "worker"));
     const unsubWorkers = onSnapshot(workersQuery, snapshot => {
       const map: Record<string, any> = {};
       snapshot.forEach(d => { map[d.id] = d.data(); });
       setWorkerCount(snapshot.size);
       setWorkers(map);
-    });
+    }, onSnapError);
     const unsubAtt = onSnapshot(collectionGroup(db, "attendance"), snapshot => {
       setAttendanceLogs(snapshot.docs.map(d => ({ id: d.id, refPath: d.ref.path, ...d.data() })));
-    });
+    }, onSnapError);
     const unsubBreaks = onSnapshot(collectionGroup(db, "breaks"), snapshot => {
       setBreakLogs(snapshot.docs.map(d => ({ workerId: getOwnerId(d), ...d.data() })));
-    });
+    }, onSnapError);
     const unsubShifts = onSnapshot(collection(db, "shifts"), snapshot => {
       setShifts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    }, onSnapError);
     const unsubCfg = onSnapshot(doc(db, "config", "system"), snap => {
       const data = snap.data() as any;
       if (!data) return;
       setConfig({ hourlyRate: Number(data.hourlyRate ?? 0), overtimeRate: Number(data.overtimeRate ?? 0) });
-    });
+    }, onSnapError);
     const unsubAudit = onSnapshot(
       query(collection(db, "adminAudits"), orderBy("updatedAt", "desc"), limit(1)),
       snapshot => {
         const d = snapshot.docs[0];
         setLatestAudit(d ? { id: d.id, ...d.data() } : null);
-      }
+      },
+      onSnapError
     );
     return () => { unsubWorkers(); unsubAtt(); unsubBreaks(); unsubShifts(); unsubCfg(); unsubAudit(); };
   }, []);
@@ -143,6 +148,7 @@ export default function AdminDashboard() {
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+        <AdminErrorBanner message={error} />
 
         {/* Page header */}
         <View style={{ marginBottom: 20 }}>

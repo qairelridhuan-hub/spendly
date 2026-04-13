@@ -4,16 +4,20 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
+import { AdminErrorBanner } from "@/lib/admin/error-banner";
+import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
 
 export default function AdminNotifications() {
   const { colors: p } = useAdminTheme();
   const [items, setItems] = useState<any[]>([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    const onSnapError = makeSnapshotErrorHandler(setError, "admin/notifications");
     const unsub = onSnapshot(collection(db, "notifications"), snapshot => {
       const list = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
       setItems(list);
-    });
+    }, onSnapError);
     return unsub;
   }, []);
 
@@ -25,6 +29,7 @@ export default function AdminNotifications() {
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+        <AdminErrorBanner message={error} />
 
         {/* Header */}
         <View style={{ marginBottom: 20 }}>
