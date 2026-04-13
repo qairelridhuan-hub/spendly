@@ -20,6 +20,7 @@ import { generateShiftsForWorkers, getSystemConfig } from "@/lib/admin/firestore
 import { useAdminTheme } from "@/lib/admin/theme";
 import { AdminErrorBanner } from "@/lib/admin/error-banner";
 import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
+import { adminCardShadow } from "@/lib/admin/shadows";
 
 type WorkConfig = {
   workingDaysPerWeek: string;
@@ -503,7 +504,14 @@ export default function AdminSettings() {
     };
   }, [paymentConfig, rulesConfig]);
 
-  const card = { backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border, marginTop: 12 };
+  const card = {
+    backgroundColor: p.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: p.border,
+    marginTop: 12,
+    ...adminCardShadow,
+  };
   const cardHeader = { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: p.border };
 
   return (

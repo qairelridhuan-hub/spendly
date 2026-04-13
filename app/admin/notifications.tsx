@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import { AdminErrorBanner } from "@/lib/admin/error-banner";
 import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
+import { adminCardShadow } from "@/lib/admin/shadows";
 
 export default function AdminNotifications() {
   const { colors: p } = useAdminTheme();
@@ -42,7 +43,7 @@ export default function AdminNotifications() {
         </View>
 
         {/* Card */}
-        <View style={{ backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border }}>
+        <View style={{ backgroundColor: p.surface, borderRadius: 12, borderWidth: 1, borderColor: p.border, ...adminCardShadow }}>
           {/* Card header */}
           <View style={{
             flexDirection: "row", alignItems: "center", gap: 8,

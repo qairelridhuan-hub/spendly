@@ -8,6 +8,7 @@ import { buildAdminReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 import { AdminErrorBanner } from "@/lib/admin/error-banner";
 import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
+import { adminCardShadow } from "@/lib/admin/shadows";
 
 export default function AdminReports() {
   const { colors: p } = useAdminTheme();
@@ -212,7 +213,13 @@ export default function AdminReports() {
     );
   };
 
-  const card = { backgroundColor: p.surface, borderRadius: 12, borderWidth: 1 as const, borderColor: p.border };
+  const card = {
+    backgroundColor: p.surface,
+    borderRadius: 12,
+    borderWidth: 1 as const,
+    borderColor: p.border,
+    ...adminCardShadow,
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>

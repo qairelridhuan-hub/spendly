@@ -18,6 +18,7 @@ import {
 import { db } from "@/lib/firebase";
 import { AdminErrorBanner } from "@/lib/admin/error-banner";
 import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
+import { adminCardShadow } from "@/lib/admin/shadows";
 import { useEffect, useMemo, useState } from "react";
 import { useAdminTheme } from "@/lib/admin/theme";
 
@@ -435,7 +436,13 @@ export default function AdminAttendance() {
     return [...list].sort((a, b) => toLogTimestamp(a.log) - toLogTimestamp(b.log)).reverse();
   }, [exceptions, exceptionFilter, exceptionWorkerId]);
 
-  const card = { backgroundColor: p.surface, borderRadius: 12, borderWidth: 1 as const, borderColor: p.border };
+  const card = {
+    backgroundColor: p.surface,
+    borderRadius: 12,
+    borderWidth: 1 as const,
+    borderColor: p.border,
+    ...adminCardShadow,
+  };
   const pill = (active: boolean) => ({
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99,
     borderWidth: 1 as const,

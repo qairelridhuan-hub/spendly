@@ -35,6 +35,7 @@ import { buildPayslipHtml } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 import { AdminErrorBanner } from "@/lib/admin/error-banner";
 import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
+import { adminCardShadow } from "@/lib/admin/shadows";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -286,6 +287,7 @@ export default function AdminPayslip() {
           borderColor: c.border,
           marginBottom: 12,
           overflow: "hidden",
+          ...adminCardShadow,
         }}>
           {/* Search */}
           <View style={{
@@ -382,6 +384,7 @@ export default function AdminPayslip() {
           borderWidth: 1,
           borderColor: c.border,
           overflow: "hidden",
+          ...adminCardShadow,
         }}>
           {/* Table header */}
           <View style={{
@@ -657,6 +660,7 @@ function StatCard({
       borderWidth: 1,
       borderColor: c.border,
       gap: 8,
+      ...adminCardShadow,
     }}>
       <View style={{
         width: 30, height: 30,

@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import { AdminErrorBanner } from "@/lib/admin/error-banner";
 import { makeSnapshotErrorHandler } from "@/lib/firebase/errors";
+import { adminCardShadow } from "@/lib/admin/shadows";
 import { getPeriodKey } from "@/lib/reports/report";
 
 export default function AdminDashboard() {
@@ -129,6 +130,7 @@ export default function AdminDashboard() {
   const card = {
     backgroundColor: p.surface, borderRadius: 12,
     borderWidth: 1 as const, borderColor: p.border,
+    ...adminCardShadow,
   };
   const sectionHeader = (title: string, action?: string, onAction?: () => void) => (
     <View style={{
