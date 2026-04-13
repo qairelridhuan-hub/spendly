@@ -1220,7 +1220,6 @@ export default function WorkerHomeScreen() {
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
                 <Bell size={20} color="#111827" />
-                {pendingCount > 0 && <View style={styles.dot} />}
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={handleLogout}>
@@ -2652,12 +2651,17 @@ const styles = StyleSheet.create({
   iconPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#ffffff",
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#f1f5f9",
     paddingHorizontal: 4,
     paddingVertical: 4,
+    shadowColor: "#000000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   iconPillBtn: {
     paddingHorizontal: 10,
@@ -2910,12 +2914,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 18,
     marginBottom: 12,
-    overflow: "hidden",
     shadowColor: "#000000",
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   salaryAccent: {
     display: "none",
@@ -3041,8 +3044,8 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
     shadowColor: "#000000",
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
     borderWidth: 1,
@@ -3107,10 +3110,6 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: "#f5f5f5",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
   },
   detailButtonText: { color: "#374151", fontWeight: "600", fontSize: 12 },
   disabledButton: { opacity: 0.5 },

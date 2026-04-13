@@ -160,7 +160,7 @@ export default function Login() {
             <Link href="./register" asChild>
               <TouchableOpacity style={styles.linkBtn}>
                 <Text style={styles.mutedText}>
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <Text style={styles.linkTextBold}>Register</Text>
                 </Text>
               </TouchableOpacity>
