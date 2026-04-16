@@ -1242,252 +1242,195 @@ export default function WorkerHomeScreen() {
             }}
           >
             {/* 💰 Earnings Summary */}
-            <View style={[styles.salarySummary, { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb" }]}>
-              <View style={styles.salaryTopRow}>
-                <View>
-                  <Text style={styles.salaryTitle}>{titleText}</Text>
-                  <Text style={styles.salaryAmount}>
+            {(() => {
+              const now = new Date();
+              const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+              const dayPct = Math.round((now.getDate() / totalDays) * 100);
+              const earnPct = projectedEarnings > 0
+                ? Math.min(100, Math.round((approvedDisplayValue / projectedEarnings) * 100))
+                : 0;
+              return (
+                <View style={[styles.salarySummary, { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb" }]}>
+
+                  {/* Title + ··· */}
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <View>
+                      <Text style={{ fontSize: 11, color: "#9ca3af", fontWeight: "500" }}>{formatPeriodLabel(selectedPeriod).toUpperCase()}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827", marginTop: 1 }}>{titleText}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setShowSalaryMenu(prev => !prev)}
+                      style={{ paddingHorizontal: 10, paddingVertical: 6 }}
+                    >
+                      <Text style={{ fontSize: 18, color: "#6b7280", letterSpacing: 2 }}>···</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Inline menu options */}
+                  {showSalaryMenu ? (
+                    <View style={{ flexDirection: "row", gap: 8, marginBottom: 10, marginTop: -4 }}>
+                      <TouchableOpacity
+                        onPress={() => { setSalaryView("past"); setPastSalaryPeriod(null); setShowSalaryMenu(false); setShowPastSalary(true); }}
+                        style={{ backgroundColor: "#f3f4f6", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: "#374151" }}>Past Salary</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => { setShowSalaryMenu(false); setShowMonthPicker(true); }}
+                        style={{ backgroundColor: "#f3f4f6", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: "#374151" }}>{formatPeriodLabel(selectedPeriod)}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+
+                  {/* Amount */}
+                  <Text style={{ fontSize: 30, fontWeight: "800", color: "#111827", marginBottom: 12 }}>
                     RM {displayCollectedEarnings.toFixed(2)}
                   </Text>
-                  <Text style={styles.salarySub}>
-                    {formatPeriodLabel(selectedPeriod)}
-                  </Text>
-                </View>
-                <View style={styles.salaryTopRight}>
-                  <View style={styles.salaryMenuAnchor}>
-                    <TouchableOpacity
-                      style={styles.salaryMenuButton}
-                      onPress={() => setShowSalaryMenu(prev => !prev)}
-                    >
-                      <Text style={styles.salaryMenuButtonText}>Menu</Text>
-                      <ChevronDown size={14} color="#0f172a" />
-                    </TouchableOpacity>
-                    {showSalaryMenu ? (
-                      <View style={styles.salaryMenuTop}>
-                        <TouchableOpacity
-                          style={styles.salaryMenuItem}
-                          onPress={() => {
-                            setSalaryView("past");
-                            setPastSalaryPeriod(null);
-                            setShowSalaryMenu(false);
-                            setShowPastSalary(true);
-                          }}
-                        >
-                          <Text style={styles.salaryMenuText}>Past Salary</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.salaryMenuItem}
-                          onPress={() => {
-                            setShowSalaryMenu(false);
-                            setShowMonthPicker(true);
-                          }}
-                        >
-                          <Text style={styles.salaryMenuText}>
-                            {formatPeriodLabel(selectedPeriod)}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={styles.salaryIconWrap}>
-                    <DollarSign size={20} color="#0f172a" />
-                  </View>
-                </View>
-              </View>
 
-              <Text style={styles.salaryHint}>{displayAmountSummary}</Text>
-              <View style={styles.row}>
-                {hasPending ? (
-                  <View style={styles.loaderTrack}>
-                    <Animated.View
-                      style={[
-                        styles.loaderIndicator,
-                        {
-                          transform: [
-                            {
-                              translateX: spinAnim.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [-8, 8],
-                              }),
-                            },
-                          ],
-                        },
-                      ]}
-                    />
+                  {/* Progress bar — approved vs projected */}
+                  <View style={{ marginBottom: 4 }}>
+                    <View style={{ height: 5, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>
+                      <View style={{ height: 5, borderRadius: 999, backgroundColor: "#111827", width: `${earnPct}%` }} />
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
+                      <Text style={{ fontSize: 10, color: "#9ca3af" }}>{earnPct}% of projected earned</Text>
+                      <Text style={{ fontSize: 10, color: "#9ca3af" }}>{dayPct}% of month passed</Text>
+                    </View>
                   </View>
-                ) : (
-                  <View style={styles.statusDotPaid} />
-                )}
-                <Text style={styles.salaryStatusText}>
-                  {hasPending
-                    ? `Awaiting approval for ${pendingCount} shift${pendingCount === 1 ? "" : "s"}`
-                    : "All shifts approved so far"}
-                </Text>
-              </View>
 
-              <View style={styles.salaryPillRow}>
-                <View style={styles.salaryMetricCard}>
-                  <Text style={styles.salaryMetricLabel}>Approved</Text>
-                  <Text style={styles.salaryMetricValue}>
-                    RM {approvedDisplayValue.toFixed(2)}
-                  </Text>
-                </View>
-                <View style={[styles.salaryMetricCard, styles.salaryMetricCardAlt]}>
-                  <Text style={styles.salaryMetricLabel}>{displayRightLabel}</Text>
-                  <Text style={styles.salaryMetricValue}>
-                    RM {displayRightValue.toFixed(2)}
-                  </Text>
-                </View>
-              </View>
+                  {/* Divider */}
+                  <View style={{ height: 1, backgroundColor: "#f1f5f9", marginVertical: 10 }} />
 
-              <TouchableOpacity
-                style={styles.salaryDetailsButton}
-                onPress={() => setShowEarningsBreakdown(true)}
-              >
-                <Text style={styles.salaryDetailsText}>View details</Text>
-              </TouchableOpacity>
-            </View>
+                  {/* Status */}
+                  <Text style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10 }}>
+                    {hasPending
+                      ? `⏳ Awaiting approval for ${pendingCount} shift${pendingCount === 1 ? "" : "s"}`
+                      : "✓ All shifts approved so far"}
+                  </Text>
+
+                  {/* Stats rows */}
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                    <Text style={{ fontSize: 11, color: "#6b7280" }}>Approved</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#111827" }}>RM {approvedDisplayValue.toFixed(2)}</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
+                    <Text style={{ fontSize: 11, color: "#6b7280" }}>{displayRightLabel}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#111827" }}>RM {displayRightValue.toFixed(2)}</Text>
+                  </View>
+
+                  {/* Divider + link */}
+                  <View style={{ height: 1, backgroundColor: "#f1f5f9", marginBottom: 10 }} />
+                  <TouchableOpacity
+                    style={{ alignSelf: "flex-end" }}
+                    onPress={() => setShowEarningsBreakdown(true)}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#111827" }}>View details →</Text>
+                  </TouchableOpacity>
+
+                </View>
+              );
+            })()}
 
             {/* ⏰ Today Shift */}
             <View style={styles.card}>
-              {/* Header row */}
-              <View style={styles.rowBetween}>
+
+              {/* Header */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <View>
                   <Text style={styles.cardTitle}>Today shift</Text>
-                  {todayShift ? (
-                    <Text style={styles.shiftMeta}>
-                      {todayShift.start} - {todayShift.end}{todayShift.location ? ` • ${todayShift.location}` : ""}
-                    </Text>
-                  ) : (
-                    <Text style={styles.shiftMeta}>No shift scheduled today</Text>
-                  )}
+                  <Text style={styles.shiftMeta}>
+                    {todayShift
+                      ? `${todayShift.start} – ${todayShift.end}${todayShift.location ? ` · ${todayShift.location}` : ""}`
+                      : "No shift scheduled today"}
+                  </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   {todayShift && (
-                    <View style={[
-                      styles.shiftStatusBadge,
-                      todayStatus === "completed" && { backgroundColor: "#f0fdf4" },
-                      todayStatus === "absent" && { backgroundColor: "#fef2f2" },
-                    ]}>
-                      <Text style={[
-                        styles.shiftStatusText,
-                        todayStatus === "completed" && { color: "#16a34a" },
-                        todayStatus === "absent" && { color: "#ef4444" },
-                      ]}>{todayStatus}</Text>
-                    </View>
+                    <Text style={{
+                      fontSize: 11, fontWeight: "600",
+                      color: todayStatus === "completed" ? "#16a34a" : todayStatus === "absent" ? "#ef4444" : "#9ca3af",
+                    }}>{todayStatus}</Text>
                   )}
-                  <Animated.View
-                    style={{
-                      transform: [
-                        {
-                          rotate: tickAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ["0deg", "360deg"],
-                          }),
-                        },
-                      ],
-                    }}
-                  >
-                    <Clock size={18} color="#9ca3af" />
+                  <Animated.View style={{ transform: [{ rotate: tickAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }}>
+                    <Clock size={16} color="#d1d5db" />
                   </Animated.View>
                 </View>
               </View>
 
               {/* Progress bar */}
-              <View style={[styles.progressBarBg, { marginTop: 10, marginBottom: 0 }]}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${Math.round(todayProgress * 100)}%` },
-                    todayStatus === "completed" && styles.progressBarFillComplete,
-                  ]}
-                />
+              <View style={[styles.progressBarBg, { marginBottom: 12 }]}>
+                <View style={[styles.progressBarFill, { width: `${Math.round(todayProgress * 100)}%` }, todayStatus === "completed" && styles.progressBarFillComplete]} />
               </View>
 
-              {/* Clock tiles */}
-              <View style={styles.clockRow}>
-                <View style={styles.clockItem}>
+              {/* Time row — plain, no boxes */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
+                <View>
                   <Text style={styles.clockLabel}>Clock in</Text>
-                  <Text style={styles.clockValue}>
-                    {todayAttendance?.clockIn || "--:--"}
-                  </Text>
+                  <Text style={styles.clockValue}>{todayAttendance?.clockIn || "--:--"}</Text>
                 </View>
-                <View style={styles.clockItem}>
+                <View style={{ width: 1, backgroundColor: "#f1f5f9" }} />
+                <View>
                   <Text style={styles.clockLabel}>Clock out</Text>
-                  <Text style={styles.clockValue}>
-                    {todayAttendance?.clockOut || "--:--"}
-                  </Text>
+                  <Text style={styles.clockValue}>{todayAttendance?.clockOut || "--:--"}</Text>
                 </View>
-                <View style={[styles.clockItem, { marginRight: 0 }]}>
+                <View style={{ width: 1, backgroundColor: "#f1f5f9" }} />
+                <View>
                   <Text style={styles.clockLabel}>Break</Text>
                   <Text style={styles.clockValue}>
                     {todayAttendance?.breakStart
                       ? todayAttendance.breakEnd
-                        ? `${todayAttendance.breakStart}-${todayAttendance.breakEnd}`
-                        : `${todayAttendance.breakStart}-...`
+                        ? `${todayAttendance.breakStart}–${todayAttendance.breakEnd}`
+                        : `${todayAttendance.breakStart}–...`
                       : "--:--"}
                   </Text>
                 </View>
               </View>
 
               {/* Action buttons */}
-              <View style={styles.clockActions}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <TouchableOpacity
-                  style={[styles.clockButton, styles.clockPrimary, !!todayAttendance?.clockIn && styles.clockButtonDone]}
+                  style={[styles.clockButton, styles.clockPrimary, !!todayAttendance?.clockIn && styles.clockButtonDone, { flex: 1 }]}
                   onPress={handleClockIn}
                   disabled={!!todayAttendance?.clockIn}
                 >
                   <Text style={styles.clockButtonTextLight}>Clock in</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.clockButton, styles.clockPrimary, (!todayAttendance?.clockIn || !!todayAttendance?.clockOut) && styles.clockButtonDone]}
+                  style={[styles.clockButton, styles.clockPrimary, (!todayAttendance?.clockIn || !!todayAttendance?.clockOut) && styles.clockButtonDone, { flex: 1 }]}
                   onPress={handleClockOut}
                   disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
                 >
                   <Text style={styles.clockButtonTextLight}>Clock out</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.clockButton, styles.clockGhost]}
+                  style={[styles.clockButton, styles.clockGhost, { flex: 1 }]}
                   onPress={handleBreakToggle}
                   disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
                 >
                   <Text style={styles.clockButtonText}>
-                    {todayAttendance?.breakStart && !todayAttendance?.breakEnd
-                      ? "End break"
-                      : "Break"}
+                    {todayAttendance?.breakStart && !todayAttendance?.breakEnd ? "End break" : "Break"}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.clockButton, styles.clockReset]}
-                  onPress={handleResetAttendance}
-                >
-                  <Text style={styles.clockResetText}>Reset</Text>
+                <TouchableOpacity onPress={handleResetAttendance} style={{ paddingHorizontal: 6, paddingVertical: 4 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#ef4444" }}>Reset</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Upcoming shift — compact inline row */}
+              {/* Upcoming shift */}
               <View style={styles.upcomingRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.upcomingLabel}>Upcoming shift</Text>
-                  {nextShift ? (
-                    <Text style={styles.shiftMeta}>
-                      {formatDateLabel(nextShift.date)} • {nextShift.start} - {nextShift.end}
-                    </Text>
-                  ) : (
-                    <Text style={styles.shiftMeta}>No upcoming shift</Text>
-                  )}
+                  <Text style={styles.shiftMeta}>
+                    {nextShift ? `${formatDateLabel(nextShift.date)} · ${nextShift.start} – ${nextShift.end}` : "No upcoming shift"}
+                  </Text>
                 </View>
                 {nextShift && (
                   <TouchableOpacity
                     style={styles.detailButton}
                     onPress={() => {
-                      setActiveShift({
-                        ...nextShift,
-                        status: resolveStatus(
-                          nextShift.status,
-                          attendanceStatusMap[nextShift.date]
-                        ),
-                      });
+                      setActiveShift({ ...nextShift, status: resolveStatus(nextShift.status, attendanceStatusMap[nextShift.date]) });
                       setShowShiftDetails(true);
                     }}
                   >
@@ -1495,6 +1438,7 @@ export default function WorkerHomeScreen() {
                   </TouchableOpacity>
                 )}
               </View>
+
             </View>
 
           </Animated.View>
@@ -2914,8 +2858,8 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: "row", justifyContent: "space-between" },
 
   salarySummary: {
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: 18,
+    padding: 14,
     marginBottom: 12,
     shadowColor: "#000000",
     shadowOpacity: 0.12,
@@ -3128,22 +3072,21 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   clockLabel: { color: "#9ca3af", fontSize: 10, fontWeight: "500" },
-  clockValue: { color: "#111827", fontWeight: "700", marginTop: 4, fontSize: 13 },
+  clockValue: { color: "#111827", fontWeight: "700", marginTop: 3, fontSize: 13 },
   clockActions: { flexDirection: "row", gap: 6, marginTop: 10 },
   clockButton: {
-    flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 7,
     paddingHorizontal: 8,
-    borderRadius: 999,
+    borderRadius: 10,
     alignItems: "center",
   },
   clockPrimary: { backgroundColor: "#111827" },
-  clockButtonDone: { backgroundColor: "#d1d5db" },
+  clockButtonDone: { backgroundColor: "#e5e7eb" },
   clockGhost: { backgroundColor: "#f5f5f5", borderWidth: 1, borderColor: "#e5e7eb" },
   clockReset: { backgroundColor: "#ef4444" },
-  clockButtonText: { color: "#374151", fontWeight: "700", fontSize: 12 },
-  clockButtonTextLight: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
-  clockResetText: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
+  clockButtonText: { color: "#374151", fontWeight: "600", fontSize: 12 },
+  clockButtonTextLight: { color: "#ffffff", fontWeight: "600", fontSize: 12 },
+  clockResetText: { color: "#ffffff", fontWeight: "600", fontSize: 12 },
   upcomingRow: {
     marginTop: 10,
     paddingTop: 10,

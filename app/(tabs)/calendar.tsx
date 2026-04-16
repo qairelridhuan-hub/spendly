@@ -266,7 +266,7 @@ export default function CalendarScreen() {
 
           <View style={styles.headerRight}>
             <View style={styles.iconPill}>
-              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/(tabs)/")}>
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/")}>
                 <Gamepad2 size={20} color="#111827" />
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
   tooltipText: { color: "#e2e8f0", fontSize: 9, marginTop: 2 },
 
   emptyBox: {
-    backgroundColor: "#101826",
+    backgroundColor: "#ffffff",
     borderRadius: 14,
     padding: 16,
     alignItems: "center",

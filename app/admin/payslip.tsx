@@ -743,13 +743,13 @@ function TableRow({
             paddingHorizontal: 9,
             paddingVertical: 5,
             borderRadius: 8,
-            backgroundColor: c.accent + "18",
+            backgroundColor: "#000000",
             borderWidth: 1,
-            borderColor: c.accent + "44",
+            borderColor: "#000000",
           }}
         >
-          <Eye size={12} color={c.accent} />
-          <Text style={{ color: c.accent, fontSize: 11, fontWeight: "600" }}>View</Text>
+          <Eye size={12} color="#ffffff" />
+          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "600" }}>View</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onDownload}
@@ -760,13 +760,13 @@ function TableRow({
             paddingHorizontal: 9,
             paddingVertical: 5,
             borderRadius: 8,
-            backgroundColor: c.success + "18",
+            backgroundColor: "#ffffff",
             borderWidth: 1,
-            borderColor: c.success + "44",
+            borderColor: "#000000",
           }}
         >
-          <Download size={12} color={c.success} />
-          <Text style={{ color: c.success, fontSize: 11, fontWeight: "600" }}>PDF</Text>
+          <Download size={12} color="#000000" />
+          <Text style={{ color: "#000000", fontSize: 11, fontWeight: "600" }}>PDF</Text>
         </TouchableOpacity>
       </View>
     </View>

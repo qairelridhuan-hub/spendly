@@ -460,9 +460,8 @@ export default function AdminWorkers() {
                       <Edit size={11} color={p.textMuted} strokeWidth={1.8} />
                       <Text style={{ color: p.textMuted, fontSize: 11, fontWeight: "600" }}>Edit</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setWorkerToDelete(worker); setShowDeleteConfirm(true); }} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 5, paddingHorizontal: 9, borderRadius: 7, backgroundColor: p.dangerSoft }}>
-                      <Trash2 size={11} color={p.danger} strokeWidth={1.8} />
-                      <Text style={{ color: p.danger, fontSize: 11, fontWeight: "600" }}>Del</Text>
+                    <TouchableOpacity onPress={() => { setWorkerToDelete(worker); setShowDeleteConfirm(true); }} style={{ padding: 5 }}>
+                      <Trash2 size={16} color={p.danger} strokeWidth={1.8} />
                     </TouchableOpacity>
                   </View>
                 </View>
