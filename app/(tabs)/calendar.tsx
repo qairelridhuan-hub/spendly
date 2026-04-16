@@ -839,7 +839,7 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     },
     logoImage: { width: 24, height: 24 },
     appName: { fontWeight: "700", fontSize: 16, color: c.text },
-    subText: { color: c.textMuted },
+    subText: { fontSize: 13, color: c.textMuted },
     headerRight: { flexDirection: "row", alignItems: "center" },
     iconPill: {
       flexDirection: "row",

@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Award, FileText, Mail, Sparkles, Target, User } from "lucide-react-native";
+import { Award, BarChart2, Bell, ChevronDown, ChevronRight, FileText, Gamepad2, LogOut, Mail, Moon, Sparkles, Sun, Target, User } from "lucide-react-native";
 import { onAuthStateChanged, signOut, updateEmail, updateProfile } from "firebase/auth";
 import {
   collection,
@@ -75,13 +75,15 @@ function getLogHours(log: any) {
  
 
 export default function ProfileScreen() {
-  const { colors: c } = useTheme();
+  const { colors: c, mode, toggleTheme } = useTheme();
   const styles = makeStyles(c);
   const [displayName, setDisplayName] = useState("User");
   const scrollRef = useRef<ScrollView>(null);
   const [email, setEmail] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
   const [editOpen, setEditOpen] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [photoInput, setPhotoInput] = useState("");
@@ -92,7 +94,7 @@ export default function ProfileScreen() {
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [overtimeLogs, setOvertimeLogs] = useState<any[]>([]);
   const [arcadeState, setArcadeState] = useState<{ totalXp?: number; bonusXp?: number } | null>(null);
-  const [challengeCount, setChallengeCount] = useState(0);
+  const [, setChallengeCount] = useState(0);
   const [completedChallengeCount, setCompletedChallengeCount] = useState(0);
   const [config, setConfig] = useState({ overtimeRate: 0 });
   const [stats, setStats] = useState<Stats>({
@@ -107,6 +109,10 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
+      return () => {
+        setShowStats(false);
+        setShowBadges(false);
+      };
     }, [])
   );
 
@@ -414,12 +420,70 @@ export default function ProfileScreen() {
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-          {/* ── HEADER ── */}
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageTitle}>Profile</Text>
+        {/* ── HEADER (outside ScrollView to match other dashboards) ── */}
+        <View style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          paddingTop: 20,
+          paddingBottom: 12,
+          marginBottom: 8,
+        }}>
+          {/* Logo + name */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{
+              width: 42, height: 42, borderRadius: 21,
+              backgroundColor: c.surface, borderWidth: 1, borderColor: c.border,
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Image
+                source={require("../../assets/images/spendly-logo.png")}
+                style={{ width: 24, height: 24 }}
+                resizeMode="contain"
+              />
+            </View>
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: c.text }}>Spendly</Text>
+              <Text style={{ fontSize: 13, color: c.textMuted }}>Hey, {displayName}!</Text>
+            </View>
           </View>
+          {/* Icon pill */}
+          <View style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: c.surface,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: c.border,
+            paddingHorizontal: 4,
+            paddingVertical: 4,
+            shadowColor: "#000000",
+            shadowOpacity: 0.08,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: 3,
+          }}>
+            <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={toggleTheme}>
+              {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
+            </TouchableOpacity>
+            <View style={{ width: 1, height: 16, backgroundColor: c.border }} />
+            <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={() => router.push("/")}>
+              <Gamepad2 size={20} color={c.text} />
+            </TouchableOpacity>
+            <View style={{ width: 1, height: 16, backgroundColor: c.border }} />
+            <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={() => router.push("/notifications")}>
+              <Bell size={20} color={c.text} />
+            </TouchableOpacity>
+            <View style={{ width: 1, height: 16, backgroundColor: c.border }} />
+            <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={confirmLogout}>
+              <LogOut size={20} color={c.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
           {/* ── PROFILE CARD ── */}
           <View style={styles.profileCard}>
@@ -455,19 +519,6 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* ── STATS ── */}
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionLabel}>STATISTICS</Text>
-            <View style={styles.statGrid}>
-              {statsList.map(stat => (
-                <View key={stat.label} style={styles.statCard}>
-                  <Text style={styles.statValue}>{stat.value}</Text>
-                  <Text style={styles.statLabel}>{stat.label}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
           {/* ── LEVEL PROGRESS ── */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionRow}>
@@ -483,30 +534,64 @@ export default function ProfileScreen() {
             </View>
           </View>
 
+          {/* ── STATS ── */}
+          <View style={styles.sectionCard}>
+            <TouchableOpacity
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+              onPress={() => setShowStats(v => !v)}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIconWrap, { backgroundColor: c.text }]}><BarChart2 size={16} color={c.backgroundStart} /></View>
+                <Text style={styles.sectionLabel}>STATISTICS</Text>
+              </View>
+              {showStats
+                ? <ChevronDown size={16} color={c.textMuted} />
+                : <ChevronRight size={16} color={c.textMuted} />}
+            </TouchableOpacity>
+            {showStats && (
+              <View style={[styles.statGrid, { marginTop: 14 }]}>
+                {statsList.map(stat => (
+                  <View key={stat.label} style={styles.statCard}>
+                    <Text style={styles.statValue}>{stat.value}</Text>
+                    <Text style={styles.statLabel}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
           {/* ── BADGES ── */}
           <View style={styles.sectionCard}>
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionLabel}>AWARDS & BADGES</Text>
-              <View style={styles.badgeCountChip}>
-                <Text style={styles.badgeCountText}>{completedChallengeCount}/{challengeCount} earned</Text>
+            <TouchableOpacity
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+              onPress={() => setShowBadges(v => !v)}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIconWrap, { backgroundColor: c.text }]}><Award size={16} color={c.backgroundStart} /></View>
+                <Text style={styles.sectionLabel}>AWARDS & BADGES</Text>
               </View>
-            </View>
-            <View style={styles.badgeGrid}>
-              {buildBadgeList({
-                goalsCompleted: stats.goalsCompleted,
-                goalsCount: stats.goalsCount,
-                completedChallenges: completedChallengeCount,
-                streakDays: getConsecutiveStreakDays(attendanceLogs),
-              }).map(badge => (
-                <View key={badge.id} style={[styles.badgeCard, badge.unlocked && styles.badgeCardUnlocked]}>
-                  <View style={[styles.badgeIcon, badge.unlocked && styles.badgeIconUnlocked]}>
-                    <Award size={14} color={badge.unlocked ? "#ffffff" : c.textMuted} />
+              {showBadges
+                ? <ChevronDown size={16} color={c.textMuted} />
+                : <ChevronRight size={16} color={c.textMuted} />}
+            </TouchableOpacity>
+            {showBadges && (
+              <View style={[styles.badgeGrid, { marginTop: 14 }]}>
+                {buildBadgeList({
+                  goalsCompleted: stats.goalsCompleted,
+                  goalsCount: stats.goalsCount,
+                  completedChallenges: completedChallengeCount,
+                  streakDays: getConsecutiveStreakDays(attendanceLogs),
+                }).map(badge => (
+                  <View key={badge.id} style={[styles.badgeCard, badge.unlocked && styles.badgeCardUnlocked]}>
+                    <View style={[styles.badgeIcon, badge.unlocked && styles.badgeIconUnlocked]}>
+                      <Award size={14} color={badge.unlocked ? "#ffffff" : c.textMuted} />
+                    </View>
+                    <Text style={styles.badgeTitle}>{badge.title}</Text>
+                    <Text style={styles.badgeDesc}>{badge.description}</Text>
                   </View>
-                  <Text style={styles.badgeTitle}>{badge.title}</Text>
-                  <Text style={styles.badgeDesc}>{badge.description}</Text>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* ── SETTINGS ── */}
@@ -515,7 +600,7 @@ export default function ProfileScreen() {
             <View style={styles.settingList}>
               <TouchableOpacity style={styles.settingRow} onPress={openEdit}>
                 <View style={styles.settingLeft}>
-                  <View style={styles.settingIconWrap}><User size={16} color={c.text} /></View>
+                  <View style={[styles.settingIconWrap, { backgroundColor: c.text }]}><User size={16} color={c.backgroundStart} /></View>
                   <Text style={styles.settingText}>Edit Profile</Text>
                 </View>
                 <Text style={styles.settingArrow}>›</Text>
@@ -523,14 +608,14 @@ export default function ProfileScreen() {
               <View style={styles.settingDivider} />
               <View style={styles.settingRow}>
                 <View style={styles.settingLeft}>
-                  <View style={styles.settingIconWrap}><Mail size={16} color={c.text} /></View>
+                  <View style={[styles.settingIconWrap, { backgroundColor: c.text }]}><Mail size={16} color={c.backgroundStart} /></View>
                   <Text style={styles.settingText}>Notifications</Text>
                 </View>
               </View>
               <View style={styles.settingDivider} />
               <TouchableOpacity style={styles.settingRow} onPress={handleGenerateReport}>
                 <View style={styles.settingLeft}>
-                  <View style={styles.settingIconWrap}><FileText size={16} color={c.text} /></View>
+                  <View style={[styles.settingIconWrap, { backgroundColor: c.text }]}><FileText size={16} color={c.backgroundStart} /></View>
                   <Text style={styles.settingText}>Generate Report (PDF)</Text>
                 </View>
                 <Text style={styles.settingArrow}>›</Text>

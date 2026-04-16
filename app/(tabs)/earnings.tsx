@@ -472,14 +472,14 @@ export default function EarningsScreen() {
           <View style={styles.quickGrid}>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <Calendar size={16} color={c.text} />
+                <Calendar size={16} color={c.backgroundStart} />
               </View>
               <Text style={styles.quickLabel}>Days Worked</Text>
               <Text style={styles.quickValue}>{daysWorked}</Text>
             </View>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <BarChart3 size={16} color={c.text} />
+                <BarChart3 size={16} color={c.backgroundStart} />
               </View>
               <Text style={styles.quickLabel}>Total Hours</Text>
               <Text style={styles.quickValue}>
@@ -488,14 +488,14 @@ export default function EarningsScreen() {
             </View>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <TrendingUp size={16} color={c.text} />
+                <TrendingUp size={16} color={c.backgroundStart} />
               </View>
               <Text style={styles.quickLabel}>Overtime</Text>
               <Text style={styles.quickValue}>{overtimeHours}h</Text>
             </View>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <Bell size={16} color={c.text} />
+                <Bell size={16} color={c.backgroundStart} />
               </View>
               <Text style={styles.quickLabel}>Pending</Text>
               <Text style={styles.quickValue}>{pendingCount}</Text>
@@ -1218,7 +1218,7 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       width: 28,
       height: 28,
       borderRadius: 10,
-      backgroundColor: "#fef3c7",
+      backgroundColor: c.text,
       alignItems: "center",
       justifyContent: "center",
       marginBottom: 8,

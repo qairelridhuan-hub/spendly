@@ -3,9 +3,10 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LogBox } from "react-native";
-import { ThemeProvider } from "@/lib/context";
+import { ThemeProvider, useTheme } from "@/lib/context";
 
-export default function RootLayout() {
+function AppShell() {
+  const { mode } = useTheme();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -21,6 +22,15 @@ export default function RootLayout() {
     persistRoute();
   }, [pathname]);
 
+  return (
+    <>
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
+      <Stack screenOptions={{ headerShown: false }} />
+    </>
+  );
+}
+
+export default function RootLayout() {
   useEffect(() => {
     LogBox.ignoreLogs([
       "Could not reach Cloud Firestore backend",
@@ -30,8 +40,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <AppShell />
     </ThemeProvider>
   );
 }
