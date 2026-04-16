@@ -16,7 +16,9 @@ import {
   DollarSign,
   Gamepad2,
   LogOut,
+  Moon,
   PieChart,
+  Sun,
   TrendingUp,
 } from "lucide-react-native";
 import { router } from "expo-router";
@@ -25,7 +27,7 @@ import { collection, doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
-import { useCalendar } from "@/lib/context";
+import { useCalendar, useTheme } from "@/lib/context";
 import { useFocusEffect } from "@react-navigation/native";
 import { cardShadow } from "@/lib/shadows";
 
@@ -78,6 +80,8 @@ export default function EarningsScreen() {
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [showApprovedDetails, setShowApprovedDetails] = useState(false);
   const { shifts } = useCalendar();
+  const { colors: c, mode, toggleTheme } = useTheme();
+  const styles = makeStyles(c);
 
   const hourlyRate =
     userHourlyRate || workConfig.hourlyRate || schedule?.hourlyRate || 0;
@@ -370,7 +374,7 @@ export default function EarningsScreen() {
   });
 
   return (
-    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
+    <View style={[styles.screen, { backgroundColor: c.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
           {/* ===== HEADER ===== */}
@@ -394,23 +398,27 @@ export default function EarningsScreen() {
 
             <View style={styles.headerRight}>
               <View style={styles.iconPill}>
-                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/(tabs)/")}>
-                  <Gamepad2 size={20} color="#111827" />
+                <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
+                  {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
+                </TouchableOpacity>
+                <View style={styles.iconPillDivider} />
+                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/")}>
+                  <Gamepad2 size={20} color={c.text} />
                 </TouchableOpacity>
                 <View style={styles.iconPillDivider} />
                 <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
-                  <Bell size={20} color="#111827" />
+                  <Bell size={20} color={c.text} />
                 </TouchableOpacity>
                 <View style={styles.iconPillDivider} />
                 <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
-                  <LogOut size={20} color="#111827" />
+                  <LogOut size={20} color={c.text} />
                 </TouchableOpacity>
               </View>
             </View>
           </View>
 
           {/* ===== HERO CARD ===== */}
-          <View style={[styles.heroCard, { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb" }]}>
+          <View style={[styles.heroCard, { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border }]}>
             <View style={styles.heroTopRow}>
               <View>
                 <Text style={styles.heroLabel}>Total Earnings</Text>
@@ -422,7 +430,7 @@ export default function EarningsScreen() {
                 </Text>
               </View>
               <View style={styles.heroIconWrap}>
-                <DollarSign size={20} color="#0f172a" />
+                <DollarSign size={20} color={c.text} />
               </View>
             </View>
 
@@ -464,14 +472,14 @@ export default function EarningsScreen() {
           <View style={styles.quickGrid}>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <Calendar size={16} color="#0f172a" />
+                <Calendar size={16} color={c.text} />
               </View>
               <Text style={styles.quickLabel}>Days Worked</Text>
               <Text style={styles.quickValue}>{daysWorked}</Text>
             </View>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <BarChart3 size={16} color="#0f172a" />
+                <BarChart3 size={16} color={c.text} />
               </View>
               <Text style={styles.quickLabel}>Total Hours</Text>
               <Text style={styles.quickValue}>
@@ -480,14 +488,14 @@ export default function EarningsScreen() {
             </View>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <TrendingUp size={16} color="#0f172a" />
+                <TrendingUp size={16} color={c.text} />
               </View>
               <Text style={styles.quickLabel}>Overtime</Text>
               <Text style={styles.quickValue}>{overtimeHours}h</Text>
             </View>
             <View style={styles.quickTile}>
               <View style={styles.quickIcon}>
-                <Bell size={16} color="#0f172a" />
+                <Bell size={16} color={c.text} />
               </View>
               <Text style={styles.quickLabel}>Pending</Text>
               <Text style={styles.quickValue}>{pendingCount}</Text>
@@ -497,7 +505,7 @@ export default function EarningsScreen() {
           {/* ===== Weekly Earnings ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <TrendingUp size={18} color="#0f172a" />
+              <TrendingUp size={18} color={c.text} />
               <Text style={styles.cardTitle}>Approved Earnings (Weekly)</Text>
             </View>
 
@@ -527,7 +535,7 @@ export default function EarningsScreen() {
           {/* ===== Budget Allocation ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <PieChart size={18} color="#0f172a" />
+              <PieChart size={18} color={c.text} />
               <Text style={styles.cardTitle}>Budget Allocation</Text>
             </View>
 
@@ -563,7 +571,7 @@ export default function EarningsScreen() {
           {/* ===== Salary Breakdown ===== */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <BarChart3 size={18} color="#0f172a" />
+              <BarChart3 size={18} color={c.text} />
               <Text style={styles.cardTitle}>Salary Breakdown</Text>
             </View>
 
@@ -607,7 +615,7 @@ export default function EarningsScreen() {
           </View>
 
           {/* ===== Smart Suggestion ===== */}
-          <View style={[styles.tipCard, { backgroundColor: "#fffbeb" }]}>
+          <View style={styles.tipCard}>
             <Text style={styles.tipTitle}>💡 Smart Suggestion</Text>
             <Text style={styles.tipText}>{suggestion.title}</Text>
             <View style={styles.tipRow}>
@@ -1054,299 +1062,302 @@ const startOfWeek = (date: Date) => {
   return start;
 };
 
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  container: {
-    padding: 16,
-    paddingTop: 20,
-    paddingBottom: 120,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  logo: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  logoImage: { width: 24, height: 24 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  subText: { fontSize: 13, color: "#6b7280" },
-  headerRight: { flexDirection: "row", alignItems: "center" },
-  iconPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-    shadowColor: "#000000",
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
-  iconPillDivider: { width: 1, height: 16, backgroundColor: "#e5e7eb" },
-  notifDot: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#ef4444",
-  },
-  bgBlob: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0)",
-    top: -80,
-    right: -60,
-  },
-  bgBlobAlt: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0)",
-    bottom: -120,
-    left: -80,
-  },
-  heroCard: {
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 16,
-    overflow: "hidden",
-    ...cardShadow,
-  },
-  heroAccent: {
-    display: "none",
-  },
-  heroTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  heroLabel: { color: "#6b7280", fontSize: 12, letterSpacing: 0.6 },
-  heroAmount: { color: "#111827", fontSize: 28, fontWeight: "700" },
-  heroSub: { color: "#6b7280", marginTop: 2, fontSize: 12 },
-  heroIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#f0f0f0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroHint: { color: "#6b7280", fontSize: 12 },
-  heroBottomRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 14,
-  },
-  heroPill: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-  },
-  heroPillAlt: {
-    backgroundColor: "#f0f0f0",
-  },
-  heroPillLabel: { color: "#6b7280", fontSize: 11 },
-  heroPillValue: { color: "#111827", fontWeight: "700", marginTop: 4 },
-  heroDetailButton: {
-    alignSelf: "flex-start",
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#111827",
-    borderRadius: 999,
-  },
-  heroDetailText: { color: "#ffffff", fontWeight: "600", fontSize: 12 },
-  quickGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 16,
-  },
-  quickTile: {
-    width: "48%",
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    shadowColor: "#000000",
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  quickIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    backgroundColor: "#fef3c7",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  quickLabel: { fontSize: 11, color: "#64748b" },
-  quickValue: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    ...cardShadow,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  chartRow: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "flex-end",
-  },
-  chartColumn: { flex: 1, alignItems: "center" },
-  chartBar: {
-    width: "100%",
-    borderRadius: 10,
-    backgroundColor: "#f59e0b",
-  },
-  chartValue: { fontSize: 11, color: "#0f172a", marginTop: 6 },
-  chartLabel: { fontSize: 10, color: "#64748b", marginTop: 2 },
-  budgetItem: { marginBottom: 12 },
-  budgetRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  budgetLabel: { color: "#0f172a", fontWeight: "600" },
-  budgetValue: { color: "#0f172a", fontWeight: "600" },
-  budgetBar: {
-    height: 8,
-    backgroundColor: "#e2e8f0",
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  budgetFill: { height: 8, borderRadius: 999 },
-  breakdownRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
-    marginBottom: 10,
-  },
-  breakdownTitle: { fontSize: 13, fontWeight: "600", color: "#0f172a" },
-  breakdownHint: { fontSize: 11, color: "#64748b", marginTop: 2 },
-  breakdownPositive: { color: "#16a34a", fontWeight: "700" },
-  breakdownNegative: { color: "#dc2626", fontWeight: "700" },
-  breakdownTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  breakdownTotal: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
-  tipCard: {
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#fde68a",
-    marginBottom: 20,
-    ...cardShadow,
-  },
-  tipTitle: { fontSize: 14, fontWeight: "700", color: "#7c2d12" },
-  tipText: { color: "#9a3412", marginTop: 8, lineHeight: 18 },
-  tipRow: { flexDirection: "row", gap: 6, marginTop: 10 },
-  tipHint: { color: "#92400e", fontSize: 12 },
-  tipButton: {
-    marginTop: 12,
-    backgroundColor: "#fb923c",
-    paddingVertical: 10,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  tipButtonText: { color: "#1f1300", fontWeight: "600" },
-  disabledButton: { opacity: 0.6 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.45)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  detailModal: {
-    width: "100%",
-    maxWidth: 360,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 16,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  modalTitle: { color: "#0f172a", fontWeight: "700" },
-  modalClose: { color: "#f97316", fontWeight: "600", fontSize: 12 },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-  },
-  detailLabel: { color: "#64748b", fontSize: 12 },
-  detailValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
-  breakdownBlock: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-    paddingTop: 12,
-  },
-  detailBreakdownTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#0f172a",
-    marginBottom: 6,
-  },
-  detailBreakdownRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-  detailBreakdownDate: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
-  detailBreakdownSub: { color: "#64748b", fontSize: 11, marginTop: 2 },
-  detailBreakdownAmount: { color: "#0f172a", fontSize: 12, fontWeight: "700" },
-  emptyText: { color: "#94a3b8", fontSize: 12, textAlign: "center" },
-});
+function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    screen: { flex: 1 },
+    safe: { flex: 1 },
+    container: {
+      padding: 16,
+      paddingTop: 20,
+      paddingBottom: 120,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    headerLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    logo: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    logoImage: { width: 24, height: 24 },
+    appName: { fontSize: 16, fontWeight: "700", color: c.text },
+    subText: { fontSize: 13, color: c.textMuted },
+    headerRight: { flexDirection: "row", alignItems: "center" },
+    iconPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.surface,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: 4,
+      paddingVertical: 4,
+      shadowColor: "#000000",
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    },
+    iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
+    iconPillDivider: { width: 1, height: 16, backgroundColor: c.border },
+    notifDot: {
+      position: "absolute",
+      top: -2,
+      right: -2,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#ef4444",
+    },
+    bgBlob: {
+      position: "absolute",
+      width: 240,
+      height: 240,
+      borderRadius: 999,
+      backgroundColor: "rgba(0,0,0,0)",
+      top: -80,
+      right: -60,
+    },
+    bgBlobAlt: {
+      position: "absolute",
+      width: 280,
+      height: 280,
+      borderRadius: 999,
+      backgroundColor: "rgba(0,0,0,0)",
+      bottom: -120,
+      left: -80,
+    },
+    heroCard: {
+      borderRadius: 22,
+      padding: 18,
+      marginBottom: 16,
+      overflow: "hidden",
+      ...cardShadow,
+    },
+    heroAccent: {
+      display: "none",
+    },
+    heroTopRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 10,
+    },
+    heroLabel: { color: c.textMuted, fontSize: 12, letterSpacing: 0.6 },
+    heroAmount: { color: c.text, fontSize: 28, fontWeight: "700" },
+    heroSub: { color: c.textMuted, marginTop: 2, fontSize: 12 },
+    heroIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      backgroundColor: c.surfaceAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    heroHint: { color: c.textMuted, fontSize: 12 },
+    heroBottomRow: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 14,
+    },
+    heroPill: {
+      flex: 1,
+      backgroundColor: c.surfaceAlt,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+    },
+    heroPillAlt: {
+      backgroundColor: c.surfaceAlt,
+    },
+    heroPillLabel: { color: c.textMuted, fontSize: 11 },
+    heroPillValue: { color: c.text, fontWeight: "700", marginTop: 4 },
+    heroDetailButton: {
+      alignSelf: "flex-start",
+      marginTop: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: c.text,
+      borderRadius: 999,
+    },
+    heroDetailText: { color: c.backgroundStart, fontWeight: "600", fontSize: 12 },
+    quickGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      gap: 12,
+      marginBottom: 16,
+    },
+    quickTile: {
+      width: "48%",
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: c.border,
+      shadowColor: "#000000",
+      shadowOpacity: 0.07,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 2,
+    },
+    quickIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 10,
+      backgroundColor: "#fef3c7",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 8,
+    },
+    quickLabel: { fontSize: 11, color: c.textMuted },
+    quickValue: { fontSize: 16, fontWeight: "700", color: c.text },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 18,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      ...cardShadow,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 12,
+    },
+    cardTitle: { fontSize: 16, fontWeight: "700", color: c.text },
+    chartRow: {
+      flexDirection: "row",
+      gap: 12,
+      alignItems: "flex-end",
+    },
+    chartColumn: { flex: 1, alignItems: "center" },
+    chartBar: {
+      width: "100%",
+      borderRadius: 10,
+      backgroundColor: "#f59e0b",
+    },
+    chartValue: { fontSize: 11, color: c.text, marginTop: 6 },
+    chartLabel: { fontSize: 10, color: c.textMuted, marginTop: 2 },
+    budgetItem: { marginBottom: 12 },
+    budgetRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 6,
+    },
+    budgetLabel: { color: c.text, fontWeight: "600" },
+    budgetValue: { color: c.text, fontWeight: "600" },
+    budgetBar: {
+      height: 8,
+      backgroundColor: c.border,
+      borderRadius: 999,
+      overflow: "hidden",
+    },
+    budgetFill: { height: 8, borderRadius: 999 },
+    breakdownRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      marginBottom: 10,
+    },
+    breakdownTitle: { fontSize: 13, fontWeight: "600", color: c.text },
+    breakdownHint: { fontSize: 11, color: c.textMuted, marginTop: 2 },
+    breakdownPositive: { color: "#16a34a", fontWeight: "700" },
+    breakdownNegative: { color: "#dc2626", fontWeight: "700" },
+    breakdownTotalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    breakdownTotal: { fontSize: 14, fontWeight: "700", color: c.text },
+    tipCard: {
+      borderRadius: 18,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: "#fde68a",
+      marginBottom: 20,
+      backgroundColor: "#fffbeb",
+      ...cardShadow,
+    },
+    tipTitle: { fontSize: 14, fontWeight: "700", color: "#7c2d12" },
+    tipText: { color: "#9a3412", marginTop: 8, lineHeight: 18 },
+    tipRow: { flexDirection: "row", gap: 6, marginTop: 10 },
+    tipHint: { color: "#92400e", fontSize: 12 },
+    tipButton: {
+      marginTop: 12,
+      backgroundColor: "#fb923c",
+      paddingVertical: 10,
+      borderRadius: 12,
+      alignItems: "center",
+    },
+    tipButtonText: { color: "#1f1300", fontWeight: "600" },
+    disabledButton: { opacity: 0.6 },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(15, 23, 42, 0.45)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
+    detailModal: {
+      width: "100%",
+      maxWidth: 360,
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 16,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    modalTitle: { color: c.text, fontWeight: "700" },
+    modalClose: { color: "#f97316", fontWeight: "600", fontSize: 12 },
+    detailRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: 6,
+    },
+    detailLabel: { color: c.textMuted, fontSize: 12 },
+    detailValue: { color: c.text, fontSize: 12, fontWeight: "600" },
+    breakdownBlock: {
+      marginTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      paddingTop: 12,
+    },
+    detailBreakdownTitle: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: c.text,
+      marginBottom: 6,
+    },
+    detailBreakdownRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 6,
+    },
+    detailBreakdownDate: { color: c.text, fontSize: 12, fontWeight: "600" },
+    detailBreakdownSub: { color: c.textMuted, fontSize: 11, marginTop: 2 },
+    detailBreakdownAmount: { color: c.text, fontSize: 12, fontWeight: "700" },
+    emptyText: { color: c.textMuted, fontSize: 12, textAlign: "center" },
+  });
+}

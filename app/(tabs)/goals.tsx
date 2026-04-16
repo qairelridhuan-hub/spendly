@@ -17,7 +17,9 @@ import {
   Bell,
   Gamepad2,
   LogOut,
+  Moon,
   Plus,
+  Sun,
   Target,
   X,
   Pencil,
@@ -39,7 +41,7 @@ import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
-import { useCalendar } from "@/lib/context";
+import { useCalendar, useTheme } from "@/lib/context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import { cardShadow } from "@/lib/shadows";
@@ -103,6 +105,8 @@ export default function GoalsScreen() {
   const [hourlyRate, setHourlyRate] = useState(0);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const { shifts } = useCalendar();
+  const { colors: c, mode, toggleTheme } = useTheme();
+  const styles = makeStyles(c);
   const approvedLogs = useMemo(
     () => attendanceLogs.filter(log => log.status === "approved"),
     [attendanceLogs]
@@ -502,7 +506,7 @@ export default function GoalsScreen() {
   }, [filter, goals, timeFilter, statusFilter]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
+    <View style={[styles.screen, { backgroundColor: c.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ===== HEADER ===== */}
         <View style={styles.header}>
@@ -526,16 +530,20 @@ export default function GoalsScreen() {
 
           <View style={styles.headerRight}>
             <View style={styles.iconPill}>
-              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/(tabs)/")}>
-                <Gamepad2 size={20} color="#111827" />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
+                {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/")}>
+                <Gamepad2 size={20} color={c.text} />
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
-                <Bell size={20} color="#111827" />
+                <Bell size={20} color={c.text} />
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
-                <LogOut size={20} color="#111827" />
+                <LogOut size={20} color={c.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -554,7 +562,7 @@ export default function GoalsScreen() {
             style={styles.addButton}
             onPress={openCreateModal}
           >
-            <Plus size={26} color="#111827" />
+            <Plus size={26} color={c.text} />
           </TouchableOpacity>
         </View>
 
@@ -757,7 +765,7 @@ export default function GoalsScreen() {
                         <Text style={styles.paceButtonText}>
                           {unitLabel.charAt(0).toUpperCase() + unitLabel.slice(1)}
                         </Text>
-                        <ChevronDown size={14} color="#6b7280" />
+                        <ChevronDown size={14} color={c.textMuted} />
                       </TouchableOpacity>
                       {isPaceMenuOpen ? (
                         <View style={styles.paceMenu}>
@@ -847,7 +855,7 @@ export default function GoalsScreen() {
         {/* EMPTY STATE */}
         {goals.length === 0 && (
           <View style={styles.emptyCard}>
-            <Target size={40} color="#111827" />
+            <Target size={40} color={c.text} />
             <Text style={styles.emptyTitle}>No goals yet</Text>
             <Text style={styles.emptyText}>
               Start by creating your first financial goal
@@ -876,7 +884,7 @@ export default function GoalsScreen() {
                   {editingGoalId ? "Edit Goal" : "Create New Goal"}
                 </Text>
                 <TouchableOpacity onPress={closeModal}>
-                  <X size={22} color="#6b7280" />
+                  <X size={22} color={c.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -1069,7 +1077,8 @@ export default function GoalsScreen() {
    STYLES
 ===================== */
 
-const styles = StyleSheet.create({
+function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   container: {
@@ -1114,23 +1123,23 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: c.border,
   },
   logoImage: { width: 24, height: 24 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  subText: { fontSize: 13, color: "#6b7280" },
+  appName: { fontSize: 16, fontWeight: "700", color: c.text },
+  subText: { fontSize: 13, color: c.textMuted },
   headerRight: { flexDirection: "row", alignItems: "center" },
   iconPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: c.border,
     paddingHorizontal: 4,
     paddingVertical: 4,
     shadowColor: "#000000",
@@ -1140,7 +1149,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
-  iconPillDivider: { width: 1, height: 16, backgroundColor: "#e5e7eb" },
+  iconPillDivider: { width: 1, height: 16, backgroundColor: c.border },
   notifDot: {
     position: "absolute",
     top: -2,
@@ -1158,16 +1167,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  title: { fontSize: 22, fontWeight: "700", color: "#111827" },
-  subtitle: { fontSize: 14, color: "#6b7280" },
+  title: { fontSize: 22, fontWeight: "700", color: c.text },
+  subtitle: { fontSize: 14, color: c.textMuted },
 
   addButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderWidth: 1.5,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000000",
@@ -1178,29 +1187,29 @@ const styles = StyleSheet.create({
   },
 
   emptyCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 18,
     padding: 24,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     ...cardShadow,
   },
-  emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700", color: "#111827" },
+  emptyTitle: { marginTop: 12, fontSize: 18, fontWeight: "700", color: c.text },
   emptyText: {
     marginTop: 6,
     fontSize: 14,
-    color: "#6b7280",
+    color: c.textMuted,
     textAlign: "center",
   },
   createButton: {
     marginTop: 16,
-    backgroundColor: "#111827",
+    backgroundColor: c.text,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
   },
-  createText: { color: "#ffffff", fontWeight: "700" },
+  createText: { color: c.backgroundStart, fontWeight: "700" },
   filterRow: {
     flexDirection: "row",
     gap: 10,
@@ -1211,61 +1220,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f5f5f5",
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
   filterMenuButtonActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: c.text,
+    borderColor: c.text,
   },
-  filterMenuText: { color: "#6b7280", fontWeight: "600", fontSize: 12 },
-  filterMenuTextActive: { color: "#ffffff" },
+  filterMenuText: { color: c.textMuted, fontWeight: "600", fontSize: 12 },
+  filterMenuTextActive: { color: c.backgroundStart },
   filterMenu: {
     marginBottom: 16,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#ffffff",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     gap: 10,
   },
-  filterMenuTitle: { color: "#6b7280", fontSize: 12, fontWeight: "600" },
+  filterMenuTitle: { color: c.textMuted, fontSize: 12, fontWeight: "600" },
   filterMenuRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   filterMenuChip: {
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f5f5f5",
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
   filterMenuChipActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: c.text,
+    borderColor: c.text,
   },
-  filterMenuChipText: { color: "#6b7280", fontSize: 12, fontWeight: "600" },
-  filterMenuChipTextActive: { color: "#ffffff" },
+  filterMenuChipText: { color: c.textMuted, fontSize: 12, fontWeight: "600" },
+  filterMenuChipTextActive: { color: c.backgroundStart },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f5f5f5",
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
   filterChipActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: c.text,
+    borderColor: c.text,
   },
-  filterText: { fontSize: 12, color: "#6b7280", fontWeight: "600" },
-  filterTextActive: { color: "#ffffff" },
+  filterText: { fontSize: 12, color: c.textMuted, fontWeight: "600" },
+  filterTextActive: { color: c.backgroundStart },
   goalList: { gap: 14 },
   goalCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     marginBottom: 14,
     ...cardShadow,
   },
@@ -1276,21 +1285,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   goalHeaderRight: { alignItems: "flex-end", gap: 8 },
-  goalName: { fontSize: 18, fontWeight: "700", color: "#111827" },
-  goalMeta: { color: "#6b7280" },
+  goalName: { fontSize: 18, fontWeight: "700", color: c.text },
+  goalMeta: { color: c.textMuted },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
   editSavedButton: { paddingVertical: 2 },
-  editSavedText: { color: "#111827", fontSize: 12, fontWeight: "600" },
+  editSavedText: { color: c.text, fontSize: 12, fontWeight: "600" },
   goalActions: { flexDirection: "row", gap: 8 },
   iconButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
   },
   priorityChip: {
     paddingHorizontal: 10,
@@ -1306,23 +1315,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  streakText: { fontSize: 12, fontWeight: "700", color: "#111827" },
-  streakHint: { fontSize: 12, color: "#6b7280" },
+  streakText: { fontSize: 12, fontWeight: "700", color: c.text },
+  streakHint: { fontSize: 12, color: c.textMuted },
   progressRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  progressLabel: { color: "#6b7280", fontSize: 12 },
+  progressLabel: { color: c.textMuted, fontSize: 12 },
   progressBar: {
     height: 8,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: c.border,
     borderRadius: 8,
     overflow: "hidden",
   },
   progressFill: {
     height: 8,
-    backgroundColor: "#111827",
+    backgroundColor: c.text,
   },
   milestoneRow: {
     flexDirection: "row",
@@ -1334,17 +1343,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#d1d5db",
+    backgroundColor: c.border,
   },
-  milestoneDotActive: { backgroundColor: "#111827" },
-  milestoneText: { fontSize: 10, color: "#6b7280" },
+  milestoneDotActive: { backgroundColor: c.text },
+  milestoneText: { fontSize: 10, color: c.textMuted },
   collectionHeader: {
     marginTop: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  collectionTitle: { fontSize: 13, fontWeight: "700", color: "#111827" },
+  collectionTitle: { fontSize: 13, fontWeight: "700", color: c.text },
   paceDropdown: { position: "relative" },
   paceButton: {
     flexDirection: "row",
@@ -1354,45 +1363,45 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f5f5f5",
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
-  paceButtonText: { color: "#111827", fontSize: 12, fontWeight: "600" },
+  paceButtonText: { color: c.text, fontSize: 12, fontWeight: "600" },
   paceMenu: {
     position: "absolute",
     top: 34,
     right: 0,
     minWidth: 120,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     paddingVertical: 6,
     zIndex: 10,
   },
   paceMenuItem: { paddingHorizontal: 10, paddingVertical: 8 },
-  paceMenuText: { color: "#6b7280", fontSize: 12 },
-  paceMenuTextActive: { color: "#111827", fontWeight: "700" },
+  paceMenuText: { color: c.textMuted, fontSize: 12 },
+  paceMenuTextActive: { color: c.text, fontWeight: "700" },
   summaryCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f9f9f9",
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
     flexDirection: "row",
     justifyContent: "space-between",
     ...cardShadow,
   },
-  summaryLabel: { color: "#6b7280", fontSize: 12 },
-  summaryValue: { color: "#111827", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  summaryLabel: { color: c.textMuted, fontSize: 12 },
+  summaryValue: { color: c.text, fontSize: 14, fontWeight: "700", marginTop: 2 },
   planCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#ffffff",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     ...cardShadow,
   },
   planRow: {
@@ -1401,23 +1410,23 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   planItem: { flex: 1 },
-  planLabel: { color: "#6b7280", fontSize: 12 },
-  planValue: { color: "#111827", fontSize: 14, fontWeight: "700", marginTop: 2 },
+  planLabel: { color: c.textMuted, fontSize: 12 },
+  planValue: { color: c.text, fontSize: 14, fontWeight: "700", marginTop: 2 },
   planDivider: {
     height: 1,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: c.border,
     marginVertical: 10,
   },
   noteBox: {
     marginTop: 12,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
   },
-  noteLabel: { fontSize: 11, color: "#6b7280", fontWeight: "700" },
-  noteText: { marginTop: 6, color: "#111827", fontSize: 12 },
+  noteLabel: { fontSize: 11, color: c.textMuted, fontWeight: "700" },
+  noteText: { marginTop: 6, color: c.text, fontSize: 12 },
   miniChart: {
     flexDirection: "row",
     gap: 8,
@@ -1430,7 +1439,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   miniBar: {
-    backgroundColor: "#111827",
+    backgroundColor: c.text,
     borderRadius: 8,
   },
   goalFooter: {
@@ -1438,8 +1447,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 12,
   },
-  goalFootLabel: { color: "#6b7280", fontSize: 12 },
-  goalFootValue: { fontWeight: "700", marginTop: 2, color: "#111827" },
+  goalFootLabel: { color: c.textMuted, fontSize: 12 },
+  goalFootValue: { fontWeight: "700", marginTop: 2, color: c.text },
   earningsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1456,7 +1465,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modal: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 16,
     maxHeight: "75%",
@@ -1468,30 +1477,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: c.text },
 
   inputGroup: { marginBottom: 10 },
-  label: { fontSize: 13, color: "#6b7280", marginBottom: 6 },
+  label: { fontSize: 13, color: c.textMuted, marginBottom: 6 },
   input: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    color: "#111827",
+    borderColor: c.border,
+    color: c.text,
   },
   inputDisabled: {
     opacity: 0.6,
   },
   dateButton: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
   },
   dateButtonText: {
-    color: "#111827",
+    color: c.text,
   },
   priorityRow: {
     flexDirection: "row",
@@ -1502,20 +1511,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
   },
   priorityButtonActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: c.text,
+    borderColor: c.text,
   },
-  priorityButtonText: { color: "#6b7280", fontWeight: "600" },
-  priorityButtonTextActive: { color: "#ffffff" },
+  priorityButtonText: { color: c.textMuted, fontWeight: "600" },
+  priorityButtonTextActive: { color: c.backgroundStart },
   notesInput: { minHeight: 60, textAlignVertical: "top" },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15,23,42,0.35)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -1523,7 +1532,7 @@ const styles = StyleSheet.create({
   dateModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 16,
   },
@@ -1548,18 +1557,19 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     alignItems: "center",
   },
-  cancelText: { color: "#111827", fontWeight: "600" },
+  cancelText: { color: c.text, fontWeight: "600" },
   createBtn: {
     flex: 1,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: "#111827",
+    backgroundColor: c.text,
     alignItems: "center",
   },
-  createBtnText: { color: "#ffffff", fontWeight: "700" },
-});
+  createBtnText: { color: c.backgroundStart, fontWeight: "700" },
+  });
+}

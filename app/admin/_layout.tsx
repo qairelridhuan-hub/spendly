@@ -436,7 +436,7 @@ function AdminLayoutInner() {
         {/* Top bar */}
         <View style={[
           {
-            height: 52,
+            height: 60,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",

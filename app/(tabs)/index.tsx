@@ -20,6 +20,8 @@ import {
   ChevronRight,
   ChevronDown,
   X,
+  Moon,
+  Sun,
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
@@ -66,7 +68,8 @@ type AttendancePolicy = {
 ===================== */
 
 export default function WorkerHomeScreen() {
-  const { colors } = useTheme();
+  const { colors, mode, toggleTheme } = useTheme();
+  const styles = makeStyles(colors);
   const [pixelFontLoaded] = useFonts({
     PressStart2P: require("../../assets/fonts/PressStart2P-Regular.ttf"),
   });
@@ -1185,7 +1188,7 @@ export default function WorkerHomeScreen() {
      UI
   ===================== */
   return (
-    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
+    <View style={[styles.screen, { backgroundColor: colors.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* 🔝 HEADER */}
         <View style={styles.header}>
@@ -1209,6 +1212,10 @@ export default function WorkerHomeScreen() {
 
           <View style={styles.headerRight}>
             <View style={styles.iconPill}>
+              <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
+                {mode === "dark" ? <Moon size={20} color={colors.text} /> : <Sun size={20} color={colors.text} />}
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
               <TouchableOpacity
                 style={styles.iconPillBtn}
                 onPress={() => {
@@ -1216,15 +1223,15 @@ export default function WorkerHomeScreen() {
                   setShowGameGate(true);
                 }}
               >
-                <Gamepad2 size={20} color="#111827" />
+                <Gamepad2 size={20} color={colors.text} />
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
-                <Bell size={20} color="#111827" />
+                <Bell size={20} color={colors.text} />
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={handleLogout}>
-                <LogOut size={20} color="#111827" />
+                <LogOut size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -1250,19 +1257,19 @@ export default function WorkerHomeScreen() {
                 ? Math.min(100, Math.round((approvedDisplayValue / projectedEarnings) * 100))
                 : 0;
               return (
-                <View style={[styles.salarySummary, { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e7eb" }]}>
+                <View style={[styles.salarySummary, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
 
                   {/* Title + ··· */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <View>
-                      <Text style={{ fontSize: 11, color: "#9ca3af", fontWeight: "500" }}>{formatPeriodLabel(selectedPeriod).toUpperCase()}</Text>
-                      <Text style={{ fontSize: 13, fontWeight: "700", color: "#111827", marginTop: 1 }}>{titleText}</Text>
+                      <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "500" }}>{formatPeriodLabel(selectedPeriod).toUpperCase()}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text, marginTop: 1 }}>{titleText}</Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => setShowSalaryMenu(prev => !prev)}
                       style={{ paddingHorizontal: 10, paddingVertical: 6 }}
                     >
-                      <Text style={{ fontSize: 18, color: "#6b7280", letterSpacing: 2 }}>···</Text>
+                      <Text style={{ fontSize: 18, color: colors.textMuted, letterSpacing: 2 }}>···</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -1271,40 +1278,40 @@ export default function WorkerHomeScreen() {
                     <View style={{ flexDirection: "row", gap: 8, marginBottom: 10, marginTop: -4 }}>
                       <TouchableOpacity
                         onPress={() => { setSalaryView("past"); setPastSalaryPeriod(null); setShowSalaryMenu(false); setShowPastSalary(true); }}
-                        style={{ backgroundColor: "#f3f4f6", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                        style={{ backgroundColor: colors.surfaceAlt, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "600", color: "#374151" }}>Past Salary</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>Past Salary</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => { setShowSalaryMenu(false); setShowMonthPicker(true); }}
-                        style={{ backgroundColor: "#f3f4f6", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                        style={{ backgroundColor: colors.surfaceAlt, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "600", color: "#374151" }}>{formatPeriodLabel(selectedPeriod)}</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>{formatPeriodLabel(selectedPeriod)}</Text>
                       </TouchableOpacity>
                     </View>
                   ) : null}
 
                   {/* Amount */}
-                  <Text style={{ fontSize: 30, fontWeight: "800", color: "#111827", marginBottom: 12 }}>
+                  <Text style={{ fontSize: 30, fontWeight: "800", color: colors.text, marginBottom: 12 }}>
                     RM {displayCollectedEarnings.toFixed(2)}
                   </Text>
 
                   {/* Progress bar — approved vs projected */}
                   <View style={{ marginBottom: 4 }}>
-                    <View style={{ height: 5, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>
-                      <View style={{ height: 5, borderRadius: 999, backgroundColor: "#111827", width: `${earnPct}%` }} />
+                    <View style={{ height: 5, backgroundColor: colors.border, borderRadius: 999, overflow: "hidden" }}>
+                      <View style={{ height: 5, borderRadius: 999, backgroundColor: colors.text, width: `${earnPct}%` }} />
                     </View>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
-                      <Text style={{ fontSize: 10, color: "#9ca3af" }}>{earnPct}% of projected earned</Text>
-                      <Text style={{ fontSize: 10, color: "#9ca3af" }}>{dayPct}% of month passed</Text>
+                      <Text style={{ fontSize: 10, color: colors.textMuted }}>{earnPct}% of projected earned</Text>
+                      <Text style={{ fontSize: 10, color: colors.textMuted }}>{dayPct}% of month passed</Text>
                     </View>
                   </View>
 
                   {/* Divider */}
-                  <View style={{ height: 1, backgroundColor: "#f1f5f9", marginVertical: 10 }} />
+                  <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
 
                   {/* Status */}
-                  <Text style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10 }}>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 10 }}>
                     {hasPending
                       ? `⏳ Awaiting approval for ${pendingCount} shift${pendingCount === 1 ? "" : "s"}`
                       : "✓ All shifts approved so far"}
@@ -1312,21 +1319,21 @@ export default function WorkerHomeScreen() {
 
                   {/* Stats rows */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-                    <Text style={{ fontSize: 11, color: "#6b7280" }}>Approved</Text>
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#111827" }}>RM {approvedDisplayValue.toFixed(2)}</Text>
+                    <Text style={{ fontSize: 11, color: colors.textMuted }}>Approved</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.text }}>RM {approvedDisplayValue.toFixed(2)}</Text>
                   </View>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
-                    <Text style={{ fontSize: 11, color: "#6b7280" }}>{displayRightLabel}</Text>
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#111827" }}>RM {displayRightValue.toFixed(2)}</Text>
+                    <Text style={{ fontSize: 11, color: colors.textMuted }}>{displayRightLabel}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.text }}>RM {displayRightValue.toFixed(2)}</Text>
                   </View>
 
                   {/* Divider + link */}
-                  <View style={{ height: 1, backgroundColor: "#f1f5f9", marginBottom: 10 }} />
+                  <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 10 }} />
                   <TouchableOpacity
                     style={{ alignSelf: "flex-end" }}
                     onPress={() => setShowEarningsBreakdown(true)}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#111827" }}>View details →</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>View details →</Text>
                   </TouchableOpacity>
 
                 </View>
@@ -1354,7 +1361,7 @@ export default function WorkerHomeScreen() {
                     }}>{todayStatus}</Text>
                   )}
                   <Animated.View style={{ transform: [{ rotate: tickAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }}>
-                    <Clock size={16} color="#d1d5db" />
+                    <Clock size={16} color={colors.textMuted} />
                   </Animated.View>
                 </View>
               </View>
@@ -1370,12 +1377,12 @@ export default function WorkerHomeScreen() {
                   <Text style={styles.clockLabel}>Clock in</Text>
                   <Text style={styles.clockValue}>{todayAttendance?.clockIn || "--:--"}</Text>
                 </View>
-                <View style={{ width: 1, backgroundColor: "#f1f5f9" }} />
+                <View style={{ width: 1, backgroundColor: colors.border }} />
                 <View>
                   <Text style={styles.clockLabel}>Clock out</Text>
                   <Text style={styles.clockValue}>{todayAttendance?.clockOut || "--:--"}</Text>
                 </View>
-                <View style={{ width: 1, backgroundColor: "#f1f5f9" }} />
+                <View style={{ width: 1, backgroundColor: colors.border }} />
                 <View>
                   <Text style={styles.clockLabel}>Break</Text>
                   <Text style={styles.clockValue}>
@@ -1434,7 +1441,7 @@ export default function WorkerHomeScreen() {
                       setShowShiftDetails(true);
                     }}
                   >
-                    <ChevronRight size={16} color="#9ca3af" />
+                    <ChevronRight size={16} color={colors.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -1532,7 +1539,7 @@ export default function WorkerHomeScreen() {
                   ]}
                   {...sliderPanResponder.panHandlers}
                 >
-                  <Gamepad2 size={18} color="#0f172a" />
+                  <Gamepad2 size={18} color={colors.text} />
                 </Animated.View>
               </View>
               <View style={styles.gameGateChaseTrack}>
@@ -1738,7 +1745,7 @@ export default function WorkerHomeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Shift details</Text>
               <TouchableOpacity onPress={() => setShowShiftDetails(false)}>
-                <X size={18} color="#e5e7eb" />
+                <X size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
             {activeShift.type === "schedule" ? (
@@ -1812,7 +1819,7 @@ export default function WorkerHomeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.monthPickerTitle}>Select Month</Text>
               <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
-                <X size={18} color="#0f172a" />
+                <X size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
             <View style={styles.monthList}>
@@ -1851,7 +1858,7 @@ export default function WorkerHomeScreen() {
                 {salaryView === "ongoing" ? "Ongoing Pay" : "Past Salary"}
               </Text>
               <TouchableOpacity onPress={() => setShowPastSalary(false)}>
-                <X size={18} color="#0f172a" />
+                <X size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
             {salaryView === "past" && pastSalaryOptions.length === 0 ? (
@@ -1950,7 +1957,7 @@ export default function WorkerHomeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Earnings Details</Text>
               <TouchableOpacity onPress={() => setShowEarningsBreakdown(false)}>
-                <X size={18} color="#e5e7eb" />
+                <X size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -2518,7 +2525,8 @@ const formatDateLabel = (value: string) => {
    STYLES
 ===================== */
 
-const styles = StyleSheet.create({
+function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
   screen: { flex: 1 },
   safe: { flex: 1 },
   scrollContent: {
@@ -2583,23 +2591,23 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: c.border,
   },
   logoImage: { width: 24, height: 24 },
-  appName: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  greeting: { fontSize: 13, color: "#6b7280" },
+  appName: { fontSize: 16, fontWeight: "700", color: c.text },
+  greeting: { fontSize: 13, color: c.textMuted },
   headerRight: { flexDirection: "row", alignItems: "center" },
   iconPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: c.border,
     paddingHorizontal: 4,
     paddingVertical: 4,
     shadowColor: "#000000",
@@ -2617,7 +2625,7 @@ const styles = StyleSheet.create({
   iconPillDivider: {
     width: 1,
     height: 16,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: c.border,
   },
   gameIconWrap: {
     width: 34,
@@ -2638,7 +2646,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(2, 6, 23, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
@@ -2648,7 +2656,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     padding: 20,
     borderRadius: 22,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#111111",
     borderWidth: 1,
     borderColor: "rgba(34,197,94,0.35)",
     alignItems: "center",
@@ -2710,7 +2718,7 @@ const styles = StyleSheet.create({
     width: "88%",
     height: 46,
     borderRadius: 999,
-    backgroundColor: "#0b1220",
+    backgroundColor: "#000000",
     borderWidth: 1,
     borderColor: "rgba(148, 163, 184, 0.2)",
     justifyContent: "center",
@@ -2748,7 +2756,7 @@ const styles = StyleSheet.create({
     height: 22,
     marginTop: 10,
     borderRadius: 999,
-    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
     overflow: "hidden",
     alignItems: "flex-start",
     justifyContent: "center",
@@ -2772,7 +2780,7 @@ const styles = StyleSheet.create({
     top: 3,
     width: 8,
     height: 8,
-    backgroundColor: "rgba(15, 23, 42, 0.9)",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
     transform: [{ rotate: "45deg" }],
   },
   ghost: {
@@ -2805,7 +2813,7 @@ const styles = StyleSheet.create({
     width: 2,
     height: 2,
     borderRadius: 999,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#000000",
   },
   ghostFeet: {
     position: "absolute",
@@ -2820,7 +2828,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#000000",
   },
   gameSplashOverlay: {
     position: "absolute",
@@ -2828,7 +2836,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(2, 6, 23, 0.65)",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2838,12 +2846,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#111111",
     borderWidth: 1,
     borderColor: "rgba(34,197,94,0.4)",
     ...cardShadow,
   },
-  gameSplashText: { color: "#374151", fontWeight: "700", fontSize: 12 },
+  gameSplashText: { color: c.textMuted, fontWeight: "700", fontSize: 12 },
   dot: {
     position: "absolute",
     top: -2,
@@ -2880,12 +2888,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 10,
   },
-  salaryTitle: { color: "#6b7280", fontSize: 13 },
-  salaryAmount: { color: "#111827", fontSize: 30, fontWeight: "700" },
-  salarySub: { color: "#6b7280", fontSize: 12, marginTop: 4 },
-  salaryHint: { color: "#6b7280", fontSize: 12 },
+  salaryTitle: { color: c.textMuted, fontSize: 13 },
+  salaryAmount: { color: c.text, fontSize: 30, fontWeight: "700" },
+  salarySub: { color: c.textMuted, fontSize: 12, marginTop: 4 },
+  salaryHint: { color: c.textMuted, fontSize: 12 },
   salaryMenuButton: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: c.surfaceAlt,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
@@ -2893,17 +2901,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  salaryMenuButtonText: { color: "#111827", fontSize: 12, fontWeight: "600" },
+  salaryMenuButtonText: { color: c.text, fontSize: 12, fontWeight: "600" },
   salaryMenuAnchor: { alignItems: "flex-end" },
   salaryIconWrap: {
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: c.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
   },
-  salaryStatusText: { color: "#6b7280", fontSize: 13 },
+  salaryStatusText: { color: c.textMuted, fontSize: 13 },
   statusDotPaid: {
     width: 8,
     height: 8,
@@ -2915,7 +2923,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: c.border,
     overflow: "hidden",
     marginRight: 6,
   },
@@ -2923,7 +2931,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#111827",
+    backgroundColor: c.text,
   },
   salaryPillRow: {
     flexDirection: "row",
@@ -2932,32 +2940,32 @@ const styles = StyleSheet.create({
   },
   salaryMetricCard: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 12,
     ...cardShadow,
   },
   salaryMetricCardAlt: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: c.surfaceAlt,
   },
-  salaryMetricLabel: { color: "#6b7280", fontSize: 11 },
-  salaryMetricValue: { color: "#111827", fontWeight: "700", marginTop: 4 },
+  salaryMetricLabel: { color: c.textMuted, fontSize: 11 },
+  salaryMetricValue: { color: c.text, fontWeight: "700", marginTop: 4 },
   salaryDetailsButton: {
     alignSelf: "flex-start",
     marginTop: 12,
-    backgroundColor: "#111827",
+    backgroundColor: c.text,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
   },
-  salaryDetailsText: { color: "#ffffff", fontSize: 12, fontWeight: "600" },
+  salaryDetailsText: { color: c.backgroundStart, fontSize: 12, fontWeight: "600" },
   salaryMenu: {
     marginTop: 6,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     overflow: "hidden",
     minWidth: 160,
     shadowColor: "#000000",
@@ -2968,10 +2976,10 @@ const styles = StyleSheet.create({
   },
   salaryMenuTop: {
     marginTop: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     overflow: "hidden",
     minWidth: 180,
     shadowColor: "#000000",
@@ -2984,41 +2992,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
-  salaryMenuText: { color: "#374151", fontSize: 12, fontWeight: "600" },
+  salaryMenuText: { color: c.text, fontSize: 12, fontWeight: "600" },
 
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: c.border,
     ...cardShadow,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  cardHint: { fontSize: 12, color: "#6b7280", marginTop: 4 },
-  smallText: { fontSize: 12, color: "#6b7280" },
-  emptyText: { fontSize: 12, color: "#6b7280", textAlign: "center" },
-  shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6, color: "#111827" },
-  shiftMeta: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: c.text },
+  cardHint: { fontSize: 12, color: c.textMuted, marginTop: 4 },
+  smallText: { fontSize: 12, color: c.textMuted },
+  emptyText: { fontSize: 12, color: c.textMuted, textAlign: "center" },
+  shiftTitle: { fontSize: 15, fontWeight: "700", marginTop: 6, color: c.text },
+  shiftMeta: { fontSize: 12, color: c.textMuted, marginTop: 2 },
   shiftStatusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
   },
-  shiftStatusText: { fontSize: 11, fontWeight: "600", color: "#6b7280" },
+  shiftStatusText: { fontSize: 11, fontWeight: "600", color: c.textMuted },
 
   progressBarBg: {
     height: 4,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: c.border,
     borderRadius: 999,
     marginVertical: 10,
     overflow: "hidden",
   },
   progressBarFill: {
     height: 4,
-    backgroundColor: "#111827",
+    backgroundColor: c.text,
     borderRadius: 999,
   },
   progressBarFillComplete: { backgroundColor: "#22c55e" },
@@ -3029,25 +3037,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
-  statusText: { fontSize: 12, color: "#6b7280", fontWeight: "600" },
-  statusCompleted: { color: "#111827" },
+  statusText: { fontSize: 12, color: c.textMuted, fontWeight: "600" },
+  statusCompleted: { color: c.text },
   statusAbsent: { color: "#ef4444" },
   viewButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
   },
-  viewButtonText: { color: "#374151", fontSize: 11, fontWeight: "600" },
+  viewButtonText: { color: c.text, fontSize: 11, fontWeight: "600" },
   detailButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -3055,7 +3063,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  detailButtonText: { color: "#374151", fontWeight: "600", fontSize: 12 },
+  detailButtonText: { color: c.text, fontWeight: "600", fontSize: 12 },
   disabledButton: { opacity: 0.5 },
   clockRow: {
     flexDirection: "row",
@@ -3068,11 +3076,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: c.surfaceAlt,
     marginRight: 8,
   },
-  clockLabel: { color: "#9ca3af", fontSize: 10, fontWeight: "500" },
-  clockValue: { color: "#111827", fontWeight: "700", marginTop: 3, fontSize: 13 },
+  clockLabel: { color: c.textMuted, fontSize: 10, fontWeight: "500" },
+  clockValue: { color: c.text, fontWeight: "700", marginTop: 3, fontSize: 13 },
   clockActions: { flexDirection: "row", gap: 6, marginTop: 10 },
   clockButton: {
     paddingVertical: 7,
@@ -3080,25 +3088,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  clockPrimary: { backgroundColor: "#111827" },
-  clockButtonDone: { backgroundColor: "#e5e7eb" },
-  clockGhost: { backgroundColor: "#f5f5f5", borderWidth: 1, borderColor: "#e5e7eb" },
+  clockPrimary: { backgroundColor: c.text },
+  clockButtonDone: { backgroundColor: c.border },
+  clockGhost: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border },
   clockReset: { backgroundColor: "#ef4444" },
-  clockButtonText: { color: "#374151", fontWeight: "600", fontSize: 12 },
-  clockButtonTextLight: { color: "#ffffff", fontWeight: "600", fontSize: 12 },
+  clockButtonText: { color: c.text, fontWeight: "600", fontSize: 12 },
+  clockButtonTextLight: { color: c.backgroundStart, fontWeight: "600", fontSize: 12 },
   clockResetText: { color: "#ffffff", fontWeight: "600", fontSize: 12 },
   upcomingRow: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: c.border,
     flexDirection: "row",
     alignItems: "center",
   },
-  upcomingLabel: { color: "#6b7280", fontSize: 11, fontWeight: "600", marginBottom: 2 },
+  upcomingLabel: { color: c.textMuted, fontSize: 11, fontWeight: "600", marginBottom: 2 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -3107,11 +3115,11 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 360,
     maxHeight: "85%",
-    backgroundColor: "#ffffff",
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: c.border,
     shadowColor: "#000000",
     shadowOpacity: 0.12,
     shadowRadius: 20,
@@ -3124,38 +3132,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  modalTitle: { color: "#111827", fontWeight: "700" },
+  modalTitle: { color: c.text, fontWeight: "700" },
   detailScrollContent: {
     paddingBottom: 8,
   },
   monthPickerModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#f8fafc",
+    backgroundColor: c.surface,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: c.border,
   },
-  monthPickerTitle: { color: "#0f172a", fontWeight: "700" },
+  monthPickerTitle: { color: c.text, fontWeight: "700" },
   pastSalaryModal: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#f8fafc",
+    backgroundColor: c.surface,
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: c.border,
   },
-  pastSalaryTitle: { color: "#0f172a", fontWeight: "700" },
-  pastSalaryEmpty: { color: "#64748b", fontSize: 12 },
+  pastSalaryTitle: { color: c.text, fontWeight: "700" },
+  pastSalaryEmpty: { color: c.textMuted, fontSize: 12 },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 6,
   },
-  detailLabel: { color: "#6b7280", fontSize: 12 },
-  detailValue: { color: "#111827", fontSize: 12, fontWeight: "600" },
+  detailLabel: { color: c.textMuted, fontSize: 12 },
+  detailValue: { color: c.text, fontSize: 12, fontWeight: "600" },
   monthList: {
     marginTop: 12,
     flexDirection: "row",
@@ -3167,57 +3175,57 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#ffffff",
+    borderColor: c.border,
+    backgroundColor: c.surface,
   },
   monthButtonActiveLight: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: c.text,
+    borderColor: c.text,
   },
-  monthButtonTextLight: { color: "#334155", fontSize: 12 },
-  monthButtonTextActiveLight: { color: "#0b1220", fontWeight: "700" },
+  monthButtonTextLight: { color: c.text, fontSize: 12 },
+  monthButtonTextActiveLight: { color: c.backgroundStart, fontWeight: "700" },
   monthButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: c.border,
   },
   monthButtonActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: c.text,
+    borderColor: c.text,
   },
-  monthButtonText: { color: "#6b7280", fontSize: 12 },
-  monthButtonTextActive: { color: "#0b1220", fontWeight: "700" },
+  monthButtonText: { color: c.textMuted, fontSize: 12 },
+  monthButtonTextActive: { color: c.backgroundStart, fontWeight: "700" },
   pastSalaryCard: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#101826",
+    borderColor: c.border,
+    backgroundColor: c.surfaceAlt,
   },
   pastSalaryCardLight: {
     marginTop: 12,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#ffffff",
+    borderColor: c.border,
+    backgroundColor: c.surface,
     ...cardShadow,
   },
-  pastSalaryLabel: { color: "#64748b", fontSize: 12 },
-  pastSalaryValue: { color: "#0f172a", fontSize: 12, fontWeight: "600" },
+  pastSalaryLabel: { color: c.textMuted, fontSize: 12 },
+  pastSalaryValue: { color: c.text, fontSize: 12, fontWeight: "600" },
   breakdownBlock: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.15)",
+    borderTopColor: c.border,
     paddingTop: 12,
   },
   breakdownTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.8)",
+    color: c.text,
     marginBottom: 6,
   },
   breakdownRow: {
@@ -3226,9 +3234,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 6,
   },
-  breakdownDate: { color: "#111827", fontSize: 12, fontWeight: "600" },
-  breakdownSub: { color: "#6b7280", fontSize: 11, marginTop: 2 },
-  breakdownAmount: { color: "#111827", fontSize: 12, fontWeight: "700" },
-
-
-});
+  breakdownDate: { color: c.text, fontSize: 12, fontWeight: "600" },
+  breakdownSub: { color: c.textMuted, fontSize: 11, marginTop: 2 },
+  breakdownAmount: { color: c.text, fontSize: 12, fontWeight: "700" },
+  });
+}

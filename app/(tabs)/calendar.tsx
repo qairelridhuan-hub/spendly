@@ -5,6 +5,8 @@ import {
   ChevronRight,
   Gamepad2,
   LogOut,
+  Moon,
+  Sun,
   X,
 } from "lucide-react-native";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -41,6 +43,9 @@ const CELL_WIDTH = (SCREEN_WIDTH - 32 - GAP * 6) / 7;
 ===================== */
 
 export default function CalendarScreen() {
+  const { colors: c, mode, toggleTheme } = useTheme();
+  const styles = makeStyles(c);
+
   const [displayName, setDisplayName] = useState("User");
   const scrollRef = useRef<ScrollView>(null);
   const [showShiftDetails, setShowShiftDetails] = useState(false);
@@ -241,7 +246,7 @@ export default function CalendarScreen() {
   ===================== */
 
   return (
-    <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
+    <View style={[styles.screen, { backgroundColor: c.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
 
@@ -266,16 +271,20 @@ export default function CalendarScreen() {
 
           <View style={styles.headerRight}>
             <View style={styles.iconPill}>
+              <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
+                {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/")}>
-                <Gamepad2 size={20} color="#111827" />
+                <Gamepad2 size={20} color={c.text} />
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
-                <Bell size={20} color="#111827" />
+                <Bell size={20} color={c.text} />
               </TouchableOpacity>
               <View style={styles.iconPillDivider} />
               <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
-                <LogOut size={20} color="#111827" />
+                <LogOut size={20} color={c.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -313,10 +322,10 @@ export default function CalendarScreen() {
 
             <View style={styles.navIcons}>
               <TouchableOpacity onPress={prevMonth}>
-                <ChevronLeft size={20} color="#0f172a" />
+                <ChevronLeft size={20} color={c.text} />
               </TouchableOpacity>
               <TouchableOpacity onPress={nextMonth}>
-                <ChevronRight size={20} color="#0f172a" />
+                <ChevronRight size={20} color={c.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -559,12 +568,12 @@ export default function CalendarScreen() {
             STATUS CARD
         ===================== */}
         <View style={[styles.card, styles.calendarCard]}>
-          <Text style={[styles.cardTitle, styles.calendarCardTitle]}>Status</Text> 
+          <Text style={[styles.cardTitle, styles.calendarCardTitle]}>Status</Text>
 
           <View style={styles.legendRow}>
-            <Legend color="#111827" label="Scheduled" />
-            <Legend color="#34d399" label="Completed" />
-            <Legend color="#f87171" label="Absent" />
+            <Legend color={c.text} label="Scheduled" legendText={styles.legendText} dot={styles.dot} legendItem={styles.legendItem} />
+            <Legend color="#34d399" label="Completed" legendText={styles.legendText} dot={styles.dot} legendItem={styles.legendItem} />
+            <Legend color="#f87171" label="Absent" legendText={styles.legendText} dot={styles.dot} legendItem={styles.legendItem} />
           </View>
         </View>
 
@@ -582,7 +591,7 @@ export default function CalendarScreen() {
                   setActiveShift(null);
                 }}
               >
-                <X size={18} color="#6b7280" />
+                <X size={18} color={c.textMuted} />
               </TouchableOpacity>
             </View>
             {activeShift.type === "schedule" ? (
@@ -651,11 +660,23 @@ export default function CalendarScreen() {
    SMALL COMPONENT
 ===================== */
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Legend({
+  color,
+  label,
+  legendText,
+  dot,
+  legendItem,
+}: {
+  color: string;
+  label: string;
+  legendText: any;
+  dot: any;
+  legendItem: any;
+}) {
   return (
-    <View style={styles.legendItem}>
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={styles.legendText}>{label}</Text>
+    <View style={legendItem}>
+      <View style={[dot, { backgroundColor: color }]} />
+      <Text style={legendText}>{label}</Text>
     </View>
   );
 }
@@ -775,299 +796,301 @@ const getShiftStatusLabel = (shift: any, attendanceStatus?: string) => {
    STYLES
 ===================== */
 
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1 },
-  container: { padding: 16, paddingTop: 20, paddingBottom: 120 },
-  bgBlob: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0)",
-    top: -80,
-    right: -60,
-  },
-  bgBlobAlt: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0)",
-    bottom: -120,
-    left: -80,
-  },
+function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    screen: { flex: 1 },
+    safe: { flex: 1 },
+    container: { padding: 16, paddingTop: 20, paddingBottom: 120 },
+    bgBlob: {
+      position: "absolute",
+      width: 240,
+      height: 240,
+      borderRadius: 999,
+      backgroundColor: "rgba(0,0,0,0)",
+      top: -80,
+      right: -60,
+    },
+    bgBlobAlt: {
+      position: "absolute",
+      width: 280,
+      height: 280,
+      borderRadius: 999,
+      backgroundColor: "rgba(0,0,0,0)",
+      bottom: -120,
+      left: -80,
+    },
 
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  logo: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  logoImage: { width: 24, height: 24 },
-  appName: { fontWeight: "700", fontSize: 16, color: "#111827" },
-  subText: { color: "#6b7280" },
-  headerRight: { flexDirection: "row", alignItems: "center" },
-  iconPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-    shadowColor: "#000000",
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
-  iconPillDivider: { width: 1, height: 16, backgroundColor: "#e5e7eb" },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+    logo: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    logoImage: { width: 24, height: 24 },
+    appName: { fontWeight: "700", fontSize: 16, color: c.text },
+    subText: { color: c.textMuted },
+    headerRight: { flexDirection: "row", alignItems: "center" },
+    iconPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.surface,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: 4,
+      paddingVertical: 4,
+      shadowColor: "#000000",
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    },
+    iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
+    iconPillDivider: { width: 1, height: 16, backgroundColor: c.border },
 
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    ...cardShadow,
-  },
-  calendarCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#e2e8f0",
-  },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 18,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      ...cardShadow,
+    },
+    calendarCard: {
+      backgroundColor: c.surface,
+      borderColor: c.border,
+    },
 
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-    color: "#111827",
-  },
-  calendarCardTitle: {
-    color: "#0f172a",
-  },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 12,
+      color: c.text,
+    },
+    calendarCardTitle: {
+      color: c.text,
+    },
 
-  monthHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  captionGroup: { flexDirection: "row", gap: 8, alignItems: "center" },
-  captionButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#101826",
-  },
-  captionText: { fontSize: 12, fontWeight: "700", color: "#111827" },
-  calendarCaptionButton: {
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
-  },
-  calendarCaptionText: { color: "#0f172a" },
-  navIcons: { flexDirection: "row", gap: 8 },
-  dropdown: {
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    backgroundColor: "#101826",
-    overflow: "hidden",
-  },
-  calendarDropdown: {
-    borderColor: "#e2e8f0",
-    backgroundColor: "#ffffff",
-  },
-  dropdownRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
-  },
-  dropdownRowActive: {
-    backgroundColor: "#111827",
-  },
-  dropdownText: { color: "#0f172a", fontWeight: "600", fontSize: 12 },
-  dropdownTextActive: { color: "#0b1220" },
+    monthHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    captionGroup: { flexDirection: "row", gap: 8, alignItems: "center" },
+    captionButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surfaceAlt,
+    },
+    captionText: { fontSize: 12, fontWeight: "700", color: c.text },
+    calendarCaptionButton: {
+      borderColor: c.border,
+      backgroundColor: c.surfaceAlt,
+    },
+    calendarCaptionText: { color: c.text },
+    navIcons: { flexDirection: "row", gap: 8 },
+    dropdown: {
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      backgroundColor: c.surfaceAlt,
+      overflow: "hidden",
+    },
+    calendarDropdown: {
+      borderColor: c.border,
+      backgroundColor: c.surface,
+    },
+    dropdownRow: {
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    dropdownRowActive: {
+      backgroundColor: c.text,
+    },
+    dropdownText: { color: c.text, fontWeight: "600", fontSize: 12 },
+    dropdownTextActive: { color: c.backgroundStart },
 
-  weekRow: { flexDirection: "row", marginBottom: 8 },
-  weekText: {
-    textAlign: "center",
-    fontWeight: "600",
-    color: "#6b7280",
-    fontSize: 12,
-  },
-  calendarWeekText: { color: "#64748b" },
+    weekRow: { flexDirection: "row", marginBottom: 8 },
+    weekText: {
+      textAlign: "center",
+      fontWeight: "600",
+      color: c.textMuted,
+      fontSize: 12,
+    },
+    calendarWeekText: { color: c.textMuted },
 
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
+    grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
 
-  dayCell: {
-    width: CELL_WIDTH,
-    height: 72,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    padding: 8,
-    justifyContent: "space-between",
-    backgroundColor: "#ffffff",
-    position: "relative",
-  },
-  calendarDayCell: {
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
-  },
+    dayCell: {
+      width: CELL_WIDTH,
+      height: 72,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 8,
+      justifyContent: "space-between",
+      backgroundColor: c.surface,
+      position: "relative",
+    },
+    calendarDayCell: {
+      borderColor: c.border,
+      backgroundColor: c.surfaceAlt,
+    },
 
-  selectedDay: {
-    borderColor: "#111827",
-    backgroundColor: "#f1f5f9",
-  },
-  todayCell: {
-    borderColor: "#111827",
-  },
+    selectedDay: {
+      borderColor: c.text,
+      backgroundColor: c.border,
+    },
+    todayCell: {
+      borderColor: c.text,
+    },
 
-  dayText: { color: "#111827", fontWeight: "600" },
-  calendarDayText: { color: "#0f172a" },
-  todayText: { color: "#111827", fontWeight: "700" },
-  selectedDayText: {
-    color: "#111827",
-    fontWeight: "700",
-  },
+    dayText: { color: c.text, fontWeight: "600" },
+    calendarDayText: { color: c.text },
+    todayText: { color: c.text, fontWeight: "700" },
+    selectedDayText: {
+      color: c.text,
+      fontWeight: "700",
+    },
 
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dotPlaceholder: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-  },
-  dotNone: { backgroundColor: "transparent" },
-  dotScheduled: { backgroundColor: "#111827" },
-  dotCompleted: { backgroundColor: "#34d399" },
-  dotAbsent: { backgroundColor: "#f87171" },
-  tooltip: {
-    position: "absolute",
-    top: -6,
-    left: -4,
-    right: -4,
-    backgroundColor: "#111827",
-    borderRadius: 10,
-    padding: 6,
-    zIndex: 10,
-  },
-  tooltipTitle: { color: "#ffffff", fontSize: 10, fontWeight: "700" },
-  tooltipText: { color: "#e2e8f0", fontSize: 9, marginTop: 2 },
+    statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    dotPlaceholder: {
+      width: 6,
+      height: 6,
+      borderRadius: 999,
+    },
+    dotNone: { backgroundColor: "transparent" },
+    dotScheduled: { backgroundColor: c.text },
+    dotCompleted: { backgroundColor: "#34d399" },
+    dotAbsent: { backgroundColor: "#f87171" },
+    tooltip: {
+      position: "absolute",
+      top: -6,
+      left: -4,
+      right: -4,
+      backgroundColor: c.text,
+      borderRadius: 10,
+      padding: 6,
+      zIndex: 10,
+    },
+    tooltipTitle: { color: c.backgroundStart, fontSize: 10, fontWeight: "700" },
+    tooltipText: { color: c.border, fontSize: 9, marginTop: 2 },
 
-  emptyBox: {
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    padding: 16,
-    alignItems: "center",
-  },
+    emptyBox: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 16,
+      alignItems: "center",
+    },
 
-  emptyText: { color: "#6b7280" },
+    emptyText: { color: c.textMuted },
 
-  shiftRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#273244",
-  },
-  shiftLeft: { flex: 1 },
-  shiftRight: { alignItems: "flex-end", gap: 6 },
-  shiftTitle: { fontWeight: "700", fontSize: 15, color: "#111827" },
-  shiftMetaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  shiftMeta: { color: "#6b7280", marginTop: 2 },
-  shiftLocation: { color: "#111827", fontWeight: "600" },
-  detailButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "#f5f5f5",
-  },
-  detailButtonText: { color: "#111827", fontWeight: "600", fontSize: 11 },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: "#f5f5f5",
-  },
-  statusPillText: { fontSize: 10, fontWeight: "700", color: "#111827" },
-  statusPillActive: { backgroundColor: "#f5f5f5" },
-  statusPillScheduled: { backgroundColor: "#f5f5f5" },
-  statusPillCompleted: { backgroundColor: "#12251b" },
-  statusPillAbsent: { backgroundColor: "#2a1114" },
+    shiftRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    shiftLeft: { flex: 1 },
+    shiftRight: { alignItems: "flex-end", gap: 6 },
+    shiftTitle: { fontWeight: "700", fontSize: 15, color: c.text },
+    shiftMetaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    shiftMeta: { color: c.textMuted, marginTop: 2 },
+    shiftLocation: { color: c.text, fontWeight: "600" },
+    detailButton: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 10,
+      backgroundColor: c.surfaceAlt,
+    },
+    detailButtonText: { color: c.text, fontWeight: "600", fontSize: 11 },
+    statusPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+      backgroundColor: c.surfaceAlt,
+    },
+    statusPillText: { fontSize: 10, fontWeight: "700", color: c.text },
+    statusPillActive: { backgroundColor: c.surfaceAlt },
+    statusPillScheduled: { backgroundColor: c.surfaceAlt },
+    statusPillCompleted: { backgroundColor: c.surfaceAlt },
+    statusPillAbsent: { backgroundColor: c.surfaceAlt },
 
-  legendRow: {
-    flexDirection: "row",
-    gap: 20,
-    marginTop: 4,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  selectedDateText: {
-    color: "#6b7280",
-    marginBottom: 8,
-  },
+    legendRow: {
+      flexDirection: "row",
+      gap: 20,
+      marginTop: 4,
+    },
+    rowBetween: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    selectedDateText: {
+      color: c.textMuted,
+      marginBottom: 8,
+    },
 
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  legendText: { color: "#0f172a" },
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    legendText: { color: c.text },
 
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  detailModal: {
-    width: "100%",
-    maxWidth: 360,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 16,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  modalTitle: { color: "#111827", fontWeight: "700" },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-  },
-  detailLabel: { color: "#6b7280", fontSize: 12 },
-  detailValue: { color: "#111827", fontSize: 12, fontWeight: "600" },
-});
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 999,
+    },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(15, 23, 42, 0.55)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
+    detailModal: {
+      width: "100%",
+      maxWidth: 360,
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      padding: 16,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    modalTitle: { color: c.text, fontWeight: "700" },
+    detailRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: 6,
+    },
+    detailLabel: { color: c.textMuted, fontSize: 12 },
+    detailValue: { color: c.text, fontSize: 12, fontWeight: "600" },
+  });
+}
