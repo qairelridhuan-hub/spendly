@@ -1,9 +1,9 @@
+import React from "react";
 import { router } from "expo-router";
 import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,6 +16,10 @@ import {
   CalendarDays,
   FileText,
   Target,
+  TrendingUp,
+  Clock,
+  Wallet,
+  PiggyBank,
 } from "lucide-react-native";
 
 const { width } = Dimensions.get("window");
@@ -67,6 +71,177 @@ const slides = [
     preview: "report",
   },
 ];
+
+const TILE_W = 130;
+const TILE_H = 130;
+const GAP = 10;
+const COLS = 3;
+
+const hero = StyleSheet.create({
+  clipBox: {
+    width: "100%",
+    height: 310,
+    borderRadius: 28,
+    overflow: "hidden",
+    backgroundColor: "#ffffff",
+  },
+  rotatedWrap: {
+    position: "absolute",
+    top: -40,
+    left: -40,
+    right: -40,
+    bottom: -40,
+    alignItems: "center",
+    justifyContent: "center",
+    transform: [{ rotate: "-20deg" }],
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    width: COLS * TILE_W + (COLS - 1) * GAP,
+    gap: GAP,
+  },
+  tile: {
+    width: TILE_W,
+    height: TILE_H,
+    borderRadius: 22,
+    padding: 14,
+    justifyContent: "flex-end",
+  },
+  tileLabel: { fontSize: 10, color: "#9ca3af", fontWeight: "500", marginTop: 6 },
+  tileValueLg: { fontSize: 18, fontWeight: "800", color: "#ffffff", letterSpacing: -0.5 },
+  tileValue: { fontSize: 16, fontWeight: "700", letterSpacing: -0.3 },
+  tileSub: { fontSize: 10, color: "#6b7280", marginTop: 1 },
+  trendRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
+  trendTxt: { fontSize: 10, color: "#4ade80", fontWeight: "600" },
+  progressBg: {
+    height: 4,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 999,
+    overflow: "hidden",
+    marginTop: 6,
+  },
+  progressFill: { height: 4, backgroundColor: "#111827", borderRadius: 999 },
+});
+
+type TileData = { bg: string; content: React.ReactNode };
+
+function WelcomeHero() {
+  const tiles: TileData[] = [
+    {
+      bg: "#111827", content: (
+        <>
+          <Wallet size={18} color="#fff" />
+          <Text style={hero.tileLabel}>Earnings</Text>
+          <Text style={hero.tileValueLg}>RM 1,240</Text>
+          <View style={hero.trendRow}><TrendingUp size={11} color="#4ade80" /><Text style={hero.trendTxt}>+12%</Text></View>
+        </>
+      )
+    },
+    {
+      bg: "#f3f4f6", content: (
+        <>
+          <Clock size={18} color="#111827" />
+          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Hours</Text>
+          <Text style={[hero.tileValue, { color: "#111827" }]}>144h</Text>
+        </>
+      )
+    },
+    {
+      bg: "#ffffff", content: (
+        <>
+          <CalendarDays size={18} color="#111827" />
+          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Shift</Text>
+          <Text style={[hero.tileValue, { color: "#111827" }]}>Mon</Text>
+          <Text style={hero.tileSub}>9:00 AM</Text>
+        </>
+      )
+    },
+    {
+      bg: "#f3f4f6", content: (
+        <>
+          <PiggyBank size={18} color="#111827" />
+          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Savings</Text>
+          <Text style={[hero.tileValue, { color: "#111827" }]}>65%</Text>
+          <View style={hero.progressBg}><View style={[hero.progressFill, { width: "65%" }]} /></View>
+        </>
+      )
+    },
+    {
+      bg: "#111827", content: (
+        <>
+          <Target size={18} color="#fff" />
+          <Text style={hero.tileLabel}>Goal</Text>
+          <Text style={hero.tileValueLg}>Travel</Text>
+          <View style={hero.trendRow}><TrendingUp size={11} color="#4ade80" /><Text style={hero.trendTxt}>On track</Text></View>
+        </>
+      )
+    },
+    {
+      bg: "#f3f4f6", content: (
+        <>
+          <FileText size={18} color="#111827" />
+          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Report</Text>
+          <Text style={[hero.tileValue, { color: "#111827" }]}>Apr</Text>
+          <Text style={hero.tileSub}>18 days</Text>
+        </>
+      )
+    },
+    {
+      bg: "#ffffff", content: (
+        <>
+          <DollarSign size={18} color="#111827" />
+          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Rate</Text>
+          <Text style={[hero.tileValue, { color: "#111827" }]}>RM 8.50</Text>
+          <Text style={hero.tileSub}>per hour</Text>
+        </>
+      )
+    },
+    {
+      bg: "#f3f4f6", content: (
+        <>
+          <CalendarDays size={18} color="#111827" />
+          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Days</Text>
+          <Text style={[hero.tileValue, { color: "#111827" }]}>18</Text>
+          <Text style={hero.tileSub}>this month</Text>
+        </>
+      )
+    },
+    {
+      bg: "#111827", content: (
+        <>
+          <TrendingUp size={18} color="#fff" />
+          <Text style={hero.tileLabel}>Growth</Text>
+          <Text style={hero.tileValueLg}>+26%</Text>
+        </>
+      )
+    },
+  ];
+
+  return (
+    <View style={hero.clipBox}>
+      <View style={hero.rotatedWrap}>
+        <View style={hero.grid}>
+          {tiles.map((t, i) => (
+            <View
+              key={i}
+              style={[
+                hero.tile,
+                {
+                  backgroundColor: t.bg,
+                  borderColor: t.bg === "#ffffff" || t.bg === "#f3f4f6" ? "#e5e7eb" : "transparent",
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              {t.content}
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
 
 function EarningsPreview() {
   return (
@@ -245,32 +420,34 @@ const preview = StyleSheet.create({
 
 function Slide({ item }: { item: typeof slides[0] }) {
   const Icon = item.icon;
+
+  if (item.useLogo) {
+    return (
+      <View style={[styles.welcomeSlide, { width }]}>
+        <View style={styles.heroWrap}>
+          <WelcomeHero />
+        </View>
+        <View style={styles.welcomeTextWrap}>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.subtitle}>{item.subtitle}</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.slide, { width }]}>
-      {/* Illustration area */}
       <View style={styles.illustrationWrap}>
-        {item.useLogo ? (
-          <View style={styles.logoBubble}>
-            <Image
-              source={require("../../assets/images/spendly-logo.png")}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
+        {Icon && (
+          <View style={styles.iconBubble}>
+            <Icon size={36} color="#111827" />
           </View>
-        ) : (
-          Icon && (
-            <View style={styles.iconBubble}>
-              <Icon size={36} color="#111827" />
-            </View>
-          )
         )}
         {item.preview === "earnings" && <EarningsPreview />}
         {item.preview === "schedule" && <SchedulePreview />}
         {item.preview === "goals" && <GoalsPreview />}
         {item.preview === "report" && <ReportPreview />}
       </View>
-
-      {/* Text */}
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.subtitle}>{item.subtitle}</Text>
     </View>
@@ -392,7 +569,9 @@ const styles = StyleSheet.create({
   },
   illustrationWrap: {
     width: "100%",
+    height: 310,
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 32,
     gap: 20,
   },
@@ -490,5 +669,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 16,
     letterSpacing: 0.3,
+  },
+
+  welcomeSlide: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  heroWrap: {
+    width: "100%",
+    marginBottom: 32,
+  },
+  welcomeTextWrap: {
+    alignItems: "center",
+    paddingHorizontal: 4,
   },
 });
