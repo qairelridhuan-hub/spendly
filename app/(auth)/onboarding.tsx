@@ -3,14 +3,14 @@ import { router } from "expo-router";
 import {
   Animated,
   Dimensions,
-  FlatList,
+  PanResponder,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   DollarSign,
   CalendarDays,
@@ -20,6 +20,8 @@ import {
   Clock,
   Wallet,
   PiggyBank,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react-native";
 
 const { width } = Dimensions.get("window");
@@ -418,88 +420,240 @@ const preview = StyleSheet.create({
   reportSub: { fontSize: 12, color: "#6b7280", marginTop: 2 },
 });
 
-function Slide({ item }: { item: typeof slides[0] }) {
+type SlideAnims = {
+  icon: Animated.Value;
+  card: Animated.Value;
+  title: Animated.Value;
+  subtitle: Animated.Value;
+};
+
+function Slide({ item, anims }: { item: typeof slides[0]; anims: SlideAnims }) {
   const Icon = item.icon;
+
+  const iconStyle = {
+    opacity: anims.icon,
+    transform: [
+      { translateY: anims.icon.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) },
+      { scale: anims.icon.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
+    ],
+  };
+  const cardStyle = {
+    opacity: anims.card,
+    transform: [{ translateY: anims.card.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }],
+  };
+  const titleStyle = {
+    opacity: anims.title,
+    transform: [{ translateY: anims.title.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }],
+  };
+  const subtitleStyle = {
+    opacity: anims.subtitle,
+    transform: [{ translateY: anims.subtitle.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
+  };
 
   if (item.useLogo) {
     return (
-      <View style={[styles.welcomeSlide, { width }]}>
-        <View style={styles.heroWrap}>
+      <View style={styles.welcomeSlide}>
+        <Animated.View style={[styles.heroWrap, iconStyle]}>
           <WelcomeHero />
-        </View>
+        </Animated.View>
         <View style={styles.welcomeTextWrap}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.subtitle}>{item.subtitle}</Text>
+          <Animated.Text style={[styles.title, titleStyle]}>{item.title}</Animated.Text>
+          <Animated.Text style={[styles.subtitle, subtitleStyle]}>{item.subtitle}</Animated.Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.slide, { width }]}>
+    <View style={styles.slide}>
       <View style={styles.illustrationWrap}>
         {Icon && (
-          <View style={styles.iconBubble}>
+          <Animated.View style={[styles.iconBubble, iconStyle]}>
             <Icon size={36} color="#111827" />
-          </View>
+          </Animated.View>
         )}
-        {item.preview === "earnings" && <EarningsPreview />}
-        {item.preview === "schedule" && <SchedulePreview />}
-        {item.preview === "goals" && <GoalsPreview />}
-        {item.preview === "report" && <ReportPreview />}
+        <Animated.View style={[{ width: "100%" }, cardStyle]}>
+          {item.preview === "earnings" && <EarningsPreview />}
+          {item.preview === "schedule" && <SchedulePreview />}
+          {item.preview === "goals" && <GoalsPreview />}
+          {item.preview === "report" && <ReportPreview />}
+        </Animated.View>
       </View>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.subtitle}>{item.subtitle}</Text>
+      <Animated.Text style={[styles.title, titleStyle]}>{item.title}</Animated.Text>
+      <Animated.Text style={[styles.subtitle, subtitleStyle]}>{item.subtitle}</Animated.Text>
     </View>
   );
 }
 
+const SLIDER_WIDTH = width - 80;
+const THUMB_SIZE = 46;
+const MAX_DRAG = SLIDER_WIDTH - THUMB_SIZE - 4;
+
+function SliderButton({ onComplete }: { onComplete: () => void }) {
+  const dragX = useRef(new Animated.Value(0)).current;
+  const [_done, setDone] = useState(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gs) => {
+        const clamped = Math.max(0, Math.min(gs.dx, MAX_DRAG));
+        dragX.setValue(clamped);
+      },
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx >= MAX_DRAG * 0.85) {
+          Animated.spring(dragX, { toValue: MAX_DRAG, useNativeDriver: true }).start(() => {
+            setDone(true);
+            onComplete();
+          });
+        } else {
+          Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
+
+  const trackOpacity = dragX.interpolate({ inputRange: [0, MAX_DRAG], outputRange: [1, 0] });
+
+  return (
+    <View style={slider.track}>
+      <Animated.Text style={[slider.label, { opacity: trackOpacity }]}>
+        Slide to get started
+      </Animated.Text>
+      <Animated.View
+        style={[slider.thumb, { transform: [{ translateX: dragX }] }]}
+        {...panResponder.panHandlers}
+      >
+        <ChevronRight size={20} color="#111827" />
+      </Animated.View>
+
+    </View>
+  );
+}
+
+const slider = StyleSheet.create({
+  track: {
+    width: SLIDER_WIDTH,
+    height: THUMB_SIZE + 8,
+    backgroundColor: "#111827",
+    borderRadius: 999,
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    overflow: "hidden",
+  },
+  label: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  thumb: {
+    position: "absolute",
+    left: 4,
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
 export default function OnboardingScreen() {
   const [current, setCurrent] = useState(0);
-  const flatRef = useRef<FlatList>(null);
+  const [animating, setAnimating] = useState(false);
   const buttonScale = useRef(new Animated.Value(1)).current;
 
-  const onPressIn = () =>
-    Animated.spring(buttonScale, { toValue: 0.96, useNativeDriver: true }).start();
-  const onPressOut = () =>
-    Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true }).start();
+  // Slide content anims
+  const iconAnim = useRef(new Animated.Value(0)).current;
+  const cardAnim = useRef(new Animated.Value(0)).current;
+  const titleAnim = useRef(new Animated.Value(0)).current;
+  const subtitleAnim = useRef(new Animated.Value(0)).current;
+  const anims: SlideAnims = { icon: iconAnim, card: cardAnim, title: titleAnim, subtitle: subtitleAnim };
+
+  // Animated dot widths
+  const dotWidths = useRef(slides.map((_, i) => new Animated.Value(i === 0 ? 20 : 6))).current;
+
+  const enterSlide = () => {
+    [iconAnim, cardAnim, titleAnim, subtitleAnim].forEach(a => a.setValue(0));
+    Animated.stagger(80, [
+      Animated.spring(iconAnim,    { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
+      Animated.spring(cardAnim,    { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
+      Animated.spring(titleAnim,   { toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
+      Animated.spring(subtitleAnim,{ toValue: 1, tension: 80, friction: 8, useNativeDriver: true }),
+    ]).start(() => setAnimating(false));
+  };
+
+  const exitSlide = (cb: () => void) => {
+    Animated.stagger(40, [
+      Animated.timing(subtitleAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
+      Animated.timing(titleAnim,    { toValue: 0, duration: 160, useNativeDriver: true }),
+      Animated.timing(cardAnim,     { toValue: 0, duration: 160, useNativeDriver: true }),
+      Animated.timing(iconAnim,     { toValue: 0, duration: 160, useNativeDriver: true }),
+    ]).start(cb);
+  };
+
+  const animateDots = (newIdx: number) => {
+    slides.forEach((_, i) => {
+      Animated.spring(dotWidths[i], {
+        toValue: i === newIdx ? 20 : 6,
+        useNativeDriver: false,
+      }).start();
+    });
+  };
+
+  const goTo = (newIdx: number) => {
+    if (animating) return;
+    setAnimating(true);
+    exitSlide(() => {
+      setCurrent(newIdx);
+      animateDots(newIdx);
+      enterSlide();
+    });
+  };
+
+  useEffect(() => { enterSlide(); }, []);
 
   const handleNext = () => {
-    if (current < slides.length - 1) {
-      flatRef.current?.scrollToIndex({ index: current + 1, animated: true });
-    } else {
-      router.replace("/(auth)/splash");
-    }
+    if (current < slides.length - 1) goTo(current + 1);
+    else router.replace("/(auth)/splash");
   };
+
+  const handlePrev = () => { if (current > 0) goTo(current - 1); };
+
+  const onPressIn = () =>
+    Animated.spring(buttonScale, { toValue: 0.94, useNativeDriver: true }).start();
+  const onPressOut = () =>
+    Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true }).start();
 
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        {/* Dots */}
+
+        {/* Animated dots */}
         <View style={styles.dotsRow}>
           {slides.map((_, i) => (
-            <View
+            <Animated.View
               key={i}
-              style={[styles.dot, current === i && styles.dotActive]}
+              style={[styles.dot, { width: dotWidths[i], backgroundColor: i === current ? "#111827" : "#d1d5db" }]}
             />
           ))}
         </View>
 
-        {/* Slides */}
-        <FlatList
-          ref={flatRef}
-          data={slides}
-          keyExtractor={item => item.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          scrollEnabled
-          onMomentumScrollEnd={e => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-            setCurrent(idx);
-          }}
-          renderItem={({ item }) => <Slide item={item} />}
-        />
+        {/* Arrow navigation */}
+        <View style={styles.arrowRow}>
+          <TouchableOpacity onPress={handlePrev} style={styles.arrowBtn} disabled={current === 0}>
+            <ChevronLeft size={20} color={current === 0 ? "#d1d5db" : "#111827"} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleNext} style={styles.arrowBtn}>
+            <ChevronRight size={20} color="#111827" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Slide */}
+        <View style={styles.slideContainer}>
+          <Slide item={slides[current]} anims={anims} />
+        </View>
 
         {/* Bottom CTA */}
         <View style={styles.bottomArea}>
@@ -521,17 +675,9 @@ export default function OnboardingScreen() {
               </Animated.View>
             </View>
           ) : (
-            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-              <TouchableOpacity
-                style={styles.getStartedBtn}
-                onPress={handleNext}
-                onPressIn={onPressIn}
-                onPressOut={onPressOut}
-                activeOpacity={1}
-              >
-                <Text style={styles.getStartedText}>Get Started</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            <View style={{ alignItems: "center" }}>
+              <SliderButton onComplete={handleNext} />
+            </View>
           )}
         </View>
       </SafeAreaView>
@@ -569,9 +715,8 @@ const styles = StyleSheet.create({
   },
   illustrationWrap: {
     width: "100%",
-    height: 310,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     marginBottom: 32,
     gap: 20,
   },
@@ -671,6 +816,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  slideContainer: {
+    flex: 1,
+  },
   welcomeSlide: {
     flex: 1,
     paddingHorizontal: 24,
@@ -683,5 +831,19 @@ const styles = StyleSheet.create({
   welcomeTextWrap: {
     alignItems: "center",
     paddingHorizontal: 4,
+  },
+  arrowRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 28,
+    paddingBottom: 8,
+  },
+  arrowBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
