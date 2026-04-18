@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import {
   Animated,
   Dimensions,
+  Easing,
   PanResponder,
   StyleSheet,
   Text,
@@ -74,172 +75,174 @@ const slides = [
   },
 ];
 
-const TILE_W = 130;
-const TILE_H = 130;
-const GAP = 10;
-const COLS = 3;
+// ── Infinite scroll hero ──────────────────────────────────────────────
+const IC_W = 118;
+const IC_H = 118;
+const IC_GAP = 10;
 
-const hero = StyleSheet.create({
-  clipBox: {
-    width: "100%",
-    height: 310,
-    borderRadius: 28,
-    overflow: "hidden",
-    backgroundColor: "#ffffff",
-  },
-  rotatedWrap: {
-    position: "absolute",
-    top: -40,
-    left: -40,
-    right: -40,
-    bottom: -40,
-    alignItems: "center",
-    justifyContent: "center",
-    transform: [{ rotate: "-20deg" }],
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    width: COLS * TILE_W + (COLS - 1) * GAP,
-    gap: GAP,
-  },
-  tile: {
-    width: TILE_W,
-    height: TILE_H,
+type ICardData = {
+  bg: string;
+  Icon: React.ComponentType<{ size: number; color: string }>;
+  label: string;
+  value: string;
+  sub?: string;
+  subColor?: string;
+  progress?: number;
+};
+
+const row1: ICardData[] = [
+  { bg: "#111827", Icon: Wallet,      label: "Earnings", value: "RM 1,240", sub: "+12%",      subColor: "#4ade80" },
+  { bg: "#f3f4f6", Icon: Clock,       label: "Hours",    value: "144h" },
+  { bg: "#ffffff", Icon: CalendarDays,label: "Shift",    value: "Mon",       sub: "9:00 AM" },
+  { bg: "#111827", Icon: TrendingUp,  label: "Growth",   value: "+26%" },
+  { bg: "#f3f4f6", Icon: DollarSign,  label: "Rate",     value: "RM 8.50",  sub: "per hr" },
+];
+
+const row2: ICardData[] = [
+  { bg: "#f3f4f6", Icon: PiggyBank,   label: "Savings",  value: "65%",       progress: 0.65 },
+  { bg: "#111827", Icon: Target,      label: "Goal",     value: "Travel",    sub: "On track",  subColor: "#4ade80" },
+  { bg: "#ffffff", Icon: FileText,    label: "Report",   value: "Apr",       sub: "18 days" },
+  { bg: "#111827", Icon: Wallet,      label: "Salary",   value: "RM 980" },
+  { bg: "#f3f4f6", Icon: CalendarDays,label: "Days",     value: "18",        sub: "this month" },
+];
+
+const row3: ICardData[] = [
+  { bg: "#111827", Icon: TrendingUp,  label: "Target",   value: "30%",       sub: "complete" },
+  { bg: "#f3f4f6", Icon: Clock,       label: "Shifts",   value: "22",        sub: "this month" },
+  { bg: "#ffffff", Icon: CalendarDays,label: "Tue",      value: "9–5 PM" },
+  { bg: "#111827", Icon: DollarSign,  label: "Bonus",    value: "RM 120" },
+  { bg: "#f3f4f6", Icon: FileText,    label: "Payslip",  value: "Ready" },
+];
+
+function ICard({ item }: { item: ICardData }) {
+  const dark = item.bg === "#111827";
+  return (
+    <View style={[
+      iStyle.card,
+      { backgroundColor: item.bg, borderWidth: dark ? 0 : 1 },
+    ]}>
+      <item.Icon size={16} color={dark ? "#ffffff" : "#111827"} />
+      <Text style={[iStyle.label, { color: dark ? "#9ca3af" : "#6b7280" }]}>{item.label}</Text>
+      <Text style={[iStyle.value, { color: dark ? "#ffffff" : "#111827" }]}>{item.value}</Text>
+      {item.sub && (
+        <Text style={[iStyle.sub, { color: item.subColor ?? (dark ? "#9ca3af" : "#6b7280") }]}>
+          {item.sub}
+        </Text>
+      )}
+      {item.progress != null && (
+        <View style={iStyle.progBg}>
+          <View style={[iStyle.progFill, { width: `${item.progress * 100}%`, backgroundColor: dark ? "#ffffff" : "#111827" }]} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+const iStyle = StyleSheet.create({
+  card: {
+    width: IC_W,
+    height: IC_H,
     borderRadius: 22,
     padding: 14,
     justifyContent: "flex-end",
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  tileLabel: { fontSize: 10, color: "#9ca3af", fontWeight: "500", marginTop: 6 },
-  tileValueLg: { fontSize: 18, fontWeight: "800", color: "#ffffff", letterSpacing: -0.5 },
-  tileValue: { fontSize: 16, fontWeight: "700", letterSpacing: -0.3 },
-  tileSub: { fontSize: 10, color: "#6b7280", marginTop: 1 },
-  trendRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
-  trendTxt: { fontSize: 10, color: "#4ade80", fontWeight: "600" },
-  progressBg: {
-    height: 4,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 999,
-    overflow: "hidden",
-    marginTop: 6,
-  },
-  progressFill: { height: 4, backgroundColor: "#111827", borderRadius: 999 },
+  label:   { fontSize: 10, fontWeight: "500", marginTop: 6 },
+  value:   { fontSize: 17, fontWeight: "800", letterSpacing: -0.4 },
+  sub:     { fontSize: 10, marginTop: 2, fontWeight: "500" },
+  progBg:  { height: 3, backgroundColor: "#e5e7eb", borderRadius: 999, overflow: "hidden", marginTop: 6 },
+  progFill:{ height: 3, borderRadius: 999 },
 });
 
-type TileData = { bg: string; content: React.ReactNode };
+const SPEED_PPS = 38; // pixels per second
 
-function WelcomeHero() {
-  const tiles: TileData[] = [
-    {
-      bg: "#111827", content: (
-        <>
-          <Wallet size={18} color="#fff" />
-          <Text style={hero.tileLabel}>Earnings</Text>
-          <Text style={hero.tileValueLg}>RM 1,240</Text>
-          <View style={hero.trendRow}><TrendingUp size={11} color="#4ade80" /><Text style={hero.trendTxt}>+12%</Text></View>
-        </>
-      )
-    },
-    {
-      bg: "#f3f4f6", content: (
-        <>
-          <Clock size={18} color="#111827" />
-          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Hours</Text>
-          <Text style={[hero.tileValue, { color: "#111827" }]}>144h</Text>
-        </>
-      )
-    },
-    {
-      bg: "#ffffff", content: (
-        <>
-          <CalendarDays size={18} color="#111827" />
-          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Shift</Text>
-          <Text style={[hero.tileValue, { color: "#111827" }]}>Mon</Text>
-          <Text style={hero.tileSub}>9:00 AM</Text>
-        </>
-      )
-    },
-    {
-      bg: "#f3f4f6", content: (
-        <>
-          <PiggyBank size={18} color="#111827" />
-          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Savings</Text>
-          <Text style={[hero.tileValue, { color: "#111827" }]}>65%</Text>
-          <View style={hero.progressBg}><View style={[hero.progressFill, { width: "65%" }]} /></View>
-        </>
-      )
-    },
-    {
-      bg: "#111827", content: (
-        <>
-          <Target size={18} color="#fff" />
-          <Text style={hero.tileLabel}>Goal</Text>
-          <Text style={hero.tileValueLg}>Travel</Text>
-          <View style={hero.trendRow}><TrendingUp size={11} color="#4ade80" /><Text style={hero.trendTxt}>On track</Text></View>
-        </>
-      )
-    },
-    {
-      bg: "#f3f4f6", content: (
-        <>
-          <FileText size={18} color="#111827" />
-          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Report</Text>
-          <Text style={[hero.tileValue, { color: "#111827" }]}>Apr</Text>
-          <Text style={hero.tileSub}>18 days</Text>
-        </>
-      )
-    },
-    {
-      bg: "#ffffff", content: (
-        <>
-          <DollarSign size={18} color="#111827" />
-          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Rate</Text>
-          <Text style={[hero.tileValue, { color: "#111827" }]}>RM 8.50</Text>
-          <Text style={hero.tileSub}>per hour</Text>
-        </>
-      )
-    },
-    {
-      bg: "#f3f4f6", content: (
-        <>
-          <CalendarDays size={18} color="#111827" />
-          <Text style={[hero.tileLabel, { color: "#6b7280" }]}>Days</Text>
-          <Text style={[hero.tileValue, { color: "#111827" }]}>18</Text>
-          <Text style={hero.tileSub}>this month</Text>
-        </>
-      )
-    },
-    {
-      bg: "#111827", content: (
-        <>
-          <TrendingUp size={18} color="#fff" />
-          <Text style={hero.tileLabel}>Growth</Text>
-          <Text style={hero.tileValueLg}>+26%</Text>
-        </>
-      )
-    },
-  ];
+function InfiniteRow({ cards, toRight }: { cards: ICardData[]; toRight: boolean }) {
+  const ROW_W = cards.length * (IC_W + IC_GAP);
+  const startVal = toRight ? -ROW_W : 0;
+  const endVal   = toRight ? 0 : -ROW_W;
+
+  const anim      = useRef(new Animated.Value(startVal)).current;
+  const posRef    = useRef(startVal);
+  const dragging  = useRef(false);
+  const dragStart = useRef(0);
+  const resumeFn  = useRef<(from: number) => void>(null!);
+
+  useEffect(() => {
+    const id = anim.addListener(({ value }) => { posRef.current = value; });
+    return () => anim.removeListener(id);
+  }, []);
+
+  resumeFn.current = (from: number) => {
+    // Normalize position into [startVal, endVal) range
+    let pos = from % ROW_W;
+    if (pos > 0) pos -= ROW_W;
+    if (pos === 0) pos = startVal;
+
+    anim.setValue(pos);
+    posRef.current = pos;
+
+    const dist = Math.abs(endVal - pos);
+    Animated.timing(anim, {
+      toValue: endVal,
+      duration: (dist / SPEED_PPS) * 1000,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished && !dragging.current) resumeFn.current(startVal);
+    });
+  };
+
+  useEffect(() => {
+    resumeFn.current(startVal);
+    return () => anim.stopAnimation();
+  }, []);
+
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder:  () => true,
+      onPanResponderGrant: () => {
+        dragging.current = true;
+        anim.stopAnimation();
+        dragStart.current = posRef.current;
+      },
+      onPanResponderMove: (_, gs) => {
+        anim.setValue(dragStart.current + gs.dx);
+      },
+      onPanResponderRelease: () => {
+        dragging.current = false;
+        resumeFn.current(posRef.current);
+      },
+    })
+  ).current;
 
   return (
-    <View style={hero.clipBox}>
-      <View style={hero.rotatedWrap}>
-        <View style={hero.grid}>
-          {tiles.map((t, i) => (
-            <View
-              key={i}
-              style={[
-                hero.tile,
-                {
-                  backgroundColor: t.bg,
-                  borderColor: t.bg === "#ffffff" || t.bg === "#f3f4f6" ? "#e5e7eb" : "transparent",
-                  borderWidth: 1,
-                },
-              ]}
-            >
-              {t.content}
-            </View>
-          ))}
-        </View>
+    <View style={{ height: IC_H, overflow: "hidden" }} {...pan.panHandlers}>
+      <Animated.View style={{ flexDirection: "row", gap: IC_GAP, transform: [{ translateX: anim }] }}>
+        {[...cards, ...cards].map((c, i) => <ICard key={i} item={c} />)}
+      </Animated.View>
+    </View>
+  );
+}
+
+function WelcomeHero() {
+  return (
+    <View style={{ width: "100%", height: 310, borderRadius: 28, overflow: "hidden", backgroundColor: "#ffffff" }}>
+      <View style={{
+        position: "absolute",
+        top: -50, left: -50, right: -50, bottom: -50,
+        transform: [{ rotate: "-20deg" }],
+        justifyContent: "center",
+        gap: IC_GAP,
+      }}>
+        <InfiniteRow cards={row1} toRight={true} />
+        <InfiniteRow cards={row2} toRight={false} />
+        <InfiniteRow cards={row3} toRight={true} />
       </View>
     </View>
   );
