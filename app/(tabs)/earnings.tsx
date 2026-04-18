@@ -619,7 +619,7 @@ export default function EarningsScreen() {
             <Text style={styles.tipTitle}>💡 Smart Suggestion</Text>
             <Text style={styles.tipText}>{suggestion.title}</Text>
             <View style={styles.tipRow}>
-              <Calendar size={14} color="#b45309" />
+              <Calendar size={14} color={c.textMuted} />
               <Text style={styles.tipHint}>{suggestion.subtitle}</Text>
             </View>
             {suggestion.action ? (
@@ -1290,23 +1290,23 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       borderRadius: 18,
       padding: 16,
       borderWidth: 1,
-      borderColor: "#fde68a",
+      borderColor: c.border,
       marginBottom: 20,
-      backgroundColor: "#fffbeb",
+      backgroundColor: c.surface,
       ...cardShadow,
     },
-    tipTitle: { fontSize: 14, fontWeight: "700", color: "#7c2d12" },
-    tipText: { color: "#9a3412", marginTop: 8, lineHeight: 18 },
+    tipTitle: { fontSize: 14, fontWeight: "700", color: c.text },
+    tipText: { color: c.text, marginTop: 8, lineHeight: 18 },
     tipRow: { flexDirection: "row", gap: 6, marginTop: 10 },
-    tipHint: { color: "#92400e", fontSize: 12 },
+    tipHint: { color: c.textMuted, fontSize: 12 },
     tipButton: {
       marginTop: 12,
-      backgroundColor: "#fb923c",
+      backgroundColor: c.accent,
       paddingVertical: 10,
       borderRadius: 12,
       alignItems: "center",
     },
-    tipButtonText: { color: "#1f1300", fontWeight: "600" },
+    tipButtonText: { color: c.surface, fontWeight: "600" },
     disabledButton: { opacity: 0.6 },
     overlay: {
       ...StyleSheet.absoluteFillObject,

@@ -629,6 +629,23 @@ export default function OnboardingScreen() {
   const onPressOut = () =>
     Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true }).start();
 
+  const currentRef = useRef(current);
+  useEffect(() => { currentRef.current = current; }, [current]);
+  const goToRef = useRef(goTo);
+  useEffect(() => { goToRef.current = goTo; }, [animating]);
+
+  const slidePan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 10 && Math.abs(gs.dx) > Math.abs(gs.dy),
+      onPanResponderRelease: (_, gs) => {
+        const idx = currentRef.current;
+        if (gs.dx < -40 && idx < slides.length - 1) goToRef.current(idx + 1);
+        else if (gs.dx > 40 && idx > 0) goToRef.current(idx - 1);
+      },
+    })
+  ).current;
+
   return (
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -652,7 +669,7 @@ export default function OnboardingScreen() {
         </View>
 
         {/* Slide */}
-        <View style={styles.slideContainer}>
+        <View style={styles.slideContainer} {...slidePan.panHandlers}>
           <Slide item={slides[current]} anims={anims} />
         </View>
 

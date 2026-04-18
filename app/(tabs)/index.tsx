@@ -9,10 +9,13 @@ import {
   Animated,
   Alert,
   PanResponder,
+  Dimensions,
 } from "react-native";
+
+const SCREEN_W = Dimensions.get("window").width;
+const CLOCK_SIZE = Math.floor((SCREEN_W - 60) / 2);
 import {
   Bell,
-  Clock,
   DollarSign,
   Target,
   Gamepad2,
@@ -23,6 +26,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react-native";
+import Svg, { Circle, Line } from "react-native-svg";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -62,6 +66,94 @@ type AttendancePolicy = {
   holidayMultiplier: number;
   holidays: string[];
 };
+
+/* =====================
+   ANALOG CLOCK
+===================== */
+
+function AnalogClock({ size = 36 }: { size?: number }) {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const r  = size / 2;
+
+  const sec = now.getSeconds();
+  const min = now.getMinutes();
+  const hr  = now.getHours() % 12;
+
+  const secDeg = sec * 6 - 90;
+  const minDeg = min * 6 + sec * 0.1 - 90;
+  const hrDeg  = hr * 30 + min * 0.5 - 90;
+
+  const pt = (deg: number, len: number) => ({
+    x: cx + len * Math.cos((deg * Math.PI) / 180),
+    y: cy + len * Math.sin((deg * Math.PI) / 180),
+  });
+
+  const hTip = pt(hrDeg,  r * 0.52);
+  const mTip = pt(minDeg, r * 0.72);
+  const sTip = pt(secDeg, r * 0.82);
+  const sTail = pt(secDeg + 180, r * 0.2);
+
+  return (
+
+    <View style={{
+      width: size, height: size, borderRadius: size / 2,
+      backgroundColor: "#f5f5f5",
+      shadowColor: "#000",
+      shadowOpacity: 0.18,
+      shadowRadius: size * 0.12,
+      shadowOffset: { width: 0, height: size * 0.06 },
+      elevation: 6,
+      alignItems: "center", justifyContent: "center",
+    }}>
+      <Svg width={size} height={size} style={{ position: "absolute" }}>
+        {/* Outer rim */}
+        <Circle cx={cx} cy={cy} r={r - 1} stroke="#e0e0e0" strokeWidth={1.5} fill="transparent" />
+        {/* Inner raised plate */}
+        <Circle cx={cx} cy={cy} r={r * 0.84} fill="#ffffff" stroke="#ececec" strokeWidth={1} />
+
+        {/* Cardinal tick marks */}
+        {[0, 90, 180, 270].map((deg) => {
+          const inner = pt(deg - 90, r * 0.72);
+          const outer = pt(deg - 90, r * 0.84);
+          return (
+            <Line
+              key={deg}
+              x1={inner.x} y1={inner.y}
+              x2={outer.x} y2={outer.y}
+              stroke="#333333" strokeWidth={size * 0.028} strokeLinecap="round"
+            />
+          );
+        })}
+
+        {/* Hour hand */}
+        <Line
+          x1={cx} y1={cy} x2={hTip.x} y2={hTip.y}
+          stroke="#1a1a1a" strokeWidth={size * 0.022} strokeLinecap="round"
+        />
+        {/* Minute hand */}
+        <Line
+          x1={cx} y1={cy} x2={mTip.x} y2={mTip.y}
+          stroke="#1a1a1a" strokeWidth={size * 0.014} strokeLinecap="round"
+        />
+        {/* Second hand — red, with tail */}
+        <Line
+          x1={sTail.x} y1={sTail.y} x2={sTip.x} y2={sTip.y}
+          stroke="#e53935" strokeWidth={size * 0.008} strokeLinecap="round"
+        />
+        {/* Center cap */}
+        <Circle cx={cx} cy={cy} r={size * 0.045} fill="#e53935" />
+        <Circle cx={cx} cy={cy} r={size * 0.022} fill="#ffffff" />
+      </Svg>
+    </View>
+  );
+}
 
 /* =====================
    SCREEN
@@ -1343,47 +1435,60 @@ export default function WorkerHomeScreen() {
             {/* ⏰ Today Shift */}
             <View style={styles.card}>
 
-              {/* Header */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                <View>
+              {/* Top row: info left, clock right */}
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 10 }}>
+
+                {/* Left: title + meta + status + progress */}
+                <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>Today shift</Text>
-                  <Text style={styles.shiftMeta}>
+                  <Text style={[styles.shiftMeta, { marginTop: 2 }]}>
                     {todayShift
                       ? `${todayShift.start} – ${todayShift.end}${todayShift.location ? ` · ${todayShift.location}` : ""}`
                       : "No shift scheduled today"}
                   </Text>
-                </View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   {todayShift && (
-                    <Text style={{
-                      fontSize: 11, fontWeight: "600",
-                      color: todayStatus === "completed" ? "#16a34a" : todayStatus === "absent" ? "#ef4444" : "#9ca3af",
-                    }}>{todayStatus}</Text>
+                    <View style={{
+                      alignSelf: "flex-start", marginTop: 8,
+                      paddingHorizontal: 8, paddingVertical: 3,
+                      borderRadius: 999,
+                      backgroundColor:
+                        todayStatus === "completed" ? "#f0fdf4" :
+                        todayStatus === "absent"    ? "#fef2f2" : colors.surfaceAlt,
+                    }}>
+                      <Text style={{
+                        fontSize: 11, fontWeight: "600",
+                        color: todayStatus === "completed" ? "#16a34a" :
+                               todayStatus === "absent"    ? "#ef4444" : colors.textMuted,
+                      }}>{todayStatus}</Text>
+                    </View>
                   )}
-                  <Animated.View style={{ transform: [{ rotate: tickAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }}>
-                    <Clock size={16} color={colors.textMuted} />
-                  </Animated.View>
+
+                  {/* Progress bar */}
+                  <View style={[styles.progressBarBg, { marginTop: 12 }]}>
+                    <View style={[styles.progressBarFill, { width: `${Math.round(todayProgress * 100)}%` }, todayStatus === "completed" && styles.progressBarFillComplete]} />
+                  </View>
                 </View>
+
+                {/* Right: analog clock */}
+                <AnalogClock size={CLOCK_SIZE} color={colors.text} />
               </View>
 
-              {/* Progress bar */}
-              <View style={[styles.progressBarBg, { marginBottom: 12 }]}>
-                <View style={[styles.progressBarFill, { width: `${Math.round(todayProgress * 100)}%` }, todayStatus === "completed" && styles.progressBarFillComplete]} />
-              </View>
+              {/* Divider */}
+              <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 10 }} />
 
-              {/* Time row — plain, no boxes */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
-                <View>
+              {/* Time stamps row */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
+                <View style={{ alignItems: "center", flex: 1 }}>
                   <Text style={styles.clockLabel}>Clock in</Text>
                   <Text style={styles.clockValue}>{todayAttendance?.clockIn || "--:--"}</Text>
                 </View>
                 <View style={{ width: 1, backgroundColor: colors.border }} />
-                <View>
+                <View style={{ alignItems: "center", flex: 1 }}>
                   <Text style={styles.clockLabel}>Clock out</Text>
                   <Text style={styles.clockValue}>{todayAttendance?.clockOut || "--:--"}</Text>
                 </View>
                 <View style={{ width: 1, backgroundColor: colors.border }} />
-                <View>
+                <View style={{ alignItems: "center", flex: 1 }}>
                   <Text style={styles.clockLabel}>Break</Text>
                   <Text style={styles.clockValue}>
                     {todayAttendance?.breakStart
@@ -1396,7 +1501,7 @@ export default function WorkerHomeScreen() {
               </View>
 
               {/* Action buttons */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <TouchableOpacity
                   style={[styles.clockButton, styles.clockPrimary, !!todayAttendance?.clockIn && styles.clockButtonDone, { flex: 1 }]}
                   onPress={handleClockIn}
@@ -1420,8 +1525,8 @@ export default function WorkerHomeScreen() {
                     {todayAttendance?.breakStart && !todayAttendance?.breakEnd ? "End break" : "Break"}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleResetAttendance} style={{ paddingHorizontal: 6, paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 12, fontWeight: "600", color: "#ef4444" }}>Reset</Text>
+                <TouchableOpacity onPress={handleResetAttendance} style={{ paddingHorizontal: 4, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "600", color: "#ef4444" }}>Reset</Text>
                 </TouchableOpacity>
               </View>
 
@@ -3079,22 +3184,22 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     backgroundColor: c.surfaceAlt,
     marginRight: 8,
   },
-  clockLabel: { color: c.textMuted, fontSize: 10, fontWeight: "500" },
-  clockValue: { color: c.text, fontWeight: "700", marginTop: 3, fontSize: 13 },
-  clockActions: { flexDirection: "row", gap: 6, marginTop: 10 },
+  clockLabel: { color: c.textMuted, fontSize: 9, fontWeight: "500" },
+  clockValue: { color: c.text, fontWeight: "700", marginTop: 2, fontSize: 11 },
+  clockActions: { flexDirection: "row", gap: 5, marginTop: 8 },
   clockButton: {
-    paddingVertical: 7,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    borderRadius: 8,
     alignItems: "center",
   },
   clockPrimary: { backgroundColor: c.text },
   clockButtonDone: { backgroundColor: c.border },
   clockGhost: { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border },
   clockReset: { backgroundColor: "#ef4444" },
-  clockButtonText: { color: c.text, fontWeight: "600", fontSize: 12 },
-  clockButtonTextLight: { color: c.backgroundStart, fontWeight: "600", fontSize: 12 },
-  clockResetText: { color: "#ffffff", fontWeight: "600", fontSize: 12 },
+  clockButtonText: { color: c.text, fontWeight: "600", fontSize: 10 },
+  clockButtonTextLight: { color: c.backgroundStart, fontWeight: "600", fontSize: 10 },
+  clockResetText: { color: "#ffffff", fontWeight: "600", fontSize: 10 },
   upcomingRow: {
     marginTop: 10,
     paddingTop: 10,
