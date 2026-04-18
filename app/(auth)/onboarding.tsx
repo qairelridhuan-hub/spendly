@@ -630,23 +630,21 @@ export default function OnboardingScreen() {
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
 
-        {/* Animated dots */}
+        {/* Dots + Arrows on same row */}
         <View style={styles.dotsRow}>
-          {slides.map((_, i) => (
-            <Animated.View
-              key={i}
-              style={[styles.dot, { width: dotWidths[i], backgroundColor: i === current ? "#111827" : "#d1d5db" }]}
-            />
-          ))}
-        </View>
-
-        {/* Arrow navigation */}
-        <View style={styles.arrowRow}>
-          <TouchableOpacity onPress={handlePrev} style={styles.arrowBtn} disabled={current === 0}>
-            <ChevronLeft size={20} color={current === 0 ? "#d1d5db" : "#111827"} />
+          <TouchableOpacity onPress={handlePrev} disabled={current === 0}>
+            <ChevronLeft size={18} color={current === 0 ? "#d1d5db" : "#111827"} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleNext} style={styles.arrowBtn}>
-            <ChevronRight size={20} color="#111827" />
+          <View style={styles.dotsInner}>
+            {slides.map((_, i) => (
+              <Animated.View
+                key={i}
+                style={[styles.dot, { width: dotWidths[i], backgroundColor: i === current ? "#111827" : "#d1d5db" }]}
+              />
+            ))}
+          </View>
+          <TouchableOpacity onPress={handleNext}>
+            <ChevronRight size={18} color="#111827" />
           </TouchableOpacity>
         </View>
 
@@ -691,8 +689,9 @@ const styles = StyleSheet.create({
 
   dotsRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 6,
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 28,
     paddingTop: 16,
     paddingBottom: 8,
   },
@@ -818,6 +817,11 @@ const styles = StyleSheet.create({
 
   slideContainer: {
     flex: 1,
+  },
+  dotsInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   welcomeSlide: {
     flex: 1,
