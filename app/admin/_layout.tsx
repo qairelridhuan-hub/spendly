@@ -167,14 +167,24 @@ function AdminLayoutInner() {
         setChecking(false);
         return;
       }
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (snap.data()?.role !== "admin") {
+      let snap;
+      try {
+        snap = await getDoc(doc(db, "users", user.uid));
+      } catch (err) {
+        console.error("[Admin] Failed to fetch user doc:", err);
         await signOut(auth);
         router.replace("/admin/login");
         setChecking(false);
         return;
       }
-      setAdminName(snap.data()?.fullName || snap.data()?.displayName || user.displayName || "Admin");
+      if (!snap.exists() || snap.data()?.role !== "admin") {
+        await signOut(auth);
+        router.replace("/admin/login");
+        setChecking(false);
+        return;
+      }
+      const data = snap.data();
+      setAdminName(data?.fullName || data?.displayName || user.displayName || "Admin");
       if (path === "/admin/login") router.replace("/admin");
       setChecking(false);
     });

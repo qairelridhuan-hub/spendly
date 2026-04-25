@@ -23,7 +23,8 @@ import {
 } from "lucide-react-native";
 import { router } from "expo-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
+import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { auth, db } from "@/lib/firebase";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
@@ -226,7 +227,7 @@ export default function EarningsScreen() {
       }
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
-      const unsubProfile = onSnapshot(userRef, snap => {
+      const unsubProfile = safeSnapshot(userRef, snap => {
         const data = snap.data() as {
           fullName?: string;
           scheduleId?: string;
@@ -250,7 +251,7 @@ export default function EarningsScreen() {
       return;
     }
     const scheduleRef = doc(db, "workSchedules", scheduleId);
-    const unsub = onSnapshot(scheduleRef, snap => {
+    const unsub = safeSnapshot(scheduleRef, snap => {
       if (!snap.exists()) {
         setSchedule(null);
         return;
@@ -271,7 +272,7 @@ export default function EarningsScreen() {
   useEffect(() => {
     if (!userId) return;
     const configRef = doc(db, "config", "system");
-    const unsub = onSnapshot(configRef, snap => {
+    const unsub = safeSnapshot(configRef, snap => {
       const data = snap.data() as any;
       if (!data) return;
       setWorkConfig({
@@ -289,7 +290,7 @@ export default function EarningsScreen() {
       return;
     }
     const attendanceRef = collection(db, "users", userId, "attendance");
-    const unsub = onSnapshot(attendanceRef, snapshot => {
+    const unsub = safeSnapshot(attendanceRef, snapshot => {
       const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
       setAttendanceLogs(logs);
     });
@@ -302,7 +303,7 @@ export default function EarningsScreen() {
       return;
     }
     const breaksRef = collection(db, "users", userId, "breaks");
-    const unsub = onSnapshot(breaksRef, snapshot => {
+    const unsub = safeSnapshot(breaksRef, snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data() as BreakEntry);
       setBreakLogs(list);
     });
@@ -315,7 +316,7 @@ export default function EarningsScreen() {
       return;
     }
     const overtimeRef = collection(db, "users", userId, "overtime");
-    const unsub = onSnapshot(overtimeRef, snapshot => {
+    const unsub = safeSnapshot(overtimeRef, snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data() as OvertimeEntry);
       setOvertimeLogs(list);
     });
@@ -328,7 +329,7 @@ export default function EarningsScreen() {
       return;
     }
     const userRef = doc(db, "users", userId);
-    const unsub = onSnapshot(userRef, snap => {
+    const unsub = safeSnapshot(userRef, snap => {
       const data = snap.data() as any;
       if (Array.isArray(data?.budgetAllocation)) {
         setBudgetAllocation(
@@ -353,7 +354,7 @@ export default function EarningsScreen() {
       return;
     }
     const goalsRef = collection(db, "users", userId, "goals");
-    const unsub = onSnapshot(goalsRef, snapshot => {
+    const unsub = safeSnapshot(goalsRef, snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data() as any);
       setGoals(list);
     });

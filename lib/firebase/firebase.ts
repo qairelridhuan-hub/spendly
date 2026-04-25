@@ -1,13 +1,13 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import {
-  getAuth,
-  initializeAuth,
-  getReactNativePersistence,
-} from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+
+// getReactNativePersistence isn't typed in firebase/auth but exists at runtime
+const getReactNativePersistence: (s: any) => any =
+  (require('firebase/auth') as any).getReactNativePersistence;
 
 const firebaseConfig = {
   apiKey: 'AIzaSyASk5LevC-uI3_7RmP8ogbnC4ubeoa49s0',
@@ -30,11 +30,10 @@ export const auth = hasApps
         persistence: getReactNativePersistence(AsyncStorage),
       });
 export const db =
-  Platform.OS === 'web'
+  Platform.OS === 'web' || hasApps
     ? getFirestore(app)
     : initializeFirestore(app, {
         experimentalAutoDetectLongPolling: true,
-        useFetchStreams: false,
-      });
+      } as any);
 export const functions = getFunctions(app, 'us-central1');
 export const firebaseProjectId = firebaseConfig.projectId;

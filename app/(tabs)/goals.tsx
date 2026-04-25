@@ -32,11 +32,11 @@ import {
   collection,
   deleteDoc,
   doc,
-  onSnapshot,
   setDoc,
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
+import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -160,7 +160,7 @@ export default function GoalsScreen() {
       }
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
-      const unsubProfile = onSnapshot(userRef, snap => {
+      const unsubProfile = safeSnapshot(userRef, snap => {
         const data = snap.data() as { fullName?: string; hourlyRate?: number } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
         if (data?.hourlyRate != null) setHourlyRate(Number(data.hourlyRate));
@@ -177,7 +177,7 @@ export default function GoalsScreen() {
     }
 
     const goalsRef = collection(db, "users", userId, "goals");
-    const unsubscribe = onSnapshot(goalsRef, snapshot => {
+    const unsubscribe = safeSnapshot(goalsRef, snapshot => {
       const nextGoals = snapshot.docs.map(docSnap => {
         const data = docSnap.data() as any;
         const createdAtValue =
@@ -218,7 +218,7 @@ export default function GoalsScreen() {
       return;
     }
     const attendanceRef = collection(db, "users", userId, "attendance");
-    const unsubscribe = onSnapshot(attendanceRef, snapshot => {
+    const unsubscribe = safeSnapshot(attendanceRef, snapshot => {
       const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
       setAttendanceLogs(logs);
     });

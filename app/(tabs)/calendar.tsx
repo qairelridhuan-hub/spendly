@@ -10,7 +10,8 @@ import {
   X,
 } from "lucide-react-native";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
+import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
@@ -153,7 +154,7 @@ export default function CalendarScreen() {
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
       unsubscribeProfile?.();
-      unsubscribeProfile = onSnapshot(userRef, snap => {
+      unsubscribeProfile = safeSnapshot(userRef, snap => {
         const data = snap.data() as { fullName?: string; scheduleId?: string } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
         setScheduleId(data?.scheduleId ?? null);
@@ -172,7 +173,7 @@ export default function CalendarScreen() {
       return;
     }
     const scheduleRef = doc(db, "workSchedules", scheduleId);
-    const unsub = onSnapshot(scheduleRef, snap => {
+    const unsub = safeSnapshot(scheduleRef, snap => {
       if (!snap.exists()) {
         setSchedule(null);
         return;
@@ -196,7 +197,7 @@ export default function CalendarScreen() {
       return;
     }
     const attendanceRef = collection(db, "users", userId, "attendance");
-    const unsub = onSnapshot(attendanceRef, snapshot => {
+    const unsub = safeSnapshot(attendanceRef, snapshot => {
       const map: Record<string, string> = {};
       snapshot.forEach(docSnap => {
         const data = docSnap.data() as any;

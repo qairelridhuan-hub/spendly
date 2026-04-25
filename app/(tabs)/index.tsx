@@ -34,11 +34,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
   doc,
-  onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { auth, db } from "@/lib/firebase";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFonts } from "expo-font";
@@ -571,7 +571,7 @@ export default function WorkerHomeScreen() {
       }
       if (user.displayName) setDisplayName(user.displayName);
       const userRef = doc(db, "users", user.uid);
-      const unsubProfile = onSnapshot(userRef, snap => {
+      const unsubProfile = safeSnapshot(userRef, snap => {
         const data = snap.data() as {
           fullName?: string;
           scheduleId?: string;
@@ -752,7 +752,7 @@ export default function WorkerHomeScreen() {
       return;
     }
     const scheduleRef = doc(db, "workSchedules", scheduleId);
-    const unsub = onSnapshot(scheduleRef, snap => {
+    const unsub = safeSnapshot(scheduleRef, snap => {
       if (!snap.exists()) {
         setSchedule(null);
         return;
@@ -1149,7 +1149,7 @@ export default function WorkerHomeScreen() {
   useEffect(() => {
     if (!userId) return;
     const configRef = doc(db, "config", "system");
-    const unsub = onSnapshot(configRef, snap => {
+    const unsub = safeSnapshot(configRef, snap => {
       const data = snap.data() as any;
       if (!data) return;
       setWorkConfig({
@@ -1187,7 +1187,7 @@ export default function WorkerHomeScreen() {
       return;
     }
     const attendanceRef = collection(db, "users", userId, "attendance");
-    const unsub = onSnapshot(attendanceRef, snapshot => {
+    const unsub = safeSnapshot(attendanceRef, snapshot => {
       const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
       setAttendanceLogs(logs);
     });
@@ -1200,7 +1200,7 @@ export default function WorkerHomeScreen() {
       return;
     }
     const breaksRef = collection(db, "users", userId, "breaks");
-    const unsub = onSnapshot(breaksRef, snapshot => {
+    const unsub = safeSnapshot(breaksRef, snapshot => {
       const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
       setBreakLogs(logs);
     });
@@ -1213,7 +1213,7 @@ export default function WorkerHomeScreen() {
       return;
     }
     const overtimeRef = collection(db, "users", userId, "overtime");
-    const unsub = onSnapshot(overtimeRef, snapshot => {
+    const unsub = safeSnapshot(overtimeRef, snapshot => {
       const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
       setOvertimeLogs(logs);
     });
@@ -1228,7 +1228,7 @@ export default function WorkerHomeScreen() {
       return;
     }
     const payrollRef = collection(db, "users", userId, "payroll");
-    const unsub = onSnapshot(payrollRef, snapshot => {
+    const unsub = safeSnapshot(payrollRef, snapshot => {
       const list = snapshot.docs.map(docSnap => docSnap.data() as any);
       setPayrollRecords(list);
     });
@@ -1241,7 +1241,7 @@ export default function WorkerHomeScreen() {
       return;
     }
     const goalsRef = collection(db, "users", userId, "goals");
-    const unsub = onSnapshot(goalsRef, snapshot => {
+    const unsub = safeSnapshot(goalsRef, snapshot => {
       setGoalsCount(snapshot.size);
     });
     return unsub;
@@ -1254,7 +1254,7 @@ export default function WorkerHomeScreen() {
     }
     const todayKey = formatDateKey(new Date());
     const attendanceRef = doc(db, "users", userId, "attendance", todayKey);
-    const unsub = onSnapshot(attendanceRef, snap => {
+    const unsub = safeSnapshot(attendanceRef, snap => {
       if (!snap.exists()) {
         setTodayAttendance(null);
         return;

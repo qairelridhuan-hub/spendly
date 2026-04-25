@@ -7,9 +7,9 @@ import {
   doc,
   getDoc,
   getDocs,
-  onSnapshot,
   updateDoc,
 } from "firebase/firestore";
+import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ScrollView,
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
       if (user.photoURL) setPhotoUrl(user.photoURL);
 
       const userRef = doc(db, "users", user.uid);
-      const unsubProfile = onSnapshot(userRef, snap => {
+      const unsubProfile = safeSnapshot(userRef, snap => {
         const data = snap.data() as { fullName?: string; photoUrl?: string; hourlyRate?: number } | undefined;
         if (data?.fullName) setDisplayName(data.fullName);
         if (data?.photoUrl) setPhotoUrl(data.photoUrl);
@@ -158,7 +158,7 @@ export default function ProfileScreen() {
       });
 
       const goalsRef = collection(db, "users", user.uid, "goals");
-      const unsubGoals = onSnapshot(goalsRef, snapshot => {
+      const unsubGoals = safeSnapshot(goalsRef, snapshot => {
         const goals = snapshot.docs.map(docSnap => docSnap.data() as any);
         const completed = goals.filter(
           goal => Number(goal.savedAmount ?? 0) >= Number(goal.targetAmount ?? 0)
@@ -171,24 +171,24 @@ export default function ProfileScreen() {
       });
 
       const attendanceRef = collection(db, "users", user.uid, "attendance");
-      const unsubAttendance = onSnapshot(attendanceRef, snapshot => {
+      const unsubAttendance = safeSnapshot(attendanceRef, snapshot => {
         const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
         setAttendanceLogs(logs);
       });
       const challengeRef = collection(db, "users", user.uid, "challenges");
-      const unsubChallenges = onSnapshot(challengeRef, snapshot => {
+      const unsubChallenges = safeSnapshot(challengeRef, snapshot => {
         const list = snapshot.docs.map(docSnap => docSnap.data() as any);
         const completed = list.filter(item => item?.completed).length;
         setChallengeCount(list.length);
         setCompletedChallengeCount(completed);
       });
       const overtimeRef = collection(db, "users", user.uid, "overtime");
-      const unsubOvertime = onSnapshot(overtimeRef, snapshot => {
+      const unsubOvertime = safeSnapshot(overtimeRef, snapshot => {
         const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
         setOvertimeLogs(logs);
       });
       const arcadeRef = doc(db, "users", user.uid, "arcade", "state");
-      const unsubArcade = onSnapshot(arcadeRef, snap => {
+      const unsubArcade = safeSnapshot(arcadeRef, snap => {
         if (!snap.exists()) {
           setArcadeState(null);
           return;
@@ -200,7 +200,7 @@ export default function ProfileScreen() {
         });
       });
       const configRef = doc(db, "config", "system");
-      const unsubConfig = onSnapshot(configRef, snap => {
+      const unsubConfig = safeSnapshot(configRef, snap => {
         const data = snap.data() as any;
         if (data?.overtimeRate != null) {
           setConfig({ overtimeRate: Number(data.overtimeRate ?? 0) });

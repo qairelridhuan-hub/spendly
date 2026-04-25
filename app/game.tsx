@@ -1,29 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LinearGradient } from "expo-linear-gradient";
-import { useFonts } from "expo-font";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   ArrowLeft,
   Award,
-  Calendar,
   CheckCircle2,
-  Circle,
   Clock,
   Coins,
   Crown,
   Gem,
   Flame,
-  Gift,
   Lock,
-  Medal,
   Menu,
   ShoppingBag,
   AlertCircle,
   ChevronRight,
   Home,
   Shield,
-  Star,
   Target,
   TrendingUp,
   Trophy,
@@ -57,8 +50,8 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { AnimatedBlobs } from "../components/AnimatedBlobs";
 import { auth, db } from "../lib/firebase";
+import { useTheme } from "../lib/context";
 import {
   getBaseXp,
   getConsecutiveStreakDays,
@@ -150,27 +143,14 @@ type DashboardPanel =
   | "achievements"
   | "badges"
   | "challenges"
+  | "quests"
+  | "powerups"
+  | "leaderboard"
   | "shop";
 
 export default function GameScreen() {
-  const [shopFontLoaded] = useFonts({
-    "SpaceGrotesk-SemiBold": require("../assets/fonts/SpaceGrotesk-SemiBold.ttf"),
-  });
-  const [pixelFontLoaded] = useFonts({
-    PressStart2P: require("../assets/fonts/PressStart2P-Regular.ttf"),
-  });
-  const neon = {
-    bgStart: "#1a0033",
-    bgEnd: "#080014",
-    surface: "#0b1020",
-    surfaceSoft: "#121b2f",
-    text: "#e2e8f0",
-    muted: "#94a3b8",
-    accent: "#22d3ee",
-    accentAlt: "#f472b6",
-    lime: "#a3e635",
-    border: "rgba(56, 189, 248, 0.4)",
-  };
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [userId, setUserId] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<DashboardPanel>("main");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1119,9 +1099,15 @@ export default function GameScreen() {
           ? "Badge Collection"
           : activePanel === "challenges"
             ? "Weekly Challenges"
-              : activePanel === "shop"
-                ? "XP Exchange Shop"
-                : "";
+            : activePanel === "quests"
+            ? "Daily Quests"
+            : activePanel === "powerups"
+            ? "Power-Ups"
+            : activePanel === "leaderboard"
+            ? "Leaderboard"
+            : activePanel === "shop"
+            ? "XP Exchange Shop"
+            : "";
 
   const shopCatalog = [
     {
@@ -1184,100 +1170,59 @@ export default function GameScreen() {
   ) => {
     const isUpcoming = options?.isUpcoming;
     const isPast = options?.isPast;
-    const percent =
-      challenge.target === 0
-        ? 0
-        : Math.min(100, (challenge.progress / challenge.target) * 100);
+    const percent = challenge.target === 0 ? 0 : Math.min(100, (challenge.progress / challenge.target) * 100);
     const difficulty = getDifficultyLabel(challenge.rewardXp);
     return (
-      <View
-        key={challenge.id}
-        style={[
-          styles.challengeCard,
-          challenge.completed && styles.challengeCardCompleted,
-        ]}
-      >
+      <View key={challenge.id} style={[styles.challengeCard, challenge.completed && styles.challengeCardDone]}>
         <View style={styles.challengeTopRow}>
           <View style={styles.challengeTitleWrap}>
             <View style={styles.challengeTitleRow}>
               <Text style={styles.challengeTitle}>{challenge.title}</Text>
-              <View
-                style={[
-                  styles.difficultyBadge,
-                  difficulty === "Easy"
-                    ? styles.difficultyEasy
-                    : difficulty === "Medium"
-                      ? styles.difficultyMedium
-                      : styles.difficultyHard,
-                ]}
-              >
+              <View style={[styles.difficultyBadge, difficulty === "Easy" ? styles.difficultyEasy : difficulty === "Medium" ? styles.difficultyMedium : styles.difficultyHard]}>
                 <Text style={styles.difficultyText}>{difficulty}</Text>
               </View>
             </View>
             <Text style={styles.challengeDesc}>{challenge.description}</Text>
           </View>
         </View>
-
         <View style={styles.challengeMetaRow}>
           <View style={styles.challengeMetaItem}>
-            <Clock size={12} color="#9ca3af" />
+            <Clock size={11} color={colors.textMuted} />
             <Text style={styles.challengeMetaText}>
-              {isUpcoming
-                ? "Starts next week"
-                : isPast
-                  ? "Finished"
-                  : challenge.completed
-                    ? "Completed"
-                    : getTimeLeftLabel(challenge.endDate)}
+              {isUpcoming ? "Next week" : isPast ? "Finished" : challenge.completed ? "Completed" : getTimeLeftLabel(challenge.endDate)}
             </Text>
           </View>
           <View style={styles.challengeRewardPill}>
-            <Trophy size={12} color="#fdba74" />
-            <Text style={styles.challengeRewardText}>
-              +{challenge.rewardXp} XP
-            </Text>
+            <Text style={styles.challengeRewardText}>+{challenge.rewardXp} XP</Text>
           </View>
         </View>
-
-        <View style={styles.challengeProgressTrack}>
-          <View
-            style={[styles.challengeProgressFill, { width: `${percent}%` }]}
-          />
+        <View style={styles.challengeTrack}>
+          <View style={[styles.challengeFill, { width: `${percent}%` as any }]} />
         </View>
-
         <View style={styles.challengeFooter}>
-          <Text style={styles.challengeProgressText}>
-            {challenge.progress} / {challenge.target} {challenge.unit}
-          </Text>
+          <Text style={styles.challengeProgressText}>{challenge.progress} / {challenge.target} {challenge.unit}</Text>
           {isUpcoming ? (
             <Text style={styles.pendingText}>Pending</Text>
           ) : isPast ? (
-            <Text style={styles.claimedText}>
-              {challenge.claimed ? "Claimed" : "Missed"}
-            </Text>
+            <Text style={styles.claimedText}>{challenge.claimed ? "Claimed" : "Missed"}</Text>
           ) : challenge.completed ? (
             challenge.claimed ? (
               <Text style={styles.claimedText}>Claimed</Text>
             ) : (
-              <TouchableOpacity
-                style={styles.claimButton}
-                onPress={() => handleClaimChallenge(challenge)}
-              >
-                <Text style={styles.claimButtonText}>Claim Reward</Text>
+              <TouchableOpacity style={styles.challengeClaimBtn} onPress={() => handleClaimChallenge(challenge)}>
+                <Text style={styles.challengeClaimBtnText}>Claim</Text>
               </TouchableOpacity>
             )
           ) : (
-            <TouchableOpacity
-              style={styles.progressButton}
-              onPress={() => handleChallengeAction(challenge.id)}
-            >
-              <Text style={styles.progressButtonText}>Make Progress</Text>
+            <TouchableOpacity style={styles.challengeBtn} onPress={() => handleChallengeAction(challenge.id)}>
+              <Text style={styles.challengeBtnText}>Go</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
     );
   };
+
 
   const handleQuestPress = useCallback(
     (questId: string) => {
@@ -1387,2018 +1332,761 @@ export default function GameScreen() {
     );
   };
 
+  const splashOpacity = useRef(new Animated.Value(0)).current;
+  const splashScale   = useRef(new Animated.Value(0.88)).current;
+  const splashTextOp  = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!arcadeReady) {
+      splashOpacity.setValue(0);
+      splashScale.setValue(0.88);
+      splashTextOp.setValue(0);
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(splashOpacity, { toValue: 1, duration: 550, useNativeDriver: true }),
+          Animated.spring(splashScale,   { toValue: 1, friction: 7, tension: 90, useNativeDriver: true }),
+        ]),
+        Animated.timing(splashTextOp, { toValue: 1, duration: 400, delay: 80, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [arcadeReady]);
+
+  if (!arcadeReady) {
+    return (
+      <View style={[styles.screen, styles.splashScreen]}>
+        <SafeAreaView style={styles.splashSafe}>
+          <View style={styles.splashCenter}>
+            <Animated.View style={[styles.splashIconWrap, { opacity: splashOpacity, transform: [{ scale: splashScale }] }]}>
+              <Trophy size={32} color={colors.text} />
+            </Animated.View>
+            <Animated.View style={[styles.splashText, { opacity: splashTextOp }]}>
+              <Text style={styles.splashTitle}>Arcade</Text>
+              <Text style={styles.splashSub}>Loading your progress…</Text>
+            </Animated.View>
+          </View>
+          <Animated.View style={[styles.splashFooter, { opacity: splashTextOp }]}>
+            <View style={styles.splashDots}>
+              {[0, 1, 2].map(i => <View key={i} style={[styles.splashDot, i === 1 && styles.splashDotActive]} />)}
+            </View>
+          </Animated.View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
   return (
-    <LinearGradient colors={[neon.bgStart, neon.bgEnd]} style={styles.screen}>
-      <ArcadeFloaters />
-      <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
-      <Modal
-        transparent
-        visible={menuOpen}
-        animationType="fade"
-        onRequestClose={() => setMenuOpen(false)}
-      >
+    <View style={styles.screen}>
+      {/* ── Navigation menu modal ───────────────────────── */}
+      <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)}>
           <Pressable style={styles.menuSheet} onPress={() => {}}>
-            <Text style={styles.menuTitle}>Arcade Menu</Text>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleMenuSelect("main")}
-            >
-              <Home size={18} color="#e2e8f0" />
-              <Text style={styles.menuItemText}>Main Dashboard</Text>
-              <ChevronRight size={16} color="#64748b" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleMenuSelect("profile")}
-            >
-              <User size={18} color="#e2e8f0" />
-              <Text style={styles.menuItemText}>Profile Achievements</Text>
-              <ChevronRight size={16} color="#64748b" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleMenuSelect("achievements")}
-            >
-              <Star size={18} color="#facc15" />
-              <Text style={styles.menuItemText}>Achievement Path</Text>
-              <ChevronRight size={16} color="#64748b" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleMenuSelect("badges")}
-            >
-              <Award size={18} color="#f472b6" />
-              <Text style={styles.menuItemText}>Badge Collection</Text>
-              <ChevronRight size={16} color="#64748b" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleMenuSelect("challenges")}
-            >
-              <Target size={18} color="#34d399" />
-              <Text style={styles.menuItemText}>Weekly Challenges</Text>
-              <ChevronRight size={16} color="#64748b" />
-            </TouchableOpacity>
+            <Text style={styles.menuTitle}>Menu</Text>
+            {([
+              { panel: "main",         label: "Dashboard",          icon: Home },
+              { panel: "profile",      label: "Profile",            icon: User },
+              { panel: "achievements", label: "Achievements",       icon: Trophy },
+              { panel: "badges",       label: "Badges",             icon: Award },
+              { panel: "challenges",   label: "Challenges",         icon: Target },
+              { panel: "shop",         label: "Market",             icon: ShoppingBag },
+            ] as { panel: DashboardPanel; label: string; icon: any }[]).map(({ panel, label, icon: Icon }) => (
+              <TouchableOpacity key={panel} style={styles.menuItem} onPress={() => handleMenuSelect(panel)}>
+                <Icon size={16} color={activePanel === panel ? colors.text : colors.textMuted} />
+                <Text style={[styles.menuItemText, activePanel === panel && styles.menuItemActive]}>{label}</Text>
+                <ChevronRight size={14} color={colors.border} />
+              </TouchableOpacity>
+            ))}
           </Pressable>
         </Pressable>
       </Modal>
+
       <SafeAreaView style={styles.safe} edges={["top"]}>
+        {/* ── Header ──────────────────────────────────────── */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() =>
-              activePanel === "main" ? router.back() : setActivePanel("main")
-            }
-          >
-            <ArrowLeft size={20} color="#e5e7eb" />
+          <TouchableOpacity style={styles.iconBtn} onPress={() => activePanel === "main" ? router.back() : setActivePanel("main")}>
+            <ArrowLeft size={18} color={colors.text} />
           </TouchableOpacity>
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => setActivePanel("shop")}
-              accessibilityLabel="Open shop"
-            >
-              <ShoppingBag size={20} color="#e5e7eb" />
+          <Text style={styles.headerTitle}>
+            {activePanel === "main" ? "Arcade" : activePanel === "shop" ? "Market" : panelTitle}
+          </Text>
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => setActivePanel("shop")}>
+              <ShoppingBag size={18} color={colors.text} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => setMenuOpen(true)}
-            >
-              <Menu size={20} color="#e5e7eb" />
+            <TouchableOpacity style={styles.iconBtn} onPress={() => setMenuOpen(true)}>
+              <Menu size={18} color={colors.text} />
             </TouchableOpacity>
-          </View>
-          <View style={styles.headerTitleWrap} pointerEvents="none">
-            <View style={styles.headerTitleStack}>
-              <Animated.Text
-                style={[
-                  styles.headerTitle,
-                  pixelFontLoaded && styles.headerTitlePixel,
-                  styles.headerTitleGlow,
-                  { opacity: titleGlowAnim },
-                ]}
-              >
-                Budget Arcade
-              </Animated.Text>
-              <Text
-                style={[
-                  styles.headerTitle,
-                  pixelFontLoaded && styles.headerTitlePixel,
-                ]}
-              >
-                Budget Arcade
-              </Text>
-            </View>
           </View>
         </View>
 
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          {!isMainPanel ? (
-            <View style={styles.panelHeader}>
-              <View style={styles.panelSpacer} />
-              <Text style={styles.panelTitle}>{panelTitle}</Text>
-              <View style={styles.panelSpacer} />
-            </View>
-          ) : null}
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
+          {/* ══ MAIN ══════════════════════════════════════════ */}
           {isMainPanel ? (
             <>
-              <LinearGradient
-                colors={["#667eea", "#764ba2", "#f093fb"]}
-                style={styles.levelCard}
-              >
-                <View style={styles.levelTopRow}>
-                  <View style={styles.levelLeft}>
-                    <View style={styles.levelBadge}>
-                      <Crown size={18} color="#ffffff" />
-                    </View>
-                    <View>
-                      <Text style={styles.levelLabel}>Level</Text>
-                      <Text style={styles.levelValue}>{level}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.currencyRow}>
-                    <View style={styles.currencyPill}>
-                      <Coins size={16} color="#0f172a" />
-                      <Text style={styles.currencyValue}>{coins}</Text>
-                    </View>
-                    <View style={[styles.currencyPill, styles.currencyPillAlt]}>
-                      <Gem size={16} color="#ffffff" />
-                      <Text
-                        style={[styles.currencyValue, styles.currencyValueAlt]}
-                      >
-                        {gems}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.xpRow}>
-                  <Text style={styles.xpText}>
-                    {totalXp} / {nextXp} XP
-                  </Text>
-                  <View style={styles.xpToLevelPill}>
-                    <Zap size={14} color="#fdba74" />
-                    <Text style={styles.xpToLevelText}>
-                      {xpToLevel} to level up
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.xpTrack}>
-                  <Animated.View
-                    style={[
-                      styles.xpGlow,
-                      { width: xpFillWidth, opacity: xpGlowOpacity },
-                    ]}
-                  />
-                  <Animated.View
-                    style={[styles.xpFill, { width: xpFillWidth }]}
-                  />
-                </View>
-
-                <View style={styles.levelFooter}>
-                  <View style={styles.nextUnlockRow}>
-                    <View style={styles.nextUnlockIcon}>
-                      <Star size={14} color="#e9d5ff" />
-                    </View>
-                    <View>
-                      <Text style={styles.nextUnlockLabel}>Next unlock</Text>
-                      <Text style={styles.nextUnlockTitle}>
-                        Advanced Insights
-                      </Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    style={[
-                      styles.convertButton,
-                      coins < 10 && styles.convertButtonDisabled,
-                    ]}
-                    onPress={handleConvertCoins}
-                    disabled={coins < 10}
-                  >
-                    <Text style={styles.convertButtonText}>
-                      Convert 10 coins to +10 XP
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </LinearGradient>
-
-              <View style={styles.sectionCard}>
-                <View style={styles.sectionHeaderRow}>
-                  <View style={styles.sectionTitleRow}>
-                    <Target size={18} color="#34d399" />
-                    <Text style={styles.sectionTitle}>Weekly Challenges</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.sectionLink}
-                    onPress={() => setActivePanel("challenges")}
-                  >
-                    <Text style={styles.sectionLinkText}>All</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.challengeList}>
-                  {(activeChallenges.length > 0
-                    ? activeChallenges.slice(0, 2)
-                    : nextWeekChallenges.slice(0, 2)
-                  ).map(challenge =>
-                    renderChallengeCard(challenge, {
-                      isUpcoming: activeChallenges.length === 0,
-                    })
-                  )}
-                </View>
-              </View>
-
-              <View style={styles.sectionCard}>
-                <View style={styles.sectionHeaderRow}>
+              {/* Level card */}
+              <View style={styles.levelCard}>
+                <View style={styles.levelCardTop}>
                   <View>
-                    <View style={styles.sectionTitleRow}>
-                      <Gift size={18} color="#facc15" />
-                      <Text style={styles.sectionTitle}>Daily Quests</Text>
+                    <Text style={styles.levelLabel}>Level</Text>
+                    <Text style={styles.levelValue}>{level}</Text>
+                  </View>
+                  <View style={styles.levelRight}>
+                    <View style={styles.currencyRow}>
+                      <Coins size={14} color={colors.textMuted} />
+                      <Text style={styles.currencyText}>{coins}</Text>
                     </View>
-                    <Text style={styles.sectionSubtitle}>
-                      Complete all for bonus:{" "}
-                      <Text style={styles.sectionHighlight}>+50 XP</Text>
-                    </Text>
-                  </View>
-                  <View style={styles.sectionBadge}>
-                    <Text style={styles.sectionBadgeText}>
-                      {dailyCompletedCount}/{dailyQuests.length}
-                    </Text>
+                    <View style={styles.currencyRow}>
+                      <Gem size={14} color={colors.textMuted} />
+                      <Text style={styles.currencyText}>{gems}</Text>
+                    </View>
                   </View>
                 </View>
-
-                <View style={styles.questList}>
-                  {dailyQuests.map(quest => (
-                    <TouchableOpacity
-                      key={quest.id}
-                      style={[
-                        styles.questRow,
-                        quest.completed && styles.questRowDone,
-                      ]}
-                      onPress={() => handleQuestPress(quest.id)}
-                      disabled={quest.completed}
-                      activeOpacity={0.8}
-                    >
-                      {quest.completed ? (
-                        <CheckCircle2 size={20} color="#22c55e" />
-                      ) : (
-                        <Circle size={20} color="#6b7280" />
-                      )}
-                      <View style={styles.questContent}>
-                        <Text style={styles.questTitle}>{quest.title}</Text>
-                        <View style={styles.questProgressRow}>
-                          <View style={styles.questProgressTrack}>
-                            <View
-                              style={[
-                                styles.questProgressFill,
-                                {
-                                  width: `${Math.min(
-                                    100,
-                                    (quest.progress / quest.total) * 100
-                                  )}%`,
-                                },
-                              ]}
-                            />
-                          </View>
-                          <Text style={styles.questProgressText}>
-                            {quest.progress}/{quest.total}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.questRewardPill}>
-                        <Zap size={12} color="#fdba74" />
-                        <Text style={styles.questRewardText}>
-                          +{quest.reward}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                <View style={styles.xpRow}>
+                  <Text style={styles.xpLabel}>{totalXp} / {nextXp} XP</Text>
+                  <Text style={styles.xpHint}>{xpToLevel} to level up</Text>
                 </View>
-
-                {allDailyCompleted ? (
-                  <View style={styles.bonusRow}>
-                    <Text style={styles.bonusText}>All quests completed!</Text>
-                    <TouchableOpacity
-                      style={[
-                        styles.bonusButton,
-                        dailyBonusClaimed && styles.bonusButtonDisabled,
-                      ]}
-                      onPress={handleClaimDailyBonus}
-                      disabled={dailyBonusClaimed}
-                    >
-                      <Text style={styles.bonusButtonText}>
-                        {dailyBonusClaimed ? "Claimed" : "Claim +50 XP"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
-              </View>
-
-              <View style={styles.streakGrid}>
-                <View style={[styles.streakCard, styles.streakCardOrange]}>
-                  <View style={styles.streakIconRow}>
-                    <Flame size={20} color="#fb7185" />
-                    <Text style={styles.streakValue}>{streakDays}</Text>
-                  </View>
-                  <Text style={styles.streakLabel}>Day Streak</Text>
-                  <Text style={styles.streakSub}>Keep it going!</Text>
+                <View style={styles.xpTrack}>
+                  <Animated.View style={[styles.xpFill, { width: xpFillWidth }]} />
                 </View>
-                <View style={[styles.streakCard, styles.streakCardCyan]}>
-                  <View style={styles.streakIconRow}>
-                    <Target size={20} color="#38bdf8" />
-                    <Text style={styles.streakValue}>{comboBonus}x</Text>
-                  </View>
-                  <Text style={styles.streakLabel}>Combo Bonus</Text>
-                  <Text style={styles.streakSub}>
-                    {streakDays >= 3 ? "Under budget!" : "Build a streak"}
+                <TouchableOpacity
+                  style={[styles.convertBtn, coins < 10 && styles.convertBtnDisabled]}
+                  onPress={handleConvertCoins}
+                  disabled={coins < 10}
+                >
+                  <Text style={[styles.convertBtnText, coins < 10 && styles.convertBtnTextDisabled]}>
+                    Convert 10 coins → +10 XP
                   </Text>
-                </View>
-                <View style={[styles.streakCard, styles.streakCardGreen]}>
-                  <View style={styles.streakIconRow}>
-                    <Coins size={20} color="#34d399" />
-                    <Text style={styles.streakValue}>
-                      RM {weeklyEarnings.toFixed(0)}
-                    </Text>
-                  </View>
-                  <Text style={styles.streakLabel}>Weekly Saved</Text>
-                  <Text style={styles.streakSub}>{weeklyChangeLabel}</Text>
-                </View>
-                <View style={[styles.streakCard, styles.streakCardPurple]}>
-                  <View style={styles.streakIconRow}>
-                    <Calendar size={20} color="#c084fc" />
-                    <Text style={styles.streakValue}>
-                      {goalsHitCount}/{goalsThisMonth.length}
-                    </Text>
-                  </View>
-                  <Text style={styles.streakLabel}>Goals Hit</Text>
-                  <Text style={styles.streakSub}>This month</Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
-              <View style={styles.sectionCard}>
-                <View style={styles.sectionHeaderRow}>
-                  <View style={styles.sectionTitleRow}>
-                    <Zap size={18} color="#f472b6" />
-                    <Text style={styles.sectionTitle}>Power-Ups</Text>
+              {/* Stats grid */}
+              <View style={styles.statsGrid}>
+                {[
+                  { icon: Flame,    value: String(streakDays),                   label: "Day Streak" },
+                  { icon: Zap,      value: `${comboBonus}x`,                     label: "Combo" },
+                  { icon: TrendingUp, value: `RM ${weeklyEarnings.toFixed(0)}`,  label: "Weekly" },
+                  { icon: Target,   value: `${goalsHitCount}/${goalsThisMonth.length}`, label: "Goals Hit" },
+                ].map(({ icon: Icon, value, label }) => (
+                  <View key={label} style={styles.statCard}>
+                    <Icon size={16} color={colors.textMuted} />
+                    <Text style={styles.statValue}>{value}</Text>
+                    <Text style={styles.statLabel}>{label}</Text>
                   </View>
-                  <View style={styles.currencySummary}>
-                    <View style={styles.currencySummaryItem}>
-                      <Coins size={14} color="#94a3b8" />
-                      <Text style={styles.currencySummaryText}>{coins}</Text>
-                    </View>
-                    <View style={styles.currencySummaryItem}>
-                      <Gem size={14} color="#94a3b8" />
-                      <Text style={styles.currencySummaryText}>{gems}</Text>
-                    </View>
-                  </View>
-                </View>
-                {shopError ? (
-                  <View style={styles.validationBanner}>
-                    <AlertCircle size={14} color="#f87171" />
-                    <Text style={styles.validationText}>{shopError}</Text>
-                  </View>
-                ) : null}
-                <View style={styles.powerGrid}>
-                  {powerUpItems.map(item => {
-                    const Icon = item.icon;
-                    const canAfford =
-                      item.currency === "coins"
-                        ? coins >= item.cost
-                        : gems >= item.cost;
-                    return (
-                      <View
-                        key={item.id}
-                        style={[styles.powerCard, { borderColor: item.border }]}
-                      >
-                        <View style={styles.powerCardHeader}>
-                          <LinearGradient
-                            colors={item.gradient}
-                            style={styles.powerIcon}
-                          >
-                            <Icon size={18} color="#ffffff" />
-                          </LinearGradient>
-                          {item.owned > 0 ? (
-                            <View style={styles.powerOwned}>
-                              <Text style={styles.powerOwnedText}>
-                                x{item.owned}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                        <Text style={styles.powerTitle}>{item.name}</Text>
-                        <Text style={styles.powerDesc}>{item.description}</Text>
-                        <View style={styles.powerFooter}>
-                          <View style={styles.powerCost}>
-                            {item.currency === "coins" ? (
-                              <Coins size={12} color="#e5e7eb" />
-                            ) : (
-                              <Gem size={12} color="#e5e7eb" />
-                            )}
-                            <Text style={styles.powerCostText}>{item.cost}</Text>
-                          </View>
-                          <TouchableOpacity
-                            style={[
-                              styles.powerBuyButton,
-                              !canAfford && styles.powerBuyButtonDisabled,
-                            ]}
-                            onPress={() =>
-                              handleBuyPowerUp(item.id, item.cost, item.currency)
-                            }
-                          >
-                            <Text style={styles.powerBuyText}>
-                              {canAfford ? "Buy" : "Not enough"}
-                            </Text>
-                          </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Nav rows */}
+              <View style={styles.card}>
+                {([
+                  { panel: "challenges" as DashboardPanel, label: "CHALLENGES",   icon: Target,       sub: `${activeChallenges.length} active` },
+                  { panel: "quests"     as DashboardPanel, label: "DAILY QUESTS", icon: CheckCircle2, sub: `${dailyCompletedCount}/${dailyQuests.length} done` },
+                  { panel: "powerups"   as DashboardPanel, label: "POWER-UPS",    icon: Zap,          sub: `${coins} coins · ${gems} gems` },
+                  { panel: "leaderboard"as DashboardPanel, label: "LEADERBOARD",  icon: Trophy,       sub: "This week" },
+                ]).map(({ panel, label, icon: Icon, sub }, index, arr) => (
+                  <View key={panel}>
+                    <TouchableOpacity style={styles.navRow} onPress={() => setActivePanel(panel)}>
+                      <View style={styles.accordionLeft}>
+                        <View style={styles.accordionIconWrap}><Icon size={16} color={colors.backgroundStart} /></View>
+                        <View>
+                          <Text style={styles.accordionLabel}>{label}</Text>
+                          <Text style={styles.cardSub}>{sub}</Text>
                         </View>
                       </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <View style={styles.sectionCard}>
-                <View style={styles.sectionHeaderRow}>
-                  <View style={styles.sectionTitleRow}>
-                    <Trophy size={18} color="#f59e0b" />
-                    <Text style={styles.sectionTitle}>Leaderboard</Text>
+                      <ChevronRight size={16} color={colors.textMuted} />
+                    </TouchableOpacity>
+                    {index < arr.length - 1 && <View style={styles.divider} />}
                   </View>
-                  <View style={styles.sectionBadge}>
-                    <Text style={styles.sectionBadgeSub}>This Week</Text>
-                  </View>
-                </View>
-                <View style={styles.leaderboardList}>
-                  {leaderboardEntries.length === 0 ? (
-                    <Text style={styles.emptyStateText}>
-                      No leaderboard data yet.
-                    </Text>
-                  ) : (
-                    leaderboardEntries.map(player => {
-                      const rankIcon =
-                        player.rank === 1 ? (
-                          <Trophy size={16} color="#facc15" />
-                        ) : player.rank === 2 ? (
-                          <Medal size={16} color="#cbd5f5" />
-                        ) : player.rank === 3 ? (
-                          <Award size={16} color="#fb923c" />
-                        ) : (
-                          <Text style={styles.leaderboardRankText}>
-                            #{player.rank}
-                          </Text>
-                        );
-                      return (
-                        <View
-                          key={`${player.rank}-${player.name}`}
-                          style={[
-                            styles.leaderboardRow,
-                            player.isYou && styles.leaderboardRowYou,
-                          ]}
-                        >
-                          <View style={styles.leaderboardRank}>{rankIcon}</View>
-                          <View style={styles.leaderboardUser}>
-                            <View style={styles.leaderboardAvatar}>
-                              <User
-                                size={18}
-                                color={player.isYou ? "#38bdf8" : "#cbd5f5"}
-                              />
-                            </View>
-                            <View style={styles.leaderboardMeta}>
-                              <View style={styles.leaderboardNameRow}>
-                                <Text
-                                  style={[
-                                    styles.leaderboardName,
-                                    player.isYou && styles.leaderboardNameYou,
-                                  ]}
-                                >
-                                  {player.name}
-                                </Text>
-                                {player.isYou ? (
-                                  <View style={styles.youBadge}>
-                                    <Text style={styles.youBadgeText}>YOU</Text>
-                                  </View>
-                                ) : null}
-                              </View>
-                              <Text style={styles.leaderboardLevel}>
-                                Level {player.level}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={styles.leaderboardScore}>
-                            <Text style={styles.leaderboardXp}>
-                              {player.xp.toLocaleString()}
-                            </Text>
-                            <Text style={styles.leaderboardXpLabel}>XP</Text>
-                          </View>
-                        </View>
-                      );
-                    })
-                  )}
-                </View>
+                ))}
               </View>
-
             </>
+
           ) : activePanel === "profile" ? (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionTitleRow}>
-                  <User size={18} color="#38bdf8" />
-                  <Text style={styles.sectionTitle}>Achievements Earned</Text>
-                </View>
-              </View>
-              <Text style={styles.subsectionTitle}>Achievement Path</Text>
-              <View style={styles.achievementList}>
-                {achievedMilestones.length > 0 ? (
-                  achievedMilestones.map(milestone => {
+            /* ══ PROFILE ════════════════════════════════════ */
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Achievements</Text>
+              <View style={styles.divider} />
+              {achievedMilestones.length === 0
+                ? <Text style={styles.empty}>No achievements yet.</Text>
+                : achievedMilestones.map(milestone => {
                     const Icon = milestone.icon;
                     const isClaimed = Boolean(milestoneClaims[milestone.id]);
                     return (
-                      <View key={milestone.id} style={styles.achievementRow}>
-                        <View style={styles.achievementIcon}>
-                          <Icon size={18} color="#e2e8f0" />
+                      <View key={milestone.id} style={styles.achieveRow}>
+                        <View style={styles.achieveIcon}><Icon size={16} color={colors.text} /></View>
+                        <View style={styles.achieveInfo}>
+                          <Text style={styles.achieveTitle}>{milestone.title}</Text>
+                          <Text style={styles.achieveMeta}>{milestone.xpRequired} XP</Text>
                         </View>
-                        <View style={styles.achievementInfo}>
-                          <Text style={styles.achievementTitle}>
-                            {milestone.title}
-                          </Text>
-                          <Text style={styles.achievementMeta}>
-                            {milestone.xpRequired} XP target
-                          </Text>
-                        </View>
-                        <View
-                          style={[
-                            styles.achievementStatus,
-                            isClaimed
-                              ? styles.achievementStatusClaimed
-                              : styles.achievementStatusReady,
-                          ]}
-                        >
-                          <Text style={styles.achievementStatusText}>
+                        <View style={[styles.statusPill, isClaimed ? styles.statusClaimed : styles.statusReady]}>
+                          <Text style={[styles.statusText, isClaimed ? styles.statusTextClaimed : styles.statusTextReady]}>
                             {isClaimed ? "Claimed" : "Ready"}
                           </Text>
                         </View>
                       </View>
                     );
-                  })
-                ) : (
-                  <Text style={styles.emptyStateText}>
-                    No achievements earned yet.
-                  </Text>
-                )}
-              </View>
-              <Text style={styles.subsectionTitle}>Badges Unlocked</Text>
-              {unlockedBadges.length > 0 ? (
-                <View style={styles.badgeGrid}>
-                  {unlockedBadges.map(badge => {
-                    const Icon = badge.icon;
-                    return (
-                      <View
-                        key={badge.id}
-                        style={[
-                          styles.badgeItem,
-                          styles.badgeItemUnlocked,
-                          { backgroundColor: getRarityColor(badge.rarity) },
-                        ]}
-                      >
-                        <View style={styles.badgeIcon}>
-                          <Icon size={22} color="#ffffff" />
-                        </View>
-                        <Text style={styles.badgeName}>{badge.name}</Text>
-                        <View style={styles.badgeRarityPill}>
-                          <Text style={styles.badgeRarityText}>
-                            {badge.rarity}
-                          </Text>
-                        </View>
-                      </View>
-                    );
                   })}
-                </View>
-              ) : (
-                <Text style={styles.emptyStateText}>
-                  No badges unlocked yet.
-                </Text>
-              )}
+              <Text style={[styles.cardTitle, { marginTop: 20 }]}>Badges</Text>
+              <View style={styles.divider} />
+              {unlockedBadges.length === 0
+                ? <Text style={styles.empty}>No badges yet.</Text>
+                : <View style={styles.badgeGrid}>
+                    {unlockedBadges.map(badge => {
+                      const Icon = badge.icon;
+                      return (
+                        <View key={badge.id} style={styles.badgeCell}>
+                          <View style={styles.badgeIconWrap}><Icon size={20} color={colors.text} /></View>
+                          <Text style={styles.badgeName}>{badge.name}</Text>
+                          <Text style={styles.badgeRarity}>{badge.rarity}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>}
             </View>
+
           ) : activePanel === "achievements" ? (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionTitleRow}>
-                  <Star size={18} color="#facc15" />
-                  <Text style={styles.sectionTitle}>Achievement Path</Text>
-                </View>
-              </View>
-              <View style={styles.milestoneTrack}>
-                <View style={styles.milestoneLine} />
-                {milestones.map(milestone => {
-                  const progressPercent = Math.min(
-                    100,
-                    (totalXp / milestone.xpRequired) * 100
-                  );
-                  const canClaim =
-                    totalXp >= milestone.xpRequired &&
-                    !milestoneClaims[milestone.id];
-                  const Icon = milestone.icon;
-                  const iconColor = milestoneClaims[milestone.id]
-                    ? "#4ade80"
-                    : canClaim
-                      ? "#facc15"
-                      : "#e2e8f0";
-                  return (
-                    <View key={milestone.id} style={styles.milestoneRow}>
-                      <View
-                        style={[
-                          styles.milestoneNode,
-                          milestoneClaims[milestone.id] &&
-                            styles.milestoneNodeClaimed,
-                          canClaim && styles.milestoneNodeReady,
-                        ]}
-                      >
-                        <Icon size={18} color={iconColor} />
-                      </View>
-                      <View style={styles.milestoneCard}>
-                        <View style={styles.milestoneHeader}>
-                          <View>
-                            <Text style={styles.milestoneTitle}>
-                              {milestone.title}
-                            </Text>
-                            <Text style={styles.milestoneSub}>
-                              Reach {milestone.xpRequired} XP total
-                            </Text>
-                          </View>
-                          {milestoneClaims[milestone.id] ? (
-                            <View style={styles.milestoneClaimed}>
-                              <Text style={styles.milestoneClaimedText}>
-                                Claimed
-                              </Text>
-                            </View>
-                          ) : canClaim ? (
-                            <TouchableOpacity
-                              style={styles.milestoneClaimButton}
-                              onPress={() => handleClaimMilestone(milestone)}
-                            >
-                              <Text style={styles.milestoneClaimButtonText}>
-                                Claim +{milestone.reward} XP
-                              </Text>
-                            </TouchableOpacity>
-                          ) : (
-                            <View style={styles.milestoneRewardPill}>
-                              <Text style={styles.milestoneRewardText}>
-                                +{milestone.reward} XP
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <View style={styles.milestoneProgressTrack}>
-                          <View
-                            style={[
-                              styles.milestoneProgressFill,
-                              { width: `${progressPercent}%` },
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.milestoneProgressText}>
-                          {totalXp} / {milestone.xpRequired} XP
-                        </Text>
-                      </View>
+            /* ══ ACHIEVEMENT PATH ════════════════════════════ */
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Achievement Path</Text>
+              <View style={styles.divider} />
+              {milestones.map(milestone => {
+                const pct = Math.min(100, (totalXp / milestone.xpRequired) * 100);
+                const canClaim = totalXp >= milestone.xpRequired && !milestoneClaims[milestone.id];
+                const claimed  = Boolean(milestoneClaims[milestone.id]);
+                const Icon = milestone.icon;
+                return (
+                  <View key={milestone.id} style={styles.milestoneRow}>
+                    <View style={[styles.milestoneNode, claimed && styles.milestoneNodeDone, canClaim && styles.milestoneNodeReady]}>
+                      <Icon size={14} color={claimed ? colors.surface : canClaim ? colors.surface : colors.textMuted} />
                     </View>
-                  );
-                })}
-              </View>
-            </View>
-          ) : activePanel === "badges" ? (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionTitleRow}>
-                  <Award size={18} color="#f472b6" />
-                  <View>
-                    <Text style={styles.sectionTitle}>Badge Collection</Text>
-                    <Text style={styles.sectionSubtitle}>
-                      {unlockedBadgeCount} of {badges.length} unlocked
-                    </Text>
+                    <View style={styles.milestoneInfo}>
+                      <View style={styles.milestoneHeader}>
+                        <View>
+                          <Text style={styles.milestoneTitle}>{milestone.title}</Text>
+                          <Text style={styles.milestoneSub}>Reach {milestone.xpRequired} XP</Text>
+                        </View>
+                        {claimed
+                          ? <Text style={styles.claimedTag}>Claimed</Text>
+                          : canClaim
+                          ? <TouchableOpacity style={styles.claimBtn} onPress={() => handleClaimMilestone(milestone)}>
+                              <Text style={styles.claimBtnText}>Claim +{milestone.reward}</Text>
+                            </TouchableOpacity>
+                          : <Text style={styles.rewardHint}>+{milestone.reward} XP</Text>}
+                      </View>
+                      <View style={styles.milestoneTrack}>
+                        <View style={[styles.milestoneFill, { width: `${pct}%` as any }]} />
+                      </View>
+                      <Text style={styles.milestonePct}>{totalXp} / {milestone.xpRequired} XP</Text>
+                    </View>
                   </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.sectionLink}
-                  onPress={() => handleMenuSelect("badges")}
-                >
-                  <Text style={styles.sectionLinkText}>{"View All ->"}</Text>
-                </TouchableOpacity>
+                );
+              })}
+            </View>
+
+          ) : activePanel === "badges" ? (
+            /* ══ BADGES ═════════════════════════════════════ */
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Badge Collection</Text>
+                <Text style={styles.cardSub}>{unlockedBadgeCount}/{badges.length} unlocked</Text>
               </View>
-              <View style={styles.badgeProgressTrack}>
-                <View
-                  style={[
-                    styles.badgeProgressFill,
-                    {
-                      width: `${(unlockedBadgeCount / badges.length) * 100}%`,
-                    },
-                  ]}
-                />
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${(unlockedBadgeCount/badges.length)*100}%` as any }]} />
               </View>
               <View style={styles.badgeGrid}>
                 {badges.map(badge => {
                   const Icon = badge.icon;
                   return (
-                    <View
-                      key={badge.id}
-                      style={[
-                        styles.badgeItem,
-                        badge.unlocked
-                          ? styles.badgeItemUnlocked
-                          : styles.badgeItemLocked,
-                        badge.unlocked && {
-                          backgroundColor: getRarityColor(badge.rarity),
-                        },
-                      ]}
-                    >
-                      {!badge.unlocked ? (
-                        <View style={styles.badgeLockOverlay}>
-                          <Lock size={18} color="#6b7280" />
-                        </View>
-                      ) : null}
-                      <View style={styles.badgeIcon}>
-                        <Icon
-                          size={22}
-                          color={badge.unlocked ? "#ffffff" : "#64748b"}
-                        />
+                    <View key={badge.id} style={[styles.badgeCell, !badge.unlocked && styles.badgeCellLocked]}>
+                      {!badge.unlocked && <View style={styles.lockOverlay}><Lock size={14} color={colors.textMuted} /></View>}
+                      <View style={[styles.badgeIconWrap, badge.unlocked && styles.badgeIconUnlocked]}>
+                        <Icon size={20} color={badge.unlocked ? colors.surface : colors.border} />
                       </View>
-                      <Text style={styles.badgeName}>{badge.name}</Text>
-                      {badge.unlocked ? (
-                        <View style={styles.badgeRarityPill}>
-                          <Text style={styles.badgeRarityText}>
-                            {badge.rarity}
-                          </Text>
-                        </View>
-                      ) : null}
+                      <Text style={[styles.badgeName, !badge.unlocked && styles.badgeNameLocked]}>{badge.name}</Text>
+                      <Text style={styles.badgeRarity}>{badge.rarity}</Text>
                     </View>
                   );
                 })}
               </View>
             </View>
+
           ) : activePanel === "shop" ? (
-            <View style={styles.sectionCard}>
-              <LinearGradient
-                colors={["#0f172a", "#111827"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.shopHero}
-              >
-                <View style={styles.shopHeroRow}>
-                  <View style={styles.shopHeroTitleBlock}>
-                    <View style={styles.shopHeroTitleRow}>
-                      <ShoppingBag size={18} color="#f59e0b" />
-                      <Text
-                        style={[
-                          styles.shopHeroTitle,
-                          shopFontLoaded && styles.shopTitleFont,
-                        ]}
-                      >
-                        Arcade Shop
-                      </Text>
-                    </View>
-                    <Text style={styles.shopHeroSubtitle}>
-                      Browse rewards and trade with coins, gems, or XP.
-                    </Text>
+            /* ══ MARKET ═════════════════════════════════════ */
+            <View style={styles.card}>
+              {/* Wallet summary */}
+              <View style={styles.walletRow}>
+                {[
+                  { icon: Coins, label: "Coins",    value: coins },
+                  { icon: Gem,   label: "Gems",     value: gems },
+                  { icon: Zap,   label: "Bonus XP", value: xpWallet },
+                ].map(({ icon: Icon, label, value }) => (
+                  <View key={label} style={styles.walletCard}>
+                    <Icon size={14} color={colors.textMuted} />
+                    <Text style={styles.walletValue}>{value}</Text>
+                    <Text style={styles.walletLabel}>{label}</Text>
                   </View>
-                  <View style={styles.shopHeroBadge}>
-                    <Text style={styles.shopHeroBadgeText}>
-                      {Math.max(0, nextXp - totalXp)} XP to level up
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.shopSearch}>
-                  <Search size={16} color="#94a3b8" />
-                  <TextInput
-                    value={shopQuery}
-                    onChangeText={setShopQuery}
-                    placeholder="Search boosts, badges, currency"
-                    placeholderTextColor="#94a3b8"
-                    style={styles.shopSearchInput}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    accessibilityLabel="Search shop items"
-                  />
-                </View>
-                <View style={styles.shopProgressRow}>
-                  <Text style={styles.shopProgressLabel}>XP progress</Text>
-                  <Text style={styles.shopProgressValue}>
-                    {Math.max(0, nextXp - totalXp)} XP to level up
-                  </Text>
-                </View>
-                <View style={styles.shopProgressShell}>
-                  <View style={styles.shopProgressTrack}>
-                    <Animated.View
-                      style={[styles.shopProgressFill, { width: xpFillWidth }]}
-                    >
-                      <LinearGradient
-                        colors={["#fde047", "#f59e0b"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.shopProgressFillInner}
-                      />
-                    </Animated.View>
-                  </View>
-                </View>
-                <View style={styles.shopWalletRow}>
-                  <View style={[styles.shopWalletCard, styles.shopWalletCoins]}>
-                    <View style={styles.shopWalletIcon}>
-                      <Coins size={14} color="#facc15" />
-                    </View>
-                    <View style={styles.shopWalletTextBlock}>
-                      <Text style={styles.shopWalletLabel}>Coins</Text>
-                      <Text
-                        style={[
-                          styles.shopWalletValue,
-                          shopFontLoaded && styles.shopTitleFont,
-                        ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.85}
-                      >
-                        {coins}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[styles.shopWalletCard, styles.shopWalletGems]}>
-                    <View style={styles.shopWalletIcon}>
-                      <Gem size={14} color="#38bdf8" />
-                    </View>
-                    <View style={styles.shopWalletTextBlock}>
-                      <Text style={styles.shopWalletLabel}>Gems</Text>
-                      <Text
-                        style={[
-                          styles.shopWalletValue,
-                          shopFontLoaded && styles.shopTitleFont,
-                        ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.85}
-                      >
-                        {gems}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={[styles.shopWalletCard, styles.shopWalletXp]}>
-                    <View style={styles.shopWalletIcon}>
-                      <Zap size={14} color="#fb923c" />
-                    </View>
-                    <View style={styles.shopWalletTextBlock}>
-                      <Text style={styles.shopWalletLabel}>Bonus XP</Text>
-                      <Text
-                        style={[
-                          styles.shopWalletValue,
-                          shopFontLoaded && styles.shopTitleFont,
-                        ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.85}
-                      >
-                        {xpWallet}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </LinearGradient>
-              <View style={styles.shopSectionHeader}>
-                <Text
-                  style={[
-                    styles.shopSectionTitle,
-                    shopFontLoaded && styles.shopTitleFont,
-                  ]}
-                >
-                  {showAllShop ? "All items" : "Recommended for you"}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowAllShop(prev => !prev)}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.shopSectionLink}>
-                    {showAllShop ? "Show less" : "See all"}
-                  </Text>
-                </TouchableOpacity>
+                ))}
+              </View>
+              {/* XP progress */}
+              <View style={styles.xpMiniRow}>
+                <Text style={styles.xpMiniLabel}>XP Progress</Text>
+                <Text style={styles.xpMiniHint}>{Math.max(0, nextXp - totalXp)} to level up</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <Animated.View style={[styles.progressFill, { width: xpFillWidth }]} />
+              </View>
+              {/* Search */}
+              <View style={styles.searchRow}>
+                <Search size={14} color={colors.textMuted} />
+                <TextInput
+                  value={shopQuery}
+                  onChangeText={setShopQuery}
+                  placeholder="Search items…"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.searchInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
               </View>
               {shopError ? (
-                <View style={styles.validationBanner}>
-                  <AlertCircle size={14} color="#f87171" />
-                  <Text style={styles.validationText}>{shopError}</Text>
+                <View style={styles.errorRow}>
+                  <AlertCircle size={13} color={colors.danger} />
+                  <Text style={styles.errorText}>{shopError}</Text>
                 </View>
               ) : null}
-              <View style={styles.shopGrid}>
-                {shopCatalog
-                  .filter(item => {
-                    if (!shopQuery.trim()) return true;
-                    const term = shopQuery.trim().toLowerCase();
-                    const rewardText =
-                      item.reward.type === "badge"
-                        ? "badge"
-                        : item.reward.type;
-                    return (
-                      item.title.toLowerCase().includes(term) ||
-                      item.description.toLowerCase().includes(term) ||
-                      rewardText.includes(term)
-                    );
-                  })
-                  .slice(
-                    0,
-                    showAllShop || shopQuery.trim().length > 0 ? undefined : 3
-                  )
-                  .map(item => {
-                  const badgeOwned =
-                    item.reward.type === "badge" && item.reward.badgeId
-                      ? Boolean(arcadeState?.shopBadges?.[item.reward.badgeId])
-                      : false;
+              <View style={styles.divider} />
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>{showAllShop ? "All Items" : "Recommended"}</Text>
+                <TouchableOpacity onPress={() => setShowAllShop(p => !p)}>
+                  <Text style={styles.cardLink}>{showAllShop ? "Show less" : "See all"}</Text>
+                </TouchableOpacity>
+              </View>
+              {shopCatalog
+                .filter(item => {
+                  if (!shopQuery.trim()) return true;
+                  const t = shopQuery.toLowerCase();
+                  return item.title.toLowerCase().includes(t) || item.description.toLowerCase().includes(t);
+                })
+                .slice(0, showAllShop || shopQuery.trim() ? undefined : 3)
+                .map(item => {
+                  const badgeOwned = item.reward.type === "badge" && item.reward.badgeId
+                    ? Boolean(arcadeState?.shopBadges?.[item.reward.badgeId]) : false;
+                  const RewardIcon = item.reward.type === "coins" ? Coins
+                    : item.reward.type === "gems" ? Gem
+                    : item.reward.type === "xp"   ? Zap
+                    : Award;
                   return (
                     <View key={item.id} style={styles.shopCard}>
                       <View style={styles.shopCardTop}>
-                        <LinearGradient
-                          colors={["rgba(59, 130, 246, 0.35)", "rgba(15, 23, 42, 0.9)"]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.shopImageWrap}
-                        >
-                          {item.reward.type === "coins" ? (
-                            <Coins size={18} color="#facc15" />
-                          ) : item.reward.type === "gems" ? (
-                            <Gem size={18} color="#38bdf8" />
-                          ) : item.reward.type === "xp" ? (
-                            <Zap size={18} color="#fb923c" />
-                          ) : (
-                            <Award size={18} color="#f472b6" />
-                          )}
-                        </LinearGradient>
+                        <View style={styles.shopIconWrap}><RewardIcon size={16} color={colors.text} /></View>
                         <View style={styles.shopCardInfo}>
                           <View style={styles.shopCardTitleRow}>
-                            <Text
-                              style={[
-                                styles.shopCardTitle,
-                                shopFontLoaded && styles.shopTitleFont,
-                              ]}
-                            >
-                              {item.title}
-                            </Text>
-                            <View style={styles.shopRewardTag}>
-                              <Text style={styles.shopRewardText}>
-                                {item.reward.type === "badge"
-                                  ? "Badge"
-                                  : `+${item.reward.amount}`}
-                              </Text>
-                            </View>
+                            <Text style={styles.shopItemTitle}>{item.title}</Text>
+                            {badgeOwned && <Text style={styles.ownedTag}>Owned</Text>}
                           </View>
-                          <Text style={styles.shopCardDesc}>
-                            {item.description}
+                          <Text style={styles.shopItemDesc}>{item.description}</Text>
+                          <Text style={styles.shopReward}>
+                            {item.reward.type === "badge" ? "Earns badge" : `+${item.reward.amount} ${item.reward.type}`}
                           </Text>
-                          <View style={styles.shopMetaRow}>
-                            <View style={styles.shopRating}>
-                              <Star size={12} color="#facc15" />
-                              <Text style={styles.shopRatingText}>4.8</Text>
-                            </View>
-                            {badgeOwned ? (
-                              <View style={styles.shopOwnedPill}>
-                                <Text style={styles.shopOwnedText}>Owned</Text>
-                              </View>
-                            ) : null}
-                          </View>
                         </View>
                       </View>
-                      <View style={styles.shopFooter}>
-                        <View style={styles.shopOfferList}>
-                          {item.offers.map(offer => {
-                            const canAfford =
-                              offer.currency === "coins"
-                                ? coins >= offer.cost
-                                : offer.currency === "gems"
-                                  ? gems >= offer.cost
-                                  : xpWallet >= offer.cost;
-                            const disabled = badgeOwned || !canAfford;
-                            return (
-                              <TouchableOpacity
-                                key={`${item.id}-${offer.currency}-${offer.cost}`}
-                                style={[
-                                  styles.shopBuyButton,
-                                  disabled && styles.shopBuyButtonDisabled,
-                                ]}
-                                onPress={() => handleShopPurchase(item, offer)}
-                                disabled={disabled}
-                              >
-                                <Text style={styles.shopBuyText}>
-                                  {offer.cost}{" "}
-                                  {offer.currency === "xp"
-                                    ? "XP"
-                                    : offer.currency === "coins"
-                                      ? "Coins"
-                                      : "Gems"}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
+                      <View style={styles.shopOffers}>
+                        {item.offers.map(offer => {
+                          const canAfford = offer.currency === "coins" ? coins >= offer.cost
+                            : offer.currency === "gems" ? gems >= offer.cost : xpWallet >= offer.cost;
+                          const off = badgeOwned || !canAfford;
+                          return (
+                            <TouchableOpacity
+                              key={`${item.id}-${offer.currency}`}
+                              style={[styles.offerBtn, off && styles.offerBtnOff]}
+                              onPress={() => handleShopPurchase(item, offer)}
+                              disabled={off}
+                            >
+                              <Text style={[styles.offerBtnText, off && styles.offerBtnTextOff]}>
+                                {offer.cost} {offer.currency.toUpperCase()}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
                     </View>
                   );
-                  })}
-              </View>
+                })}
             </View>
-          ) : (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionTitleRow}>
-                  <Target size={18} color="#34d399" />
-                  <Text style={styles.sectionTitle}>Weekly Challenges</Text>
+
+          ) : activePanel === "challenges" ? (
+            /* ══ CHALLENGES ══════════════════════════════════ */
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>This Week</Text>
+              <View style={styles.divider} />
+              {currentWeekChallenges.length === 0
+                ? <Text style={styles.empty}>No challenges this week.</Text>
+                : currentWeekChallenges.map(ch => renderChallengeCard(ch))}
+              {currentWeekChallenges.some(ch => ch.claimed) && (
+                <TouchableOpacity style={styles.resetBtn} onPress={handleResetWeeklyClaims}>
+                  <Text style={styles.resetBtnText}>Reset claims</Text>
+                </TouchableOpacity>
+              )}
+              <Text style={[styles.cardTitle, { marginTop: 20 }]}>Coming Next Week</Text>
+              <View style={styles.divider} />
+              {nextWeekChallenges.map(ch => renderChallengeCard(ch, { isUpcoming: true }))}
+              <Text style={[styles.cardTitle, { marginTop: 20 }]}>Past Weeks</Text>
+              <View style={styles.divider} />
+              {claimedHistory.length === 0
+                ? <Text style={styles.empty}>No history yet.</Text>
+                : claimedHistory.map(ch => renderChallengeCard(ch, { isPast: true }))}
+            </View>
+
+          ) : activePanel === "quests" ? (
+            /* ══ DAILY QUESTS ════════════════════════════════ */
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Daily Quests</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{dailyCompletedCount}/{dailyQuests.length}</Text>
                 </View>
               </View>
-              <Text style={styles.subsectionTitle}>Current Week</Text>
-              <View style={styles.challengeList}>
-                {currentWeekChallenges.length > 0 ? (
-                  currentWeekChallenges.map(challenge =>
-                    renderChallengeCard(challenge)
-                  )
-                ) : (
-                  <Text style={styles.emptyStateText}>
-                    No active challenges this week.
-                  </Text>
-                )}
-              </View>
-              {currentWeekChallenges.some(challenge => challenge.claimed) ? (
+              <Text style={[styles.cardSub, { marginBottom: 12 }]}>Complete all for +50 XP bonus</Text>
+              <View style={styles.divider} />
+              {dailyQuests.map(quest => (
                 <TouchableOpacity
-                  style={styles.resetClaimsButton}
-                  onPress={handleResetWeeklyClaims}
+                  key={quest.id}
+                  style={[styles.questRow, quest.completed && styles.questRowDone]}
+                  onPress={() => handleQuestPress(quest.id)}
+                  disabled={quest.completed}
+                  activeOpacity={0.7}
                 >
-                  <Text style={styles.resetClaimsText}>
-                    Reset this week claims
-                  </Text>
+                  {quest.completed
+                    ? <CheckCircle2 size={18} color={colors.text} />
+                    : <View style={styles.questCircle} />}
+                  <View style={styles.questBody}>
+                    <Text style={[styles.questTitle, quest.completed && styles.questTitleDone]}>{quest.title}</Text>
+                    <View style={styles.questTrack}>
+                      <View style={[styles.questFill, { width: `${Math.min(100,(quest.progress/quest.total)*100)}%` as any }]} />
+                    </View>
+                  </View>
+                  <Text style={styles.questReward}>+{quest.reward}</Text>
                 </TouchableOpacity>
-              ) : null}
-              <Text style={styles.subsectionTitle}>Upcoming Next Week</Text>
-              <View style={styles.challengeList}>
-                {nextWeekChallenges.length > 0 ? (
-                  nextWeekChallenges.map(challenge =>
-                    renderChallengeCard(challenge, { isUpcoming: true })
-                  )
-                ) : (
-                  <Text style={styles.emptyStateText}>
-                    No upcoming challenges yet.
-                  </Text>
-                )}
+              ))}
+              {allDailyCompleted && (
+                <View style={styles.bonusRow}>
+                  <Text style={styles.bonusLabel}>All done!</Text>
+                  <TouchableOpacity
+                    style={[styles.bonusBtn, dailyBonusClaimed && styles.bonusBtnClaimed]}
+                    onPress={handleClaimDailyBonus}
+                    disabled={dailyBonusClaimed}
+                  >
+                    <Text style={[styles.bonusBtnText, dailyBonusClaimed && styles.bonusBtnTextClaimed]}>
+                      {dailyBonusClaimed ? "Claimed" : "Claim +50 XP"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+          ) : activePanel === "powerups" ? (
+            /* ══ POWER-UPS ═══════════════════════════════════ */
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Power-Ups</Text>
+                <View style={styles.walletPill}>
+                  <Coins size={12} color={colors.textMuted} /><Text style={styles.walletText}>{coins}</Text>
+                  <Gem size={12} color={colors.textMuted} /><Text style={styles.walletText}>{gems}</Text>
+                </View>
               </View>
-              <Text style={styles.subsectionTitle}>Past Weeks</Text>
-              <View style={styles.challengeList}>
-                {claimedHistory.length > 0 ? (
-                  claimedHistory.map(challenge =>
-                    renderChallengeCard(challenge, { isPast: true })
-                  )
-                ) : (
-                  <Text style={styles.emptyStateText}>
-                    No past challenges yet.
-                  </Text>
-                )}
+              <View style={styles.divider} />
+              {shopError ? (
+                <View style={styles.errorRow}>
+                  <AlertCircle size={13} color={colors.danger} />
+                  <Text style={styles.errorText}>{shopError}</Text>
+                </View>
+              ) : null}
+              <View style={styles.powerGrid}>
+                {powerUpItems.map(item => {
+                  const Icon = item.icon;
+                  const canAfford = item.currency === "coins" ? coins >= item.cost : gems >= item.cost;
+                  return (
+                    <View key={item.id} style={styles.powerCard}>
+                      <View style={styles.powerIconWrap}><Icon size={16} color={colors.text} /></View>
+                      <Text style={styles.powerName}>{item.name}</Text>
+                      <Text style={styles.powerDesc}>{item.description}</Text>
+                      <View style={styles.powerFooter}>
+                        <Text style={styles.powerCost}>{item.cost} {item.currency}</Text>
+                        <TouchableOpacity
+                          style={[styles.powerBtn, !canAfford && styles.powerBtnOff]}
+                          onPress={() => handleBuyPowerUp(item.id, item.cost, item.currency)}
+                          disabled={!canAfford}
+                        >
+                          <Text style={[styles.powerBtnText, !canAfford && styles.powerBtnTextOff]}>
+                            {item.owned > 0 ? `Buy (×${item.owned})` : "Buy"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             </View>
-          )}
+
+          ) : activePanel === "leaderboard" ? (
+            /* ══ LEADERBOARD ═════════════════════════════════ */
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Leaderboard</Text>
+                <Text style={styles.cardSub}>This week</Text>
+              </View>
+              <View style={styles.divider} />
+              {leaderboardEntries.length === 0
+                ? <Text style={styles.empty}>No data yet.</Text>
+                : leaderboardEntries.map(player => (
+                  <View key={`${player.rank}-${player.name}`} style={[styles.lbRow, player.isYou && styles.lbRowYou]}>
+                    <Text style={styles.lbRank}>
+                      {player.rank === 1 ? "1st" : player.rank === 2 ? "2nd" : player.rank === 3 ? "3rd" : `#${player.rank}`}
+                    </Text>
+                    <View style={styles.lbUser}>
+                      <User size={14} color={colors.textMuted} />
+                      <Text style={[styles.lbName, player.isYou && styles.lbNameYou]}>{player.name}</Text>
+                      {player.isYou && <Text style={styles.youTag}>YOU</Text>}
+                    </View>
+                    <Text style={styles.lbXp}>{player.xp.toLocaleString()} XP</Text>
+                  </View>
+                ))}
+            </View>
+
+          ) : null}
+
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  safe: { flex: 1, paddingHorizontal: 16 },
-  content: { paddingBottom: 40, gap: 16 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 4,
-    paddingBottom: 12,
-    position: "relative",
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.8)",
-  },
-  headerActions: { flexDirection: "row", gap: 8 },
-  headerTitleWrap: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  headerTitleStack: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontSize: 18,
-    color: "#e5e7eb",
-    textAlign: "center",
-  },
-  headerTitlePixel: {
-    fontFamily: "PressStart2P",
-    fontSize: 12,
-    letterSpacing: 0.5,
-    color: "#facc15",
-  },
-  headerTitleGlow: {
-    position: "absolute",
-    textShadowColor: "rgba(255, 225, 120, 1)",
-    textShadowRadius: 16,
-    textShadowOffset: { width: 0, height: 0 },
-  },
-  panelHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-  },
-  panelBack: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.75)",
-  },
-  panelTitle: { fontSize: 16, fontWeight: "700", color: "#e5e7eb" },
-  panelSpacer: { width: 32 },
-  levelCard: {
-    borderRadius: 24,
-    padding: 18,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
-  },
-  levelTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  levelLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  levelBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(250, 204, 21, 0.9)",
-  },
-  levelLabel: { fontSize: 12, color: "rgba(255, 255, 255, 0.7)" },
-  levelValue: { fontSize: 28, fontWeight: "800", color: "#ffffff" },
-  currencyRow: { flexDirection: "row", gap: 8 },
-  currencyPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
-  },
-  currencyPillAlt: { backgroundColor: "rgba(59, 130, 246, 0.85)" },
-  currencyValue: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  currencyValueAlt: { color: "#ffffff" },
-  shopButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
-  },
-  xpRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  xpText: { fontSize: 12, color: "rgba(255, 255, 255, 0.85)" },
-  xpToLevelPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: "rgba(251, 146, 60, 0.35)",
-  },
-  xpToLevelText: { fontSize: 12, fontWeight: "700", color: "#fed7aa" },
-  xpTrack: {
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
-    overflow: "visible",
-    position: "relative",
-    marginTop: 10,
-  },
-  xpFill: { height: 10, borderRadius: 999, backgroundColor: "#facc15" },
-  xpGlow: {
-    position: "absolute",
-    left: 0,
-    top: -4,
-    height: 18,
-    borderRadius: 999,
-    backgroundColor: "rgba(250, 204, 21, 0.4)",
-    shadowColor: "#facc15",
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  levelFooter: { marginTop: 12, gap: 10 },
-  nextUnlockRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
-    borderRadius: 14,
-    padding: 10,
-  },
-  nextUnlockIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(126, 34, 206, 0.3)",
-  },
-  nextUnlockLabel: { fontSize: 10, color: "rgba(255, 255, 255, 0.7)" },
-  nextUnlockTitle: { fontSize: 12, fontWeight: "700", color: "#ffffff" },
-  convertButton: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: "rgba(15, 23, 42, 0.45)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-  },
-  convertButtonDisabled: { opacity: 0.5 },
-  convertButtonText: { fontSize: 12, fontWeight: "700", color: "#e2e8f0" },
-  sectionCard: {
-    borderRadius: 24,
-    padding: 16,
-    backgroundColor: "#1e1038",
-    borderWidth: 1,
-    borderColor: "#3d2b5f",
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    gap: 12,
-  },
-  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#ffffff" },
-  sectionSubtitle: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
-  sectionHighlight: { color: "#facc15", fontWeight: "700" },
-  sectionBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#3d2b5f",
-    backgroundColor: "#0f0820",
-  },
-  sectionBadgeText: { fontSize: 12, color: "#38bdf8", fontWeight: "700" },
-  sectionBadgeSub: { fontSize: 12, color: "#94a3b8" },
-  questList: { gap: 10 },
-  questRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: "#0f0820",
-    borderWidth: 1,
-    borderColor: "#2d1b4e",
-  },
-  questRowDone: {
-    borderColor: "rgba(34, 197, 94, 0.4)",
-    backgroundColor: "rgba(34, 197, 94, 0.08)",
-  },
-  questContent: { flex: 1 },
-  questTitle: { fontSize: 14, fontWeight: "600", color: "#e5e7eb" },
-  questProgressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 6,
-  },
-  questProgressTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: "#0a0118",
-    overflow: "hidden",
-  },
-  questProgressFill: { height: 6, borderRadius: 999, backgroundColor: "#38bdf8" },
-  questProgressText: { fontSize: 11, color: "#9ca3af" },
-  questRewardPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(251, 146, 60, 0.2)",
-  },
-  questRewardText: { fontSize: 12, fontWeight: "700", color: "#fdba74" },
-  bonusRow: {
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: "rgba(245, 158, 11, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(245, 158, 11, 0.3)",
-  },
-  bonusText: { fontSize: 13, fontWeight: "700", color: "#facc15" },
-  bonusButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "rgba(245, 158, 11, 0.9)",
-  },
-  bonusButtonDisabled: { backgroundColor: "rgba(148, 163, 184, 0.4)" },
-  bonusButtonText: { fontSize: 12, fontWeight: "700", color: "#0f172a" },
-  streakGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  streakCard: {
-    width: "48%",
-    borderRadius: 18,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
-  },
-  streakCardOrange: { backgroundColor: "rgba(251, 146, 60, 0.15)" },
-  streakCardCyan: { backgroundColor: "rgba(56, 189, 248, 0.15)" },
-  streakCardGreen: { backgroundColor: "rgba(34, 197, 94, 0.15)" },
-  streakCardPurple: { backgroundColor: "rgba(168, 85, 247, 0.15)" },
-  streakIconRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-  streakValue: { fontSize: 18, fontWeight: "800", color: "#ffffff" },
-  streakLabel: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
-  streakSub: { fontSize: 11, color: "#94a3b8", marginTop: 2 },
-  currencySummary: { flexDirection: "row", gap: 12, alignItems: "center" },
-  currencySummaryItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  currencySummaryText: { fontSize: 12, color: "#94a3b8", fontWeight: "600" },
-  validationBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginBottom: 10,
-    backgroundColor: "rgba(248, 113, 113, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(248, 113, 113, 0.35)",
-  },
-  validationText: { fontSize: 11, color: "#fecaca", flex: 1 },
-  shopTitleFont: { fontFamily: "SpaceGrotesk-SemiBold" },
-  shopHero: {
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.2)",
-    backgroundColor: "#0f172a",
-    marginBottom: 14,
-  },
-  shopHeroRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  shopHeroTitleBlock: { flex: 1 },
-  shopHeroTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  shopHeroTitle: { color: "#f8fafc", fontSize: 18, fontWeight: "700" },
-  shopHeroSubtitle: { color: "#cbd5f5", fontSize: 12, marginTop: 6 },
-  shopHeroBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(59, 130, 246, 0.2)",
-    borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.35)",
-  },
-  shopHeroBadgeText: { color: "#bfdbfe", fontSize: 11, fontWeight: "700" },
-  shopSearch: {
-    marginTop: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: "rgba(15, 23, 42, 0.8)",
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.2)",
-  },
-  shopSearchInput: {
-    flex: 1,
-    color: "#e2e8f0",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  shopProgressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  shopProgressLabel: { color: "#cbd5f5", fontSize: 11, fontWeight: "700" },
-  shopProgressValue: { color: "#fcd34d", fontSize: 10, fontWeight: "700" },
-  shopProgressShell: {
-    marginTop: 8,
-    marginBottom: 8,
-    position: "relative",
-  },
-  shopProgressTrack: {
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(148, 163, 184, 0.18)",
-    overflow: "hidden",
-    zIndex: 2,
-  },
-  shopProgressFill: {
-    height: "100%",
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  shopProgressFillInner: { flex: 1 },
-  shopWalletRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
-  },
-  shopWalletCard: {
-    flex: 1,
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.2)",
-  },
-  shopWalletCoins: { backgroundColor: "rgba(250, 204, 21, 0.08)" },
-  shopWalletGems: { backgroundColor: "rgba(56, 189, 248, 0.08)" },
-  shopWalletXp: { backgroundColor: "rgba(251, 146, 60, 0.1)" },
-  shopWalletIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.7)",
-  },
-  shopWalletTextBlock: { flexShrink: 1, minWidth: 0 },
-  shopWalletLabel: {
-    color: "#94a3b8",
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  shopWalletValue: {
-    color: "#e2e8f0",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  shopSectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  shopSectionTitle: { color: "#e2e8f0", fontSize: 14, fontWeight: "700" },
-  shopSectionLink: { color: "#38bdf8", fontSize: 12, fontWeight: "700" },
-  shopGrid: {
-    gap: 12,
-  },
-  shopCard: {
-    borderRadius: 18,
-    padding: 14,
-    backgroundColor: "rgba(15, 23, 42, 0.65)",
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.2)",
-  },
-  shopCardTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  shopImageWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.25)",
-  },
-  shopCardInfo: { flex: 1 },
-  shopCardTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  shopCardTitle: { color: "#e5e7eb", fontSize: 14, fontWeight: "700" },
-  shopRewardTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.35)",
-  },
-  shopRewardText: { color: "#bfdbfe", fontSize: 11, fontWeight: "700" },
-  shopCardDesc: { color: "#94a3b8", fontSize: 12, marginTop: 6 },
-  shopMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 8,
-  },
-  shopRating: { flexDirection: "row", alignItems: "center", gap: 4 },
-  shopRatingText: { color: "#fcd34d", fontSize: 11, fontWeight: "700" },
-  shopOwnedPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: "rgba(34, 197, 94, 0.2)",
-  },
-  shopOwnedText: { color: "#86efac", fontSize: 10, fontWeight: "700" },
-  shopFooter: {
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  shopOfferList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "flex-end",
-  },
-  shopCost: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  shopCostText: { color: "#e5e7eb", fontSize: 12, fontWeight: "700" },
-  shopBuyButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "#38bdf8",
-  },
-  shopBuyButtonDisabled: { backgroundColor: "rgba(148, 163, 184, 0.35)" },
-  shopBuyText: { color: "#0b1220", fontSize: 12, fontWeight: "700" },
-  powerGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  powerCard: {
-    width: "48%",
-    borderRadius: 18,
-    padding: 12,
-    borderWidth: 1,
-    backgroundColor: "#0f0820",
-  },
-  powerCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  powerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  powerOwned: {
-    backgroundColor: "rgba(255, 255, 255, 0.85)",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  powerOwnedText: { fontSize: 11, fontWeight: "700", color: "#111827" },
-  powerTitle: { fontSize: 13, fontWeight: "700", color: "#e5e7eb" },
-  powerDesc: { fontSize: 11, color: "#94a3b8", marginTop: 4, marginBottom: 10 },
-  powerFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  powerCost: { flexDirection: "row", alignItems: "center", gap: 4 },
-  powerCostText: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
-  powerBuyButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "rgba(168, 85, 247, 0.9)",
-  },
-  powerBuyButtonDisabled: { backgroundColor: "rgba(148, 163, 184, 0.35)" },
-  powerBuyText: { fontSize: 11, fontWeight: "700", color: "#ffffff" },
-  leaderboardList: { gap: 10 },
-  leaderboardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#2d1b4e",
-    backgroundColor: "#0f0820",
-    gap: 10,
-  },
-  leaderboardRowYou: {
-    borderColor: "rgba(34, 211, 238, 0.6)",
-    backgroundColor: "rgba(14, 116, 144, 0.25)",
-  },
-  leaderboardRank: { width: 24, alignItems: "center" },
-  leaderboardRankText: { color: "#64748b", fontWeight: "700" },
-  leaderboardUser: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-  leaderboardAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(15, 23, 42, 0.6)",
-  },
-  leaderboardMeta: { flex: 1 },
-  leaderboardNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  leaderboardName: { fontSize: 12, fontWeight: "700", color: "#e5e7eb" },
-  leaderboardNameYou: { color: "#38bdf8" },
-  youBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: "#0ea5e9",
-  },
-  youBadgeText: { fontSize: 10, fontWeight: "700", color: "#ffffff" },
-  leaderboardLevel: { fontSize: 10, color: "#94a3b8", marginTop: 2 },
-  leaderboardScore: { alignItems: "flex-end" },
-  leaderboardXp: { fontSize: 13, fontWeight: "700", color: "#e5e7eb" },
-  leaderboardXpLabel: { fontSize: 10, color: "#94a3b8" },
-  leaderboardButton: {
-    marginTop: 12,
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: "rgba(147, 51, 234, 0.9)",
-    alignItems: "center",
-  },
-  leaderboardButtonText: { fontSize: 13, fontWeight: "700", color: "#ffffff" },
-  sectionLink: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(56, 189, 248, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(56, 189, 248, 0.4)",
-  },
-  sectionLinkText: { fontSize: 12, color: "#38bdf8", fontWeight: "700" },
-  subsectionTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#cbd5f5",
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  emptyStateText: { fontSize: 12, color: "#94a3b8", paddingVertical: 6 },
-  achievementList: { gap: 10, marginBottom: 12 },
-  achievementRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: "#0f0820",
-    borderWidth: 1,
-    borderColor: "#2d1b4e",
-  },
-  achievementIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(148, 163, 184, 0.2)",
-  },
-  achievementInfo: { flex: 1 },
-  achievementTitle: { fontSize: 13, fontWeight: "700", color: "#e5e7eb" },
-  achievementMeta: { fontSize: 11, color: "#94a3b8", marginTop: 2 },
-  achievementStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  achievementStatusClaimed: {
-    borderColor: "rgba(34, 197, 94, 0.4)",
-    backgroundColor: "rgba(34, 197, 94, 0.2)",
-  },
-  achievementStatusReady: {
-    borderColor: "rgba(250, 204, 21, 0.4)",
-    backgroundColor: "rgba(250, 204, 21, 0.2)",
-  },
-  achievementStatusText: { fontSize: 10, fontWeight: "700", color: "#e5e7eb" },
-  challengeList: { gap: 12 },
-  challengeCard: {
-    padding: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#2d1b4e",
-    backgroundColor: "#0f0820",
-    gap: 8,
-  },
-  challengeCardCompleted: { borderColor: "rgba(34, 197, 94, 0.35)" },
-  challengeTopRow: { flexDirection: "row", justifyContent: "space-between" },
+const makeStyles = (c: ReturnType<typeof useTheme>["colors"]) => StyleSheet.create({
+  /* layout */
+  screen:       { flex: 1, backgroundColor: c.backgroundStart },
+  safe:         { flex: 1, paddingHorizontal: 16 },
+  content:      { paddingBottom: 48, gap: 12 },
+  /* header */
+  header:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 },
+  headerTitle:  { fontSize: 16, fontWeight: "700", color: c.text, letterSpacing: -0.3 },
+  headerRight:  { flexDirection: "row", gap: 8 },
+  iconBtn:      { width: 34, height: 34, borderRadius: 8, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center", backgroundColor: c.surface },
+  /* menu */
+  menuOverlay:  { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "flex-end" },
+  menuSheet:    { backgroundColor: c.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36, borderTopWidth: 1, borderColor: c.border },
+  menuTitle:    { fontSize: 11, fontWeight: "700", color: c.textMuted, letterSpacing: 1, textTransform: "uppercase", marginBottom: 12 },
+  menuItem:     { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: c.border },
+  menuItemText: { flex: 1, fontSize: 14, color: c.textMuted, fontWeight: "500" },
+  menuItemActive:{ color: c.text, fontWeight: "700" },
+  /* level card */
+  levelCard:    { backgroundColor: c.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: c.border },
+  levelCardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
+  levelLabel:   { fontSize: 11, color: c.textMuted, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" },
+  levelValue:   { fontSize: 40, fontWeight: "800", color: c.text, lineHeight: 44 },
+  levelRight:   { gap: 6, alignItems: "flex-end" },
+  currencyRow:  { flexDirection: "row", alignItems: "center", gap: 5 },
+  currencyText: { fontSize: 13, fontWeight: "600", color: c.textMuted },
+  xpRow:        { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  xpLabel:      { fontSize: 12, color: c.textMuted },
+  xpHint:       { fontSize: 12, color: c.textMuted },
+  xpTrack:      { height: 4, borderRadius: 999, backgroundColor: c.border, overflow: "hidden", marginBottom: 14 },
+  xpFill:       { height: 4, borderRadius: 999, backgroundColor: c.text },
+  convertBtn:   { alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: c.border },
+  convertBtnDisabled: { opacity: 0.4 },
+  convertBtnText: { fontSize: 12, fontWeight: "600", color: c.text },
+  convertBtnTextDisabled: { color: c.textMuted },
+  /* stats grid */
+  statsGrid:    { flexDirection: "row", gap: 8 },
+  statCard:     { flex: 1, backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, alignItems: "center", gap: 4 },
+  statValue:    { fontSize: 15, fontWeight: "800", color: c.text },
+  statLabel:    { fontSize: 10, color: c.textMuted, fontWeight: "500" },
+  /* generic card */
+  card:         { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 16 },
+  cardHeader:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  cardTitle:    { fontSize: 14, fontWeight: "700", color: c.text, letterSpacing: -0.2 },
+  cardSub:      { fontSize: 11, color: c.textMuted },
+  cardLink:     { fontSize: 12, fontWeight: "600", color: c.textMuted },
+  divider:      { height: 1, backgroundColor: c.border, marginVertical: 10 },
+  empty:        { fontSize: 12, color: c.textMuted, paddingVertical: 8 },
+  countBadge:   { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: c.border },
+  countBadgeText: { fontSize: 12, fontWeight: "700", color: c.text },
+  /* quests */
+  questRow:     { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border },
+  questRowDone: { opacity: 0.5 },
+  questBody:    { flex: 1 },
+  questTitle:   { fontSize: 13, fontWeight: "500", color: c.text, marginBottom: 5 },
+  questTitleDone: { textDecorationLine: "line-through" },
+  questTrack:   { height: 3, borderRadius: 999, backgroundColor: c.border, overflow: "hidden" },
+  questFill:    { height: 3, backgroundColor: c.text, borderRadius: 999 },
+  questReward:  { fontSize: 12, fontWeight: "600", color: c.textMuted, width: 32, textAlign: "right" },
+  bonusRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.border },
+  bonusLabel:   { fontSize: 13, fontWeight: "600", color: c.text },
+  bonusBtn:     { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: c.text },
+  bonusBtnClaimed: { backgroundColor: c.border },
+  bonusBtnText: { fontSize: 12, fontWeight: "700", color: c.surface },
+  bonusBtnTextClaimed: { color: c.textMuted },
+  /* wallet */
+  walletPill:   { flexDirection: "row", alignItems: "center", gap: 8 },
+  walletText:   { fontSize: 12, fontWeight: "600", color: c.textMuted },
+  /* power-ups */
+  powerGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
+  powerCard:    { width: "48%", borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12 },
+  powerIconWrap:{ width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  powerName:    { fontSize: 12, fontWeight: "700", color: c.text, marginBottom: 2 },
+  powerDesc:    { fontSize: 11, color: c.textMuted, marginBottom: 10 },
+  powerFooter:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  powerCost:    { fontSize: 11, color: c.textMuted, fontWeight: "600" },
+  powerBtn:     { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: c.text },
+  powerBtnOff:  { backgroundColor: c.border },
+  powerBtnText: { fontSize: 11, fontWeight: "700", color: c.surface },
+  powerBtnTextOff: { color: c.textMuted },
+  /* leaderboard */
+  lbRow:        { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border },
+  lbRowYou:     { backgroundColor: c.surfaceAlt, marginHorizontal: -16, paddingHorizontal: 16 },
+  lbRank:       { width: 30, fontSize: 11, fontWeight: "700", color: c.textMuted },
+  lbUser:       { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
+  lbName:       { fontSize: 13, fontWeight: "500", color: c.textMuted },
+  lbNameYou:    { fontWeight: "700", color: c.text },
+  youTag:       { fontSize: 9, fontWeight: "700", color: c.textMuted, borderWidth: 1, borderColor: c.border, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
+  lbXp:         { fontSize: 12, fontWeight: "700", color: c.text },
+  /* achievements / profile */
+  achieveRow:   { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border },
+  achieveIcon:  { width: 32, height: 32, borderRadius: 8, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" },
+  achieveInfo:  { flex: 1 },
+  achieveTitle: { fontSize: 13, fontWeight: "600", color: c.text },
+  achieveMeta:  { fontSize: 11, color: c.textMuted, marginTop: 1 },
+  statusPill:   { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
+  statusClaimed:{ borderColor: c.border, backgroundColor: c.surfaceAlt },
+  statusReady:  { borderColor: c.text, backgroundColor: c.text },
+  statusText:   { fontSize: 11, fontWeight: "700" },
+  statusTextClaimed: { color: c.textMuted },
+  statusTextReady:   { color: c.surface },
+  /* badges */
+  badgeGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 8 },
+  badgeCell:    { width: "30%", borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 10, alignItems: "center", gap: 4, aspectRatio: 1, position: "relative", overflow: "hidden" },
+  badgeCellLocked: { opacity: 0.45 },
+  lockOverlay:  { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceAlt },
+  badgeIconWrap:{ width: 36, height: 36, borderRadius: 9, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" },
+  badgeIconUnlocked: { backgroundColor: c.text, borderColor: c.text },
+  badgeName:    { fontSize: 9, fontWeight: "700", color: c.text, textAlign: "center" },
+  badgeNameLocked: { color: c.textMuted },
+  badgeRarity:  { fontSize: 8, color: c.textMuted, textAlign: "center" },
+  /* milestones */
+  milestoneRow: { flexDirection: "row", gap: 12, alignItems: "flex-start", marginBottom: 14 },
+  milestoneNode:{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center", marginTop: 2 },
+  milestoneNodeDone:  { backgroundColor: c.text, borderColor: c.text },
+  milestoneNodeReady: { backgroundColor: c.text, borderColor: c.text },
+  milestoneInfo:{ flex: 1 },
+  milestoneHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
+  milestoneTitle: { fontSize: 13, fontWeight: "700", color: c.text },
+  milestoneSub:   { fontSize: 11, color: c.textMuted, marginTop: 2 },
+  claimedTag:     { fontSize: 11, fontWeight: "600", color: c.textMuted },
+  claimBtn:       { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 7, backgroundColor: c.text },
+  claimBtnText:   { fontSize: 11, fontWeight: "700", color: c.surface },
+  rewardHint:     { fontSize: 11, color: c.textMuted },
+  milestoneTrack: { height: 3, borderRadius: 999, backgroundColor: c.border, overflow: "hidden", marginBottom: 4 },
+  milestoneFill:  { height: 3, backgroundColor: c.text, borderRadius: 999 },
+  milestonePct:   { fontSize: 10, color: c.textMuted },
+  /* progress track (generic) */
+  progressTrack:  { height: 4, borderRadius: 999, backgroundColor: c.border, overflow: "hidden", marginBottom: 12 },
+  progressFill:   { height: 4, backgroundColor: c.text, borderRadius: 999 },
+  /* market/shop */
+  walletRow:      { flexDirection: "row", gap: 8, marginBottom: 14 },
+  walletCard:     { flex: 1, borderRadius: 10, borderWidth: 1, borderColor: c.border, padding: 10, alignItems: "center", gap: 3 },
+  walletValue:    { fontSize: 16, fontWeight: "800", color: c.text },
+  walletLabel:    { fontSize: 10, color: c.textMuted },
+  xpMiniRow:      { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  xpMiniLabel:    { fontSize: 12, fontWeight: "600", color: c.text },
+  xpMiniHint:     { fontSize: 12, color: c.textMuted },
+  searchRow:      { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginVertical: 12 },
+  searchInput:    { flex: 1, fontSize: 13, color: c.text },
+  shopCard:       { borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, marginBottom: 10 },
+  shopCardTop:    { flexDirection: "row", gap: 12, marginBottom: 10 },
+  shopIconWrap:   { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" },
+  shopCardInfo:   { flex: 1 },
+  shopCardTitleRow:{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
+  shopItemTitle:  { fontSize: 13, fontWeight: "700", color: c.text },
+  shopItemDesc:   { fontSize: 12, color: c.textMuted, marginBottom: 3 },
+  shopReward:     { fontSize: 11, fontWeight: "600", color: c.text },
+  ownedTag:       { fontSize: 10, fontWeight: "700", color: c.textMuted, borderWidth: 1, borderColor: c.border, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  shopOffers:     { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  offerBtn:       { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 7, backgroundColor: c.text },
+  offerBtnOff:    { backgroundColor: c.border },
+  offerBtnText:   { fontSize: 11, fontWeight: "700", color: c.surface },
+  offerBtnTextOff:{ color: c.textMuted },
+  /* challenge card */
+  challengeCard:  { borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, gap: 8 },
+  challengeCardDone: { backgroundColor: c.surfaceAlt },
+  challengeTopRow:{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   challengeTitleWrap: { flex: 1 },
   challengeTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  challengeTitle: { fontSize: 14, fontWeight: "700", color: "#ffffff" },
-  challengeDesc: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
-  difficultyBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, borderWidth: 1 },
-  difficultyEasy: {
-    borderColor: "rgba(34, 197, 94, 0.4)",
-    backgroundColor: "rgba(34, 197, 94, 0.2)",
-  },
-  difficultyMedium: {
-    borderColor: "rgba(234, 179, 8, 0.4)",
-    backgroundColor: "rgba(234, 179, 8, 0.2)",
-  },
-  difficultyHard: {
-    borderColor: "rgba(239, 68, 68, 0.4)",
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
-  },
-  difficultyText: { fontSize: 10, fontWeight: "700", color: "#e5e7eb" },
-  challengeMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  challengeMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  challengeMetaText: { fontSize: 10, color: "#94a3b8" },
-  challengeRewardPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: "rgba(251, 146, 60, 0.2)",
-  },
-  challengeRewardText: { fontSize: 11, fontWeight: "700", color: "#fdba74" },
-  challengeProgressTrack: {
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: "#0a0118",
-    overflow: "hidden",
-  },
-  challengeProgressFill: { height: 8, borderRadius: 999, backgroundColor: "#38bdf8" },
-  challengeFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  challengeProgressText: { fontSize: 10, color: "#94a3b8" },
-  progressButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "#0ea5e9",
-  },
-  progressButtonText: { fontSize: 11, fontWeight: "700", color: "#ffffff" },
-  claimButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "rgba(34, 197, 94, 0.9)",
-  },
-  claimButtonText: { fontSize: 11, fontWeight: "700", color: "#ffffff" },
-  claimedText: { fontSize: 11, fontWeight: "700", color: "#4ade80" },
-  pendingText: { fontSize: 11, fontWeight: "700", color: "#60a5fa" },
-  resetClaimsButton: {
-    alignSelf: "flex-start",
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(248, 113, 113, 0.5)",
-    backgroundColor: "rgba(248, 113, 113, 0.12)",
-  },
-  resetClaimsText: { fontSize: 11, fontWeight: "700", color: "#fca5a5" },
-  milestoneTrack: { gap: 12, position: "relative" },
-  milestoneLine: {
-    position: "absolute",
-    left: 18,
-    top: 10,
-    bottom: 10,
-    width: 2,
-    backgroundColor: "rgba(56, 189, 248, 0.3)",
-  },
-  milestoneRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-  milestoneNode: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#3d2b5f",
-    backgroundColor: "#0f0820",
-  },
-  milestoneNodeClaimed: {
-    borderColor: "#4ade80",
-    backgroundColor: "rgba(34, 197, 94, 0.25)",
-  },
-  milestoneNodeReady: {
-    borderColor: "#facc15",
-    backgroundColor: "rgba(234, 179, 8, 0.25)",
-  },
-  milestoneEmoji: { fontSize: 18 },
-  milestoneCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#2d1b4e",
-    backgroundColor: "#0f0820",
-    padding: 12,
-  },
-  milestoneHeader: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
-  milestoneTitle: { fontSize: 14, fontWeight: "700", color: "#ffffff" },
-  milestoneSub: { fontSize: 11, color: "#94a3b8", marginTop: 4 },
-  milestoneClaimed: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "rgba(34, 197, 94, 0.2)",
-    borderWidth: 1,
-    borderColor: "rgba(34, 197, 94, 0.4)",
-  },
-  milestoneClaimedText: { fontSize: 10, fontWeight: "700", color: "#4ade80" },
-  milestoneClaimButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "rgba(245, 158, 11, 0.95)",
-  },
-  milestoneClaimButtonText: { fontSize: 10, fontWeight: "700", color: "#0f172a" },
-  milestoneRewardPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: "rgba(251, 146, 60, 0.2)",
-    borderWidth: 1,
-    borderColor: "rgba(251, 146, 60, 0.4)",
-  },
-  milestoneRewardText: { fontSize: 10, fontWeight: "700", color: "#fdba74" },
-  milestoneProgressTrack: {
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: "#0a0118",
-    overflow: "hidden",
-    marginTop: 8,
-  },
-  milestoneProgressFill: { height: 6, borderRadius: 999, backgroundColor: "#38bdf8" },
-  milestoneProgressText: { fontSize: 10, color: "#94a3b8", marginTop: 4 },
-  badgeProgressTrack: {
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: "#0f0820",
-    overflow: "hidden",
-    marginBottom: 12,
-  },
-  badgeProgressFill: { height: 8, borderRadius: 999, backgroundColor: "#38bdf8" },
-  badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  badgeItem: {
-    width: "30%",
-    borderRadius: 16,
-    padding: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    aspectRatio: 1,
-    position: "relative",
-  },
-  badgeItemUnlocked: { backgroundColor: "#2d1b4e" },
-  badgeItemLocked: { backgroundColor: "#0f0820", borderWidth: 1, borderColor: "#2d1b4e" },
-  badgeLockOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(2, 6, 23, 0.6)",
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeIcon: { marginBottom: 6 },
-  badgeName: { fontSize: 10, fontWeight: "700", color: "#ffffff", textAlign: "center" },
-  badgeRarityPill: {
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
-  },
-  badgeRarityText: { fontSize: 9, fontWeight: "700", color: "#ffffff" },
-  menuOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(2, 6, 23, 0.65)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  menuSheet: {
-    width: "100%",
-    borderRadius: 20,
-    backgroundColor: "#0f0820",
-    borderWidth: 1,
-    borderColor: "#2d1b4e",
-    padding: 16,
-  },
-  menuTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#e2e8f0",
-    marginBottom: 4,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: "rgba(30, 16, 56, 0.8)",
-    marginTop: 10,
-  },
-  menuItemText: { flex: 1, fontSize: 13, color: "#e2e8f0", fontWeight: "600" },
-  bgBlob: { opacity: 0.22 },
-  bgBlobAlt: { opacity: 0.18 },
-  floaters: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  floater: { position: "absolute" },
-  floaterCircle: {
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  floaterSquare: {
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-  floaterRounded: {
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  floaterPill: {
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  floaterTriangle: {
-    width: 0,
-    height: 0,
-    borderStyle: "solid",
-    backgroundColor: "transparent",
-  },
-  floaterLShape: {
-    borderRadius: 8,
-    borderWidth: 1,
-    position: "relative",
-  },
-  floaterLArm: {
-    position: "absolute",
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  floaterController: {
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  floaterDot: {
-    position: "absolute",
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#38bdf8",
-  },
+  challengeTitle: { fontSize: 13, fontWeight: "700", color: c.text, flex: 1 },
+  difficultyBadge:{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4, borderWidth: 1 },
+  difficultyEasy: { borderColor: c.border },
+  difficultyMedium:{ borderColor: c.border },
+  difficultyHard: { borderColor: c.text },
+  difficultyText: { fontSize: 10, fontWeight: "600", color: c.textMuted },
+  challengeDesc:  { fontSize: 11, color: c.textMuted, marginTop: 2 },
+  challengeMetaRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  challengeMetaItem:{ flexDirection: "row", alignItems: "center", gap: 4 },
+  challengeMetaText:{ fontSize: 10, color: c.textMuted },
+  challengeRewardPill:{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, borderWidth: 1, borderColor: c.border },
+  challengeRewardText:{ fontSize: 11, fontWeight: "600", color: c.textMuted },
+  challengeTrack: { height: 3, borderRadius: 999, backgroundColor: c.border, overflow: "hidden" },
+  challengeFill:  { height: 3, backgroundColor: c.text, borderRadius: 999 },
+  challengeFooter:{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  challengeProgressText:{ fontSize: 10, color: c.textMuted },
+  challengeBtn:   { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: c.text },
+  challengeBtnText:{ fontSize: 11, fontWeight: "700", color: c.surface },
+  challengeClaimBtn:{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: c.text },
+  challengeClaimBtnText:{ fontSize: 11, fontWeight: "700", color: c.text },
+  claimedText:    { fontSize: 11, fontWeight: "600", color: c.textMuted },
+  pendingText:    { fontSize: 11, fontWeight: "600", color: c.textMuted },
+  resetBtn:       { alignSelf: "flex-start", marginTop: 10, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 7, borderWidth: 1, borderColor: c.border },
+  resetBtnText:   { fontSize: 11, fontWeight: "600", color: c.textMuted },
+  /* splash */
+  splashScreen:     { alignItems: "center", justifyContent: "center" },
+  splashSafe:       { flex: 1, width: "100%" },
+  splashCenter:     { flex: 1, alignItems: "center", justifyContent: "center", gap: 20 },
+  splashIconWrap:   { width: 80, height: 80, borderRadius: 20, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
+  splashText:       { alignItems: "center", gap: 6 },
+  splashTitle:      { fontSize: 26, fontWeight: "800", color: c.text, letterSpacing: -0.5 },
+  splashSub:        { fontSize: 13, color: c.textMuted, letterSpacing: 0.1 },
+  splashFooter:     { paddingBottom: 48, alignItems: "center" },
+  splashDots:       { flexDirection: "row", gap: 6 },
+  splashDot:        { width: 6, height: 6, borderRadius: 3, backgroundColor: c.border },
+  splashDotActive:  { width: 18, backgroundColor: c.text },
+  /* nav row */
+  navRow:           { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 },
+  questCircle:      { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: c.border },
+  /* accordion */
+  accordionRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  accordionLeft:    { flexDirection: "row", alignItems: "center", gap: 12 },
+  accordionRight:   { flexDirection: "row", alignItems: "center", gap: 10 },
+  accordionIconWrap:{ width: 34, height: 34, borderRadius: 10, backgroundColor: c.text, alignItems: "center", justifyContent: "center" },
+  accordionLabel:   { fontSize: 13, fontWeight: "700", color: c.text, letterSpacing: 0.4 },
+  accordionBody:    { marginTop: 14, gap: 10 },
+  /* error */
+  errorRow:       { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: c.danger, marginBottom: 8 },
+  errorText:      { fontSize: 11, color: c.danger, flex: 1 },
+  /* floater (unused but keep to avoid ref errors in ArcadeFloaters) */
+  floaters:       { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  floater:        { position: "absolute" },
+  floaterCircle:  { borderRadius: 999, borderWidth: 1 },
+  floaterSquare:  { borderRadius: 4, borderWidth: 1 },
+  floaterRounded: { borderRadius: 12, borderWidth: 1 },
+  floaterPill:    { borderRadius: 999, borderWidth: 1 },
+  floaterTriangle:{ width: 0, height: 0, borderStyle: "solid", backgroundColor: "transparent" },
+  floaterLShape:  { borderRadius: 8, borderWidth: 1, position: "relative" },
+  floaterLArm:    { position: "absolute", borderRadius: 6, borderWidth: 1 },
+  floaterController:{ borderRadius: 8, borderWidth: 1 },
+  floaterDot:     { position: "absolute", width: 4, height: 4, borderRadius: 2, backgroundColor: c.border },
+  bgBlob:         { opacity: 0 },
+  bgBlobAlt:      { opacity: 0 },
 });
 
 const ArcadeFloaters = () => {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { width, height } = Dimensions.get("window");
   const items = useRef(
     Array.from({ length: 18 }).map((_, index) => {

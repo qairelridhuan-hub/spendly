@@ -13,12 +13,12 @@ import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   doc,
-  onSnapshot,
   query,
   serverTimestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
+import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { auth, db } from "@/lib/firebase";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useTheme } from "@/lib/context";
@@ -42,7 +42,7 @@ export default function NotificationsScreen() {
       collection(db, "notifications"),
       where("targetRole", "in", ["worker", "all"])
     );
-    const unsub = onSnapshot(notificationsQuery, snapshot => {
+    const unsub = safeSnapshot(notificationsQuery, snapshot => {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
         ...docSnap.data(),
