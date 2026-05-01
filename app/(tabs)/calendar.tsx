@@ -24,11 +24,9 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "@/lib/firebase";
 import { useCalendar, useTheme } from "@/lib/context";
-import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { cardShadow } from "@/lib/shadows";
 
 /* =====================
@@ -36,8 +34,12 @@ import { cardShadow } from "@/lib/shadows";
 ===================== */
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const GAP = 8;
-const CELL_WIDTH = (SCREEN_WIDTH - 32 - GAP * 6) / 7;
+const CONTAINER_PAD = 16; // ScrollView container horizontal padding
+const CARD_BORDER = 1;
+const CARD_H_PAD = 12;
+const CAL_GAP = 3;
+const CAL_CONTENT_WIDTH = SCREEN_WIDTH - CONTAINER_PAD * 2 - CARD_BORDER * 2 - CARD_H_PAD * 2;
+const CELL_WIDTH = (CAL_CONTENT_WIDTH - CAL_GAP * 6) / 7;
 
 /* =====================
    SCREEN
@@ -323,10 +325,10 @@ export default function CalendarScreen() {
 
             <View style={styles.navIcons}>
               <TouchableOpacity onPress={prevMonth}>
-                <ChevronLeft size={20} color={c.text} />
+                <ChevronLeft size={16} color={c.text} />
               </TouchableOpacity>
               <TouchableOpacity onPress={nextMonth}>
-                <ChevronRight size={20} color={c.text} />
+                <ChevronRight size={16} color={c.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -377,112 +379,93 @@ export default function CalendarScreen() {
             </View>
           ) : null}
 
-          {/* WEEK ROW */}
+          {/* WEEK HEADER */}
           <View style={styles.weekRow}>
             {["S","M","T","W","T","F","S"].map((d, i) => (
-              <Text
-                key={i}
-                style={[styles.weekText, styles.calendarWeekText, { width: CELL_WIDTH }]}
-              >
-                {d}
-              </Text>
+              <Text key={i} style={styles.weekText}>{d}</Text>
             ))}
           </View>
 
-          {/* CALENDAR GRID */}
-          <View style={styles.grid}>
-            {Array.from({ length: totalCells }).map((_, index) => {
-              const day = index - startDay + 1;
-              const valid = day > 0 && day <= daysInMonth;
+          {/* CALENDAR GRID — explicit week rows */}
+          {Array.from({ length: Math.ceil(totalCells / 7) }).map((_, rowIdx) => (
+            <View key={rowIdx} style={styles.calRow}>
+              {Array.from({ length: 7 }).map((_, colIdx) => {
+                const index = rowIdx * 7 + colIdx;
+                const day   = index - startDay + 1;
+                const valid = day > 0 && day <= daysInMonth;
 
-              if (!valid) {
+                if (!valid) {
+                  return <View key={`sp-${index}`} style={styles.cellSpacer} />;
+                }
+
+                const dateKey = `${year}-${pad(month + 1)}-${pad(day)}`;
+                const status  = getDateStatus(dateKey, attendanceMap, getShiftsForDate);
+                const isToday = dateKey === todayKey;
                 return (
-                  <View
-                    key={`empty-${index}`}
-                    style={[styles.dayCell, styles.calendarDayCell]}
-                  />
-                );
-              }
-
-              const dateKey = `${year}-${pad(month + 1)}-${pad(day)}`;
-              const status = getDateStatus(dateKey, attendanceMap, getShiftsForDate);
-              const isToday = dateKey === todayKey;
-              return (
-                <TouchableOpacity
-                  key={day}
-                  style={[
-                    styles.dayCell,
-                    styles.calendarDayCell,
-                    isToday && styles.todayCell,
-                    selectedDay === day && styles.selectedDay,
-                  ]}
-                  onPress={() => {
-                    setSelectedDay(day);
-                    setSelectedDate(`${year}-${pad(month + 1)}-${pad(day)}`);
-                    setActiveTooltipDate(null);
-                  }}
-                >
-                  <Text
+                  <TouchableOpacity
+                    key={day}
                     style={[
-                      styles.dayText,
-                      styles.calendarDayText,
-                      isToday && styles.todayText,
-                      selectedDay === day && styles.selectedDayText,
+                      styles.dayCell,
+                      isToday && styles.todayCell,
+                      selectedDay === day && styles.selectedDay,
                     ]}
+                    onPress={() => {
+                      setSelectedDay(day);
+                      setSelectedDate(`${year}-${pad(month + 1)}-${pad(day)}`);
+                      setActiveTooltipDate(null);
+                    }}
                   >
-                    {day}
-                  </Text>
-                  <View style={styles.statusRow}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (status === "none") return;
-                        setActiveTooltipDate(prev =>
-                          prev === dateKey ? null : dateKey
-                        );
-                      }}
+                    <Text
                       style={[
-                        styles.dotPlaceholder,
-                        status === "scheduled" && styles.dotScheduled,
-                        status === "completed" && styles.dotCompleted,
-                        status === "absent" && styles.dotAbsent,
-                        status === "none" && styles.dotNone,
+                        styles.dayText,
+                        isToday && styles.todayText,
+                        selectedDay === day && styles.selectedDayText,
                       ]}
-                      disabled={status === "none"}
-                    />
-                  </View>
-                  {activeTooltipDate === dateKey ? (
-                    <View style={styles.tooltip}>
-                      {(() => {
-                        const shiftsForDay = getShiftsForDate(dateKey);
-                        if (!shiftsForDay.length) {
-                          return (
-                            <Text style={styles.tooltipText}>No shift</Text>
+                    >
+                      {day}
+                    </Text>
+                    <View style={styles.statusRow}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (status === "none") return;
+                          setActiveTooltipDate(prev =>
+                            prev === dateKey ? null : dateKey
                           );
-                        }
-                        const first = shiftsForDay[0];
-                        const extra = shiftsForDay.length - 1;
-                        return (
-                          <>
-                            <Text style={styles.tooltipTitle}>
-                              {first.role || "Shift"}
-                            </Text>
-                            <Text style={styles.tooltipText}>
-                              {first.start} - {first.end}
-                            </Text>
-                            {extra > 0 ? (
-                              <Text style={styles.tooltipText}>
-                                +{extra} more
-                              </Text>
-                            ) : null}
-                          </>
-                        );
-                      })()}
+                        }}
+                        style={[
+                          styles.dotPlaceholder,
+                          status === "scheduled" && styles.dotScheduled,
+                          status === "completed" && styles.dotCompleted,
+                          status === "absent"    && styles.dotAbsent,
+                          status === "none"      && styles.dotNone,
+                        ]}
+                        disabled={status === "none"}
+                      />
                     </View>
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                    {activeTooltipDate === dateKey ? (
+                      <View style={styles.tooltip}>
+                        {(() => {
+                          const shiftsForDay = getShiftsForDate(dateKey);
+                          if (!shiftsForDay.length) {
+                            return <Text style={styles.tooltipText}>No shift</Text>;
+                          }
+                          const first = shiftsForDay[0];
+                          const extra = shiftsForDay.length - 1;
+                          return (
+                            <>
+                              <Text style={styles.tooltipTitle}>{first.role || "Shift"}</Text>
+                              <Text style={styles.tooltipText}>{first.start} - {first.end}</Text>
+                              {extra > 0 && <Text style={styles.tooltipText}>+{extra} more</Text>}
+                            </>
+                          );
+                        })()}
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
         </View>
 
         {/* =====================
@@ -862,9 +845,9 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
 
     card: {
       backgroundColor: c.surface,
-      borderRadius: 18,
-      padding: 16,
-      marginBottom: 16,
+      borderRadius: 16,
+      padding: 12,
+      marginBottom: 12,
       borderWidth: 1,
       borderColor: c.border,
       ...cardShadow,
@@ -888,13 +871,13 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 12,
+      marginBottom: 8,
     },
-    captionGroup: { flexDirection: "row", gap: 8, alignItems: "center" },
+    captionGroup: { flexDirection: "row", gap: 6, alignItems: "center" },
     captionButton: {
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: 10,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: c.border,
       backgroundColor: c.surfaceAlt,
@@ -905,7 +888,7 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: c.surfaceAlt,
     },
     calendarCaptionText: { color: c.text },
-    navIcons: { flexDirection: "row", gap: 8 },
+    navIcons: { flexDirection: "row", gap: 4 },
     dropdown: {
       marginBottom: 12,
       borderWidth: 1,
@@ -930,42 +913,45 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     dropdownText: { color: c.text, fontWeight: "600", fontSize: 12 },
     dropdownTextActive: { color: c.backgroundStart },
 
-    weekRow: { flexDirection: "row", marginBottom: 8 },
+    weekRow: { flexDirection: "row", gap: CAL_GAP, marginBottom: 4 },
     weekText: {
+      width: CELL_WIDTH,
       textAlign: "center",
       fontWeight: "600",
       color: c.textMuted,
-      fontSize: 12,
+      fontSize: 10,
     },
     calendarWeekText: { color: c.textMuted },
 
-    grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
+    calRow:     { flexDirection: "row", gap: CAL_GAP, marginBottom: CAL_GAP },
+    cellSpacer: { width: CELL_WIDTH, height: 44 },
 
     dayCell: {
       width: CELL_WIDTH,
-      height: 72,
-      borderRadius: 14,
+      height: 44,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: c.border,
-      padding: 8,
+      paddingTop: 5,
+      paddingHorizontal: 4,
+      paddingBottom: 4,
       justifyContent: "space-between",
-      backgroundColor: c.surface,
-      position: "relative",
-    },
-    calendarDayCell: {
-      borderColor: c.border,
       backgroundColor: c.surfaceAlt,
+      position: "relative",
+      alignItems: "center",
     },
 
     selectedDay: {
       borderColor: c.text,
+      borderWidth: 1.5,
       backgroundColor: c.border,
     },
     todayCell: {
       borderColor: c.text,
+      borderWidth: 1.5,
     },
 
-    dayText: { color: c.text, fontWeight: "600" },
+    dayText: { color: c.text, fontWeight: "600", fontSize: 11 },
     calendarDayText: { color: c.text },
     todayText: { color: c.text, fontWeight: "700" },
     selectedDayText: {
@@ -973,7 +959,7 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       fontWeight: "700",
     },
 
-    statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
     dotPlaceholder: {
       width: 6,
       height: 6,
@@ -985,16 +971,16 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     dotAbsent: { backgroundColor: "#f87171" },
     tooltip: {
       position: "absolute",
-      top: -6,
-      left: -4,
-      right: -4,
+      top: -2,
+      left: -2,
+      right: -2,
       backgroundColor: c.text,
-      borderRadius: 10,
-      padding: 6,
+      borderRadius: 8,
+      padding: 5,
       zIndex: 10,
     },
-    tooltipTitle: { color: c.backgroundStart, fontSize: 10, fontWeight: "700" },
-    tooltipText: { color: c.border, fontSize: 9, marginTop: 2 },
+    tooltipTitle: { color: c.backgroundStart, fontSize: 9, fontWeight: "700" },
+    tooltipText: { color: c.border, fontSize: 8, marginTop: 1 },
 
     emptyBox: {
       backgroundColor: c.surface,

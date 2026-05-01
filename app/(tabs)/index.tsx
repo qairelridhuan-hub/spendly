@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 const SCREEN_W = Dimensions.get("window").width;
-const CLOCK_SIZE = Math.floor((SCREEN_W - 60) / 2);
+const CLOCK_SIZE = 88;
 import {
   Bell,
   DollarSign,
@@ -71,7 +71,8 @@ type AttendancePolicy = {
    ANALOG CLOCK
 ===================== */
 
-function AnalogClock({ size = 36 }: { size?: number }) {
+function AnalogClock({ size = 88 }: { size?: number }) {
+  const { colors } = useTheme();
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -95,61 +96,70 @@ function AnalogClock({ size = 36 }: { size?: number }) {
     y: cy + len * Math.sin((deg * Math.PI) / 180),
   });
 
-  const hTip = pt(hrDeg,  r * 0.52);
-  const mTip = pt(minDeg, r * 0.72);
-  const sTip = pt(secDeg, r * 0.82);
-  const sTail = pt(secDeg + 180, r * 0.2);
+  const hTip  = pt(hrDeg,       r * 0.50);
+  const mTip  = pt(minDeg,      r * 0.70);
+  const sTip  = pt(secDeg,      r * 0.78);
+  const sTail = pt(secDeg + 180, r * 0.18);
+
+  // 12 subtle tick marks, slightly heavier on the 4 cardinals
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const deg = i * 30 - 90;
+    const isCardinal = i % 3 === 0;
+    const inner = pt(deg, r * (isCardinal ? 0.74 : 0.80));
+    const outer = pt(deg, r * 0.88);
+    return { deg, inner, outer, isCardinal };
+  });
 
   return (
-
     <View style={{
-      width: size, height: size, borderRadius: size / 2,
-      backgroundColor: "#f5f5f5",
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: colors.border,
       shadowColor: "#000",
-      shadowOpacity: 0.18,
-      shadowRadius: size * 0.12,
-      shadowOffset: { width: 0, height: size * 0.06 },
-      elevation: 6,
-      alignItems: "center", justifyContent: "center",
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+      alignItems: "center",
+      justifyContent: "center",
     }}>
       <Svg width={size} height={size} style={{ position: "absolute" }}>
-        {/* Outer rim */}
-        <Circle cx={cx} cy={cy} r={r - 1} stroke="#e0e0e0" strokeWidth={1.5} fill="transparent" />
-        {/* Inner raised plate */}
-        <Circle cx={cx} cy={cy} r={r * 0.84} fill="#ffffff" stroke="#ececec" strokeWidth={1} />
+        {/* Face fill */}
+        <Circle cx={cx} cy={cy} r={r - 1} fill={colors.surfaceAlt} />
 
-        {/* Cardinal tick marks */}
-        {[0, 90, 180, 270].map((deg) => {
-          const inner = pt(deg - 90, r * 0.72);
-          const outer = pt(deg - 90, r * 0.84);
-          return (
-            <Line
-              key={deg}
-              x1={inner.x} y1={inner.y}
-              x2={outer.x} y2={outer.y}
-              stroke="#333333" strokeWidth={size * 0.028} strokeLinecap="round"
-            />
-          );
-        })}
+        {/* Tick marks */}
+        {ticks.map(({ inner, outer, isCardinal }, i) => (
+          <Line
+            key={i}
+            x1={inner.x} y1={inner.y}
+            x2={outer.x} y2={outer.y}
+            stroke={colors.border}
+            strokeWidth={isCardinal ? 1.5 : 1}
+            strokeLinecap="round"
+          />
+        ))}
 
         {/* Hour hand */}
         <Line
           x1={cx} y1={cy} x2={hTip.x} y2={hTip.y}
-          stroke="#1a1a1a" strokeWidth={size * 0.022} strokeLinecap="round"
+          stroke={colors.text} strokeWidth={size * 0.040} strokeLinecap="round"
         />
         {/* Minute hand */}
         <Line
           x1={cx} y1={cy} x2={mTip.x} y2={mTip.y}
-          stroke="#1a1a1a" strokeWidth={size * 0.014} strokeLinecap="round"
+          stroke={colors.text} strokeWidth={size * 0.025} strokeLinecap="round"
         />
-        {/* Second hand — red, with tail */}
+        {/* Second hand — muted, with short tail */}
         <Line
           x1={sTail.x} y1={sTail.y} x2={sTip.x} y2={sTip.y}
-          stroke="#e53935" strokeWidth={size * 0.008} strokeLinecap="round"
+          stroke={colors.textMuted} strokeWidth={1} strokeLinecap="round"
         />
         {/* Center cap */}
-        <Circle cx={cx} cy={cy} r={size * 0.045} fill="#e53935" />
-        <Circle cx={cx} cy={cy} r={size * 0.022} fill="#ffffff" />
+        <Circle cx={cx} cy={cy} r={size * 0.038} fill={colors.text} />
+        <Circle cx={cx} cy={cy} r={size * 0.018} fill={colors.surfaceAlt} />
       </Svg>
     </View>
   );
@@ -1310,10 +1320,7 @@ export default function WorkerHomeScreen() {
               <View style={styles.iconPillDivider} />
               <TouchableOpacity
                 style={styles.iconPillBtn}
-                onPress={() => {
-                  setShowGameSplash(false);
-                  setShowGameGate(true);
-                }}
+                onPress={() => router.push("/game")}
               >
                 <Gamepad2 size={20} color={colors.text} />
               </TouchableOpacity>
@@ -1436,7 +1443,7 @@ export default function WorkerHomeScreen() {
             <View style={styles.card}>
 
               {/* Top row: info left, clock right */}
-              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 10 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 12, gap: 14 }}>
 
                 {/* Left: title + meta + status + progress */}
                 <View style={{ flex: 1 }}>
@@ -1556,7 +1563,7 @@ export default function WorkerHomeScreen() {
           </Animated.View>
         </ScrollView>
 
-        {showGameGate ? (
+        {false ? (
           <View style={styles.gameGateOverlay}>
             <View style={styles.gameGateCard}>
               <TouchableOpacity
@@ -1821,7 +1828,7 @@ export default function WorkerHomeScreen() {
           </View>
         ) : null}
 
-        {showGameSplash ? (
+        {false ? (
           <View style={styles.gameSplashOverlay}>
             <View style={styles.gameSplashCard}>
               <Animated.View
