@@ -3,7 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LogBox } from "react-native";
-import { ThemeProvider, useTheme } from "@/lib/context";
+import { CalendarProvider, ThemeProvider, useTheme } from "@/lib/context";
 
 function AppShell() {
   const { mode } = useTheme();
@@ -40,7 +40,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <AppShell />
+      <CalendarProvider>
+        <AppShell />
+      </CalendarProvider>
     </ThemeProvider>
   );
 }

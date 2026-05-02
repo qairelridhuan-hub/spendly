@@ -5,24 +5,20 @@ import {
   TouchableOpacity,
   View,
   Alert,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
+  ArrowLeft,
   BarChart3,
   Bell,
   Calendar,
   DollarSign,
-  Gamepad2,
-  LogOut,
-  Moon,
   PieChart,
-  Sun,
   TrendingUp,
 } from "lucide-react-native";
 import { router } from "expo-router";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc } from "firebase/firestore";
 import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { auth, db } from "@/lib/firebase";
@@ -378,45 +374,10 @@ export default function EarningsScreen() {
     <View style={[styles.screen, { backgroundColor: c.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
-          {/* ===== HEADER ===== */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <TouchableOpacity
-                style={styles.logo}
-                onPress={() => router.push("/(tabs)/profile")}
-              >
-                <Image
-                  source={require("../../assets/images/spendly-logo.png")}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-              <View>
-                <Text style={styles.appName}>Spendly</Text>
-                <Text style={styles.subText}>Hey, {displayName}!</Text>
-              </View>
-            </View>
-
-            <View style={styles.headerRight}>
-              <View style={styles.iconPill}>
-                <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
-                  {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
-                </TouchableOpacity>
-                <View style={styles.iconPillDivider} />
-                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/")}>
-                  <Gamepad2 size={20} color={c.text} />
-                </TouchableOpacity>
-                <View style={styles.iconPillDivider} />
-                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
-                  <Bell size={20} color={c.text} />
-                </TouchableOpacity>
-                <View style={styles.iconPillDivider} />
-                <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
-                  <LogOut size={20} color={c.text} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+          {/* ===== BACK BUTTON ===== */}
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginBottom: 8, alignSelf: "flex-start" }}>
+            <ArrowLeft size={20} color={c.text} />
+          </TouchableOpacity>
 
           {/* ===== HERO CARD ===== */}
           <View style={[styles.heroCard, { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border }]}>

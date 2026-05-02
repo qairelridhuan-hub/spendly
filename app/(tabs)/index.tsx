@@ -1426,139 +1426,26 @@ export default function WorkerHomeScreen() {
                     <Text style={{ fontSize: 11, fontWeight: "700", color: colors.text }}>RM {displayRightValue.toFixed(2)}</Text>
                   </View>
 
-                  {/* Divider + link */}
+                  {/* Divider + button */}
                   <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 10 }} />
-                  <TouchableOpacity
-                    style={{ alignSelf: "flex-end" }}
-                    onPress={() => setShowEarningsBreakdown(true)}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>View details →</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <TouchableOpacity
+                      onPress={() => setShowEarningsBreakdown(true)}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>View details →</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => router.push("/earnings")}
+                      style={{ backgroundColor: colors.text, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 }}
+                    >
+                      <Text style={{ color: colors.backgroundStart, fontSize: 12, fontWeight: "700" }}>Earnings</Text>
+                    </TouchableOpacity>
+                  </View>
 
                 </View>
               );
             })()}
 
-            {/* ⏰ Today Shift */}
-            <View style={styles.card}>
-
-              {/* Top row: info left, clock right */}
-              <View style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 12, gap: 14 }}>
-
-                {/* Left: title + meta + status + progress */}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>Today shift</Text>
-                  <Text style={[styles.shiftMeta, { marginTop: 2 }]}>
-                    {todayShift
-                      ? `${todayShift.start} – ${todayShift.end}${todayShift.location ? ` · ${todayShift.location}` : ""}`
-                      : "No shift scheduled today"}
-                  </Text>
-                  {todayShift && (
-                    <View style={{
-                      alignSelf: "flex-start", marginTop: 8,
-                      paddingHorizontal: 8, paddingVertical: 3,
-                      borderRadius: 999,
-                      backgroundColor:
-                        todayStatus === "completed" ? "#f0fdf4" :
-                        todayStatus === "absent"    ? "#fef2f2" : colors.surfaceAlt,
-                    }}>
-                      <Text style={{
-                        fontSize: 11, fontWeight: "600",
-                        color: todayStatus === "completed" ? "#16a34a" :
-                               todayStatus === "absent"    ? "#ef4444" : colors.textMuted,
-                      }}>{todayStatus}</Text>
-                    </View>
-                  )}
-
-                  {/* Progress bar */}
-                  <View style={[styles.progressBarBg, { marginTop: 12 }]}>
-                    <View style={[styles.progressBarFill, { width: `${Math.round(todayProgress * 100)}%` }, todayStatus === "completed" && styles.progressBarFillComplete]} />
-                  </View>
-                </View>
-
-                {/* Right: analog clock */}
-                <AnalogClock size={CLOCK_SIZE} color={colors.text} />
-              </View>
-
-              {/* Divider */}
-              <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 10 }} />
-
-              {/* Time stamps row */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
-                <View style={{ alignItems: "center", flex: 1 }}>
-                  <Text style={styles.clockLabel}>Clock in</Text>
-                  <Text style={styles.clockValue}>{todayAttendance?.clockIn || "--:--"}</Text>
-                </View>
-                <View style={{ width: 1, backgroundColor: colors.border }} />
-                <View style={{ alignItems: "center", flex: 1 }}>
-                  <Text style={styles.clockLabel}>Clock out</Text>
-                  <Text style={styles.clockValue}>{todayAttendance?.clockOut || "--:--"}</Text>
-                </View>
-                <View style={{ width: 1, backgroundColor: colors.border }} />
-                <View style={{ alignItems: "center", flex: 1 }}>
-                  <Text style={styles.clockLabel}>Break</Text>
-                  <Text style={styles.clockValue}>
-                    {todayAttendance?.breakStart
-                      ? todayAttendance.breakEnd
-                        ? `${todayAttendance.breakStart}–${todayAttendance.breakEnd}`
-                        : `${todayAttendance.breakStart}–...`
-                      : "--:--"}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Action buttons */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <TouchableOpacity
-                  style={[styles.clockButton, styles.clockPrimary, !!todayAttendance?.clockIn && styles.clockButtonDone, { flex: 1 }]}
-                  onPress={handleClockIn}
-                  disabled={!!todayAttendance?.clockIn}
-                >
-                  <Text style={styles.clockButtonTextLight}>Clock in</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.clockButton, styles.clockPrimary, (!todayAttendance?.clockIn || !!todayAttendance?.clockOut) && styles.clockButtonDone, { flex: 1 }]}
-                  onPress={handleClockOut}
-                  disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
-                >
-                  <Text style={styles.clockButtonTextLight}>Clock out</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.clockButton, styles.clockGhost, { flex: 1 }]}
-                  onPress={handleBreakToggle}
-                  disabled={!todayAttendance?.clockIn || !!todayAttendance?.clockOut}
-                >
-                  <Text style={styles.clockButtonText}>
-                    {todayAttendance?.breakStart && !todayAttendance?.breakEnd ? "End break" : "Break"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleResetAttendance} style={{ paddingHorizontal: 4, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 10, fontWeight: "600", color: "#ef4444" }}>Reset</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Upcoming shift */}
-              <View style={styles.upcomingRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.upcomingLabel}>Upcoming shift</Text>
-                  <Text style={styles.shiftMeta}>
-                    {nextShift ? `${formatDateLabel(nextShift.date)} · ${nextShift.start} – ${nextShift.end}` : "No upcoming shift"}
-                  </Text>
-                </View>
-                {nextShift && (
-                  <TouchableOpacity
-                    style={styles.detailButton}
-                    onPress={() => {
-                      setActiveShift({ ...nextShift, status: resolveStatus(nextShift.status, attendanceStatusMap[nextShift.date]) });
-                      setShowShiftDetails(true);
-                    }}
-                  >
-                    <ChevronRight size={16} color={colors.textMuted} />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-            </View>
 
           </Animated.View>
         </ScrollView>

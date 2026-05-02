@@ -2,6 +2,7 @@ import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
+import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -36,4 +37,5 @@ export const db =
         experimentalAutoDetectLongPolling: true,
       } as any);
 export const functions = getFunctions(app, 'us-central1');
+export const storage = getStorage(app);
 export const firebaseProjectId = firebaseConfig.projectId;
