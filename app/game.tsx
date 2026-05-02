@@ -1855,6 +1855,7 @@ export default function GameScreen() {
           ) : null}
 
         </ScrollView>
+
       </SafeAreaView>
     </View>
   );

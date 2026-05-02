@@ -789,7 +789,7 @@ export default function WorkerHomeScreen() {
     gameSplashTimer.current = setTimeout(() => {
       setShowGameSplash(false);
       router.push("/game");
-    }, 700);
+    }, 5700);
   }, [router]);
 
   const sliderPanResponder = useMemo(
@@ -1828,27 +1828,6 @@ export default function WorkerHomeScreen() {
           </View>
         ) : null}
 
-        {false ? (
-          <View style={styles.gameSplashOverlay}>
-            <View style={styles.gameSplashCard}>
-              <Animated.View
-                style={{
-                  transform: [
-                    {
-                      rotate: gameSpin.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ["0deg", "360deg"],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <Gamepad2 size={36} color="#22c55e" />
-              </Animated.View>
-              <Text style={styles.gameSplashText}>Loading Arcade...</Text>
-            </View>
-          </View>
-        ) : null}
       </SafeAreaView>
 
       {showShiftDetails && activeShift ? (
