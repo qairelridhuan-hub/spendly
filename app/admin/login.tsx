@@ -16,15 +16,15 @@ import { auth, db } from "@/lib/firebase";
 
 export default function AdminLogin() {
   const adminUi = {
-    background: ["#f8fafc", "#f1f5f9", "#e2e8f0"],
+    background: ["#000000", "#111111", "#000000"] as const,
     card: "#ffffff",
-    cardBorder: "#e2e8f0",
-    text: "#0f172a",
-    textMuted: "#64748b",
-    accent: "#0ea5e9",
-    accentStrong: "#0284c7",
-    inputBg: "#f8fafc",
-    inputBorder: "#cbd5e1",
+    cardBorder: "#e5e5e5",
+    text: "#000000",
+    textMuted: "#6b7280",
+    accent: "#000000",
+    accentStrong: "#000000",
+    inputBg: "#f9f9f9",
+    inputBorder: "#d1d1d1",
     danger: "#ef4444",
   };
   const [email, setEmail] = useState("");
@@ -77,28 +77,6 @@ export default function AdminLogin() {
 
   return (
     <LinearGradient colors={adminUi.background} style={{ flex: 1 }}>
-      <View
-        style={{
-          position: "absolute",
-          width: 380,
-          height: 380,
-          borderRadius: 190,
-          backgroundColor: "rgba(14,165,233,0.16)",
-          top: -160,
-          right: -160,
-        }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          width: 520,
-          height: 520,
-          borderRadius: 260,
-          backgroundColor: "rgba(2,132,199,0.18)",
-          bottom: -240,
-          left: -220,
-        }}
-      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1, justifyContent: "center", padding: 24 }}
@@ -156,9 +134,9 @@ export default function AdminLogin() {
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderRadius: 999,
-              backgroundColor: "rgba(14,165,233,0.14)",
+              backgroundColor: "#f0f0f0",
               borderWidth: 1,
-              borderColor: "rgba(14,165,233,0.4)",
+              borderColor: "#d1d1d1",
               marginBottom: 12,
             }}
           >
