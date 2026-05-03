@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cardShadow } from "@/lib/shadows";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme, useCalendar } from "@/lib/context";
 import { router } from "expo-router";
@@ -251,15 +252,6 @@ export default function AttendanceScreen() {
 
   // ── Loading / Error ───────────────────────────────────────────────────────
 
-  if (state.phase === "loading") {
-    return (
-      <View style={[s.loadingCenter, { backgroundColor: c.backgroundStart }]}>
-        <ActivityIndicator size="large" color={c.text} />
-        <Text style={[s.loadingText, { color: c.textMuted }]}>Loading attendance…</Text>
-      </View>
-    );
-  }
-
   if (state.phase === "error") {
     return (
       <View style={[s.loadingCenter, { backgroundColor: c.backgroundStart }]}>
@@ -271,9 +263,14 @@ export default function AttendanceScreen() {
     );
   }
 
-  // ── Ready ─────────────────────────────────────────────────────────────────
+  // ── Ready (also renders during loading with safe defaults) ───────────────
 
-  const { today, withinRadius, locationDenied, workplace, displayName } = state;
+  const isLoading = state.phase === "loading";
+  const today        = state.phase === "ready" ? state.today        : { clockedIn: false, clockedOut: false, onBreak: false } as TodayAttendanceState;
+  const withinRadius = state.phase === "ready" ? state.withinRadius : false;
+  const locationDenied = state.phase === "ready" ? state.locationDenied : false;
+  const workplace    = state.phase === "ready" ? state.workplace    : null;
+  const displayName  = state.phase === "ready" ? state.displayName  : "";
   const checkedIn  = today.clockedIn && !today.clockedOut;
   const checkedOut = today.clockedOut;
   const onBreak    = today.onBreak;
@@ -424,7 +421,7 @@ export default function AttendanceScreen() {
                 ? "Permission denied"
                 : withinRadius
                 ? "Within workplace"
-                : `Outside — must be within ${workplace.allowedRadiusMeters}m`}
+                : `Outside — must be within ${workplace?.allowedRadiusMeters ?? "—"}m`}
             </Text>
           </View>
           {withinRadius && !locationDenied && <CheckCircle2 size={18} color="#16a34a" strokeWidth={1.8} />}
@@ -472,7 +469,7 @@ export default function AttendanceScreen() {
           </View>
 
           <Text style={[s.modalWorkplace, { color: c.text }]}>
-            {workplace.workplaceId === "dev" ? "Your Workplace" : workplace.workplaceId}
+            {workplace?.workplaceId === "dev" ? "Your Workplace" : (workplace?.workplaceId ?? "—")}
           </Text>
 
           <TouchableOpacity
@@ -519,13 +516,13 @@ const s = StyleSheet.create({
   iconPillDivider:  { width: 1, height: 16 },
 
   // Time card
-  timeCard:         { borderRadius: 20, padding: 24, marginBottom: 16, borderWidth: 1, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  timeCard:         { borderRadius: 20, padding: 24, marginBottom: 16, borderWidth: 1, ...cardShadow },
   timeCardLabel:    { fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 6 },
   timeCardClock:    { fontSize: 52, fontWeight: "800", letterSpacing: -1 },
   timeCardDate:     { fontSize: 14, marginTop: 4 },
 
   // Shift card
-  shiftCard:        { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  shiftCard:        { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 20, ...cardShadow },
   stampsRow:        { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
   stampCol:         { alignItems: "center", flex: 1 },
   stampDivider:     { width: 1 },
@@ -540,7 +537,7 @@ const s = StyleSheet.create({
 
   // Work details
   sectionTitle:     { fontSize: 16, fontWeight: "800", marginBottom: 12 },
-  detailCard:       { flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 10, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  detailCard:       { flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 10, ...cardShadow },
   detailIconBg:     { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 14 },
   detailBody:       { flex: 1 },
   detailTitle:      { fontSize: 14, fontWeight: "700" },

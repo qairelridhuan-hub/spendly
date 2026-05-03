@@ -562,7 +562,7 @@ export default function GoalsScreen() {
             style={styles.addButton}
             onPress={openCreateModal}
           >
-            <Plus size={26} color={c.text} />
+            <Plus size={26} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -1174,16 +1174,14 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: c.surface,
-    borderWidth: 1.5,
-    borderColor: c.border,
+    backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
 
   emptyCard: {
