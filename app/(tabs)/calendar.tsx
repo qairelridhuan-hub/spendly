@@ -28,6 +28,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "@/lib/firebase";
 import { useCalendar, useTheme } from "@/lib/context";
 import { cardShadow } from "@/lib/shadows";
+import { ScreenTransition } from "@/components/ScreenTransition";
 
 /* =====================
    LAYOUT CONSTANTS
@@ -249,6 +250,7 @@ export default function CalendarScreen() {
   ===================== */
 
   return (
+    <ScreenTransition>
     <View style={[styles.screen, { backgroundColor: c.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
@@ -637,6 +639,7 @@ export default function CalendarScreen() {
         </View>
       ) : null}
     </View>
+    </ScreenTransition>
   );
 }
 

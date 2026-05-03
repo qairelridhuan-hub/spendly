@@ -1296,6 +1296,7 @@ export default function WorkerHomeScreen() {
      UI
   ===================== */
   return (
+    <ScreenTransition>
     <View style={[styles.screen, { backgroundColor: colors.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* 🔝 HEADER */}
@@ -2145,6 +2146,7 @@ export default function WorkerHomeScreen() {
         </View>
       ) : null}
     </View>
+    </ScreenTransition>
   );
 }
 

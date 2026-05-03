@@ -46,6 +46,7 @@ import {
   WifiOff,
   X,
 } from "lucide-react-native";
+import { ScreenTransition } from "@/components/ScreenTransition";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -279,6 +280,7 @@ export default function AttendanceScreen() {
   const locationIcon = locationDenied ? "#ca8a04" : withinRadius ? "#16a34a" : "#dc2626";
 
   return (
+    <ScreenTransition>
     <SafeAreaView style={[s.safe, { backgroundColor: c.backgroundStart }]} edges={["top"]}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
@@ -490,6 +492,7 @@ export default function AttendanceScreen() {
         </Animated.View>
       </Modal>
     </SafeAreaView>
+    </ScreenTransition>
   );
 }
 

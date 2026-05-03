@@ -35,6 +35,7 @@ import {
   getTotalXp,
 } from "@/lib/game/stats";
 import { cardShadow } from "@/lib/shadows";
+import { ScreenTransition } from "@/components/ScreenTransition";
 
 type Stats = {
   totalDays: number;
@@ -418,6 +419,7 @@ export default function ProfileScreen() {
   const { level, nextXp, progress } = useMemo(() => getLevelProgress(xp), [xp]);
 
   return (
+    <ScreenTransition>
     <View style={styles.screen}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
 
@@ -661,6 +663,7 @@ export default function ProfileScreen() {
         </ScrollView>
       </SafeAreaView>
     </View>
+    </ScreenTransition>
   );
 }
 

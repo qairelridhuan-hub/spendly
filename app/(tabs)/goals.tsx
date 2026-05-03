@@ -45,6 +45,7 @@ import { useCalendar, useTheme } from "@/lib/context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import { cardShadow } from "@/lib/shadows";
+import { ScreenTransition } from "@/components/ScreenTransition";
 
 type GoalPriority = "high" | "medium" | "low";
 
@@ -506,6 +507,7 @@ export default function GoalsScreen() {
   }, [filter, goals, timeFilter, statusFilter]);
 
   return (
+    <ScreenTransition>
     <View style={[styles.screen, { backgroundColor: c.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ===== HEADER ===== */}
@@ -1070,6 +1072,7 @@ export default function GoalsScreen() {
         </Modal>
       </SafeAreaView>
     </View>
+    </ScreenTransition>
   );
 }
 
