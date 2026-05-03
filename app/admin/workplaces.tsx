@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Platform,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import WebView from "react-native-webview";
 import {
   addDoc,
   collection,
@@ -50,6 +51,86 @@ type FormState = {
 
 const emptyForm = (): FormState => ({ name: "", latitude: "", longitude: "", allowedRadiusMeters: "100" });
 
+function buildMapHtml(lat?: number, lng?: number, radius?: number): string {
+  const centerLat = lat ?? 3.139;
+  const centerLng = lng ?? 101.6869;
+  const zoom = lat ? 16 : 6;
+  const hasPin = lat != null && lng != null;
+  const r = radius ?? 100;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body, #map { width:100%; height:100%; }
+    .confirm-btn {
+      position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+      z-index:999; background:#18181b; color:#fff;
+      border:none; border-radius:10px; padding:12px 28px;
+      font-size:14px; font-weight:600; cursor:pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .confirm-btn:disabled { background:#888; }
+    .hint {
+      position:absolute; top:12px; left:50%; transform:translateX(-50%);
+      z-index:999; background:rgba(0,0,0,0.65); color:#fff;
+      border-radius:8px; padding:7px 14px; font-size:12px; white-space:nowrap;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<div class="hint" id="hint">Tap on map to set workplace location</div>
+<button class="confirm-btn" id="confirmBtn" disabled onclick="confirm()">Confirm Location</button>
+<script>
+  var map = L.map('map').setView([${centerLat}, ${centerLng}], ${zoom});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(map);
+
+  var marker = null;
+  var circle = null;
+  var selectedLat = ${hasPin ? lat : "null"};
+  var selectedLng = ${hasPin ? lng : "null"};
+  var radius = ${r};
+
+  var icon = L.divIcon({
+    html: '<div style="width:20px;height:20px;background:#18181b;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+    iconSize:[20,20], iconAnchor:[10,10], className:''
+  });
+
+  function placeMarker(lat, lng) {
+    selectedLat = lat; selectedLng = lng;
+    if (marker) map.removeLayer(marker);
+    if (circle) map.removeLayer(circle);
+    marker = L.marker([lat, lng], { icon: icon }).addTo(map);
+    circle = L.circle([lat, lng], { radius: radius, color:'#18181b', fillColor:'#18181b', fillOpacity:0.12, weight:2 }).addTo(map);
+    document.getElementById('confirmBtn').disabled = false;
+    document.getElementById('hint').textContent = 'Tap again to move · Press Confirm to use this location';
+  }
+
+  function updateRadius(r) {
+    radius = r;
+    if (circle) circle.setRadius(r);
+  }
+
+  function confirm() {
+    if (selectedLat == null) return;
+    window.ReactNativeWebView.postMessage(JSON.stringify({ lat: selectedLat, lng: selectedLng, radius: radius }));
+  }
+
+  map.on('click', function(e) { placeMarker(e.latlng.lat, e.latlng.lng); });
+
+  ${hasPin ? `placeMarker(${lat}, ${lng});` : ""}
+</script>
+</body>
+</html>`;
+}
+
 export default function WorkplacesScreen() {
   const { mode } = useAdminTheme();
   const isDark = mode === "dark";
@@ -76,6 +157,8 @@ export default function WorkplacesScreen() {
   const [form, setForm]             = useState<FormState>(emptyForm());
   const [saving, setSaving]         = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showMap, setShowMap]       = useState(false);
+  const mapRef                      = useRef<WebView>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, user => setAdminId(user?.uid ?? null));
@@ -181,7 +264,7 @@ export default function WorkplacesScreen() {
         <View style={[st.card, { backgroundColor: S.card, borderColor: S.border }, adminCardShadow]}>
           <View style={st.cardHeader}>
             <Text style={[st.cardTitle, { color: S.text }]}>{editingId ? "Edit Workplace" : "New Workplace"}</Text>
-            <TouchableOpacity onPress={() => { setShowForm(false); setEditingId(null); }}>
+            <TouchableOpacity onPress={() => { setShowForm(false); setEditingId(null); setShowMap(false); }}>
               <X size={16} color={S.muted} strokeWidth={2} />
             </TouchableOpacity>
           </View>
@@ -191,18 +274,72 @@ export default function WorkplacesScreen() {
               <Text style={[st.label, { color: S.muted }]}>Name</Text>
               <TextInput style={inputStyle} placeholder="e.g. Main Office" placeholderTextColor={S.muted} value={form.name} onChangeText={v => setForm(f => ({ ...f, name: v }))} />
             </View>
+
+            {/* ── Map Picker ── */}
+            <View style={st.formField}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text style={[st.label, { color: S.muted }]}>Location</Text>
+                <TouchableOpacity
+                  onPress={() => setShowMap(v => !v)}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: S.tag }}
+                >
+                  <MapPin size={12} color={S.text} strokeWidth={2} />
+                  <Text style={{ fontSize: 11, fontWeight: "600", color: S.text }}>{showMap ? "Hide Map" : "Pick on Map"}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {showMap && (
+                <View style={{ height: 280, borderRadius: 10, overflow: "hidden", marginTop: 8, borderWidth: 1, borderColor: S.inputBorder }}>
+                  <WebView
+                    ref={mapRef}
+                    source={{ html: buildMapHtml(
+                      form.latitude ? parseFloat(form.latitude) : undefined,
+                      form.longitude ? parseFloat(form.longitude) : undefined,
+                      form.allowedRadiusMeters ? parseInt(form.allowedRadiusMeters) : undefined,
+                    )}}
+                    style={{ flex: 1 }}
+                    javaScriptEnabled
+                    onMessage={e => {
+                      try {
+                        const { lat, lng, radius } = JSON.parse(e.nativeEvent.data);
+                        setForm(f => ({
+                          ...f,
+                          latitude: lat.toFixed(6),
+                          longitude: lng.toFixed(6),
+                          allowedRadiusMeters: String(radius),
+                        }));
+                      } catch {}
+                    }}
+                  />
+                </View>
+              )}
+
+              {form.latitude && form.longitude ? (
+                <Text style={{ fontSize: 11, color: S.muted, marginTop: 6 }}>
+                  📍 {parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 11, color: S.muted, marginTop: 6 }}>No location set — tap "Pick on Map" and tap the map</Text>
+              )}
+            </View>
+
             <View style={st.formRow}>
               <View style={[st.formField, { flex: 1 }]}>
-                <Text style={[st.label, { color: S.muted }]}>Latitude</Text>
-                <TextInput style={inputStyle} placeholder="e.g. 3.1390" placeholderTextColor={S.muted} keyboardType="decimal-pad" value={form.latitude} onChangeText={v => setForm(f => ({ ...f, latitude: v }))} />
-              </View>
-              <View style={[st.formField, { flex: 1 }]}>
-                <Text style={[st.label, { color: S.muted }]}>Longitude</Text>
-                <TextInput style={inputStyle} placeholder="e.g. 101.6869" placeholderTextColor={S.muted} keyboardType="decimal-pad" value={form.longitude} onChangeText={v => setForm(f => ({ ...f, longitude: v }))} />
-              </View>
-              <View style={[st.formField, { flex: 1 }]}>
                 <Text style={[st.label, { color: S.muted }]}>Radius (m)</Text>
-                <TextInput style={inputStyle} placeholder="e.g. 100" placeholderTextColor={S.muted} keyboardType="number-pad" value={form.allowedRadiusMeters} onChangeText={v => setForm(f => ({ ...f, allowedRadiusMeters: v }))} />
+                <TextInput
+                  style={inputStyle}
+                  placeholder="e.g. 100"
+                  placeholderTextColor={S.muted}
+                  keyboardType="number-pad"
+                  value={form.allowedRadiusMeters}
+                  onChangeText={v => {
+                    setForm(f => ({ ...f, allowedRadiusMeters: v }));
+                    const r = parseInt(v);
+                    if (!isNaN(r) && r > 0) {
+                      mapRef.current?.injectJavaScript(`updateRadius(${r}); true;`);
+                    }
+                  }}
+                />
               </View>
             </View>
           </View>

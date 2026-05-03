@@ -47,6 +47,7 @@ import {
   X,
 } from "lucide-react-native";
 import { ScreenTransition } from "@/components/ScreenTransition";
+import WebView from "react-native-webview";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -149,6 +150,61 @@ function formatDateLabel(value: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+// ─── Map HTML ────────────────────────────────────────────────────────────────
+
+function buildAttendanceMapHtml(
+  wpLat: number, wpLng: number, radius: number,
+  userLat?: number, userLng?: number,
+  inside?: boolean,
+): string {
+  const centerLat = userLat ?? wpLat;
+  const centerLng = userLng ?? wpLng;
+  const zoneColor = inside ? "#16a34a" : "#dc2626";
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>* { margin:0; padding:0; } html,body,#map { width:100%; height:100%; }</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+  var map = L.map('map', { zoomControl:true, attributionControl:false })
+    .setView([${centerLat}, ${centerLng}], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+
+  // Workplace radius circle
+  L.circle([${wpLat}, ${wpLng}], {
+    radius: ${radius}, color: '${zoneColor}', fillColor: '${zoneColor}',
+    fillOpacity: 0.12, weight: 2
+  }).addTo(map);
+
+  // Workplace marker
+  var wpIcon = L.divIcon({
+    html: '<div style="width:14px;height:14px;background:#18181b;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>',
+    iconSize:[14,14], iconAnchor:[7,7], className:''
+  });
+  L.marker([${wpLat}, ${wpLng}], { icon: wpIcon })
+    .bindTooltip('Workplace', { permanent:true, direction:'top', offset:[0,-10] })
+    .addTo(map);
+
+  ${userLat != null ? `
+  // User location
+  var userIcon = L.divIcon({
+    html: '<div style="width:14px;height:14px;background:${inside ? "#16a34a" : "#dc2626"};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>',
+    iconSize:[14,14], iconAnchor:[7,7], className:''
+  });
+  L.marker([${userLat}, ${userLng}], { icon: userIcon })
+    .bindTooltip('You', { permanent:true, direction:'top', offset:[0,-10] })
+    .addTo(map);
+  ` : ""}
+</script>
+</body>
+</html>`;
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function AttendanceScreen() {
@@ -160,6 +216,7 @@ export default function AttendanceScreen() {
   const [showModal, setShowModal]     = useState(false);
   const [pendingAction, setPendingAction] = useState<"clock-in" | "clock-out" | null>(null);
   const [now, setNow]                 = useState(new Date());
+  const [userCoords, setUserCoords]   = useState<{ latitude: number; longitude: number } | null>(null);
   const slideAnim                     = useRef(new Animated.Value(SCREEN_H)).current;
 
   useEffect(() => {
@@ -197,7 +254,8 @@ export default function AttendanceScreen() {
       allowedRadiusMeters: 9999999,
     };
     const today = result.ok ? result.today : { clockedIn: false, clockedOut: false, onBreak: false };
-    const { granted, withinRadius } = await resolveLocation(workplace);
+    const { granted, withinRadius, coords } = await resolveLocation(workplace);
+    if (coords) setUserCoords(coords);
 
     setState({
       phase: "ready",
@@ -429,6 +487,31 @@ export default function AttendanceScreen() {
           {withinRadius && !locationDenied && <CheckCircle2 size={18} color="#16a34a" strokeWidth={1.8} />}
         </View>
 
+        {/* ── Map View ── */}
+        {workplace && workplace.workplaceId !== "dev" && (
+          <View style={[s.mapCard, { borderColor: c.border, ...cardShadow }]}>
+            <WebView
+              source={{ html: buildAttendanceMapHtml(
+                workplace.workplaceLatitude,
+                workplace.workplaceLongitude,
+                workplace.allowedRadiusMeters,
+                userCoords?.latitude,
+                userCoords?.longitude,
+                withinRadius,
+              )}}
+              style={{ flex: 1, borderRadius: 14 }}
+              javaScriptEnabled
+              scrollEnabled={false}
+            />
+            <View style={{ padding: 10, flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: withinRadius ? "#16a34a" : "#dc2626" }} />
+              <Text style={{ fontSize: 11, color: c.textMuted }}>
+                {withinRadius ? "You are inside the workplace zone" : "You are outside the workplace zone"}
+              </Text>
+            </View>
+          </View>
+        )}
+
         <View style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 32 }]}>
           <View style={[s.detailIconBg, { backgroundColor: c.surfaceAlt }]}>
             <WifiOff size={18} color={c.text} strokeWidth={1.8} />
@@ -541,6 +624,7 @@ const s = StyleSheet.create({
   // Work details
   sectionTitle:     { fontSize: 16, fontWeight: "800", marginBottom: 12 },
   detailCard:       { flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 10, ...cardShadow },
+  mapCard:          { height: 240, borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 10 },
   detailIconBg:     { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 14 },
   detailBody:       { flex: 1 },
   detailTitle:      { fontSize: 14, fontWeight: "700" },
