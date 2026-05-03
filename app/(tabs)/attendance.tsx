@@ -11,6 +11,7 @@ import {
   Dimensions,
   Image,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -33,6 +34,7 @@ import {
   requestLocationPermission,
   getCurrentLocation,
   isWithinAllowedRadius,
+  calculateDistanceInMeters,
 } from "../../src/utils/locationHelpers";
 import {
   Bell,
@@ -48,6 +50,7 @@ import {
 } from "lucide-react-native";
 import { ScreenTransition } from "@/components/ScreenTransition";
 import WebView from "react-native-webview";
+import { Map, MapControls } from "@/components/ui/map";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -61,6 +64,7 @@ type ReadyState = {
   today: TodayAttendanceState;
   withinRadius: boolean;
   locationDenied: boolean;
+  distanceMeters: number | null;
 };
 
 type ScreenState =
@@ -88,17 +92,17 @@ function getUserInfo(): Promise<{ uid: string; displayName: string } | null> {
 
 async function resolveLocation(workplace: WorkplaceSettings) {
   const granted = await requestLocationPermission();
-  if (!granted) return { granted: false, coords: null, withinRadius: false };
+  if (!granted) return { granted: false, coords: null, withinRadius: false, distanceMeters: null };
   try {
     const coords = await getCurrentLocation();
-    const within = isWithinAllowedRadius(
+    const distance = calculateDistanceInMeters(
       coords.latitude, coords.longitude,
       workplace.workplaceLatitude, workplace.workplaceLongitude,
-      workplace.allowedRadiusMeters
     );
-    return { granted: true, coords, withinRadius: within };
+    const within = distance <= workplace.allowedRadiusMeters;
+    return { granted: true, coords, withinRadius: within, distanceMeters: Math.round(distance) };
   } catch {
-    return { granted: true, coords: null, withinRadius: false };
+    return { granted: true, coords: null, withinRadius: false, distanceMeters: null };
   }
 }
 
@@ -163,19 +167,89 @@ function buildAttendanceMapHtml(
   return `<!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>* { margin:0; padding:0; } html,body,#map { width:100%; height:100%; }</style>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body,#map { width:100%; height:100%; background:#f1f5f9; }
+    .leaflet-control-zoom { display:none; }
+    .leaflet-control-attribution { display:none; }
+
+    /* Custom controls panel */
+    #controls {
+      position:absolute;
+      right:12px;
+      bottom:12px;
+      z-index:1000;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .ctrl-btn {
+      width:36px;
+      height:36px;
+      background:#fff;
+      border:none;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow:0 1px 6px rgba(0,0,0,0.12);
+      font-size:18px;
+      line-height:1;
+      color:#18181b;
+      font-family:sans-serif;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .ctrl-btn:active { background:#f4f4f5; }
+    .ctrl-divider {
+      width:36px;
+      height:1px;
+      background:#e4e4e7;
+    }
+
+    /* Viewport info */
+    #info {
+      position:absolute;
+      left:10px;
+      top:10px;
+      z-index:1000;
+      background:rgba(255,255,255,0.85);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      border-radius:8px;
+      padding:6px 10px;
+      font-size:10px;
+      color:#52525b;
+      font-family:monospace;
+      line-height:1.7;
+      pointer-events:none;
+    }
+
+    /* Fullscreen */
+    body.fs #map { position:fixed; top:0;left:0;width:100vw;height:100vh;z-index:9999; }
+    body.fs #controls { position:fixed; }
+    body.fs #info { position:fixed; }
+  </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="info">— —</div>
+<div id="controls">
+  <button class="ctrl-btn" id="btn-fs" title="Fullscreen">⤢</button>
+  <button class="ctrl-btn" id="btn-loc" title="My location">◎</button>
+  <div class="ctrl-divider"></div>
+  <button class="ctrl-btn" id="btn-plus" title="Zoom in">+</button>
+  <button class="ctrl-btn" id="btn-minus" title="Zoom out">−</button>
+</div>
 <script>
-  var map = L.map('map', { zoomControl:true, attributionControl:false })
+  var map = L.map('map', { zoomControl:false, attributionControl:false })
     .setView([${centerLat}, ${centerLng}], 16);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
 
-  // Workplace radius circle
+  // Zone circle
   L.circle([${wpLat}, ${wpLng}], {
     radius: ${radius}, color: '${zoneColor}', fillColor: '${zoneColor}',
     fillOpacity: 0.12, weight: 2
@@ -191,15 +265,62 @@ function buildAttendanceMapHtml(
     .addTo(map);
 
   ${userLat != null ? `
-  // User location
+  // User marker
   var userIcon = L.divIcon({
-    html: '<div style="width:14px;height:14px;background:${inside ? "#16a34a" : "#dc2626"};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>',
+    html: '<div style="width:14px;height:14px;background:${zoneColor};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.4)"></div>',
     iconSize:[14,14], iconAnchor:[7,7], className:''
   });
   L.marker([${userLat}, ${userLng}], { icon: userIcon })
     .bindTooltip('You', { permanent:true, direction:'top', offset:[0,-10] })
     .addTo(map);
-  ` : ""}
+  var userLatLng = L.latLng(${userLat}, ${userLng});
+  ` : "var userLatLng = null;"}
+
+  var wpLatLng = L.latLng(${wpLat}, ${wpLng});
+
+  // Viewport info
+  var info = document.getElementById('info');
+  function updateInfo() {
+    var c = map.getCenter();
+    info.textContent = c.lng.toFixed(5) + '  ' + c.lat.toFixed(5) + '  z' + map.getZoom();
+  }
+  map.on('move zoom', updateInfo);
+  updateInfo();
+
+  // Controls
+  document.getElementById('btn-plus').addEventListener('click', function(){ map.zoomIn(); });
+  document.getElementById('btn-minus').addEventListener('click', function(){ map.zoomOut(); });
+
+  var liveMarker = null;
+  document.getElementById('btn-loc').addEventListener('click', function(){
+    if (!navigator.geolocation) {
+      map.setView(userLatLng || wpLatLng, 17, { animate:true });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var ll = L.latLng(pos.coords.latitude, pos.coords.longitude);
+      map.setView(ll, 17, { animate:true });
+      if (liveMarker) { map.removeLayer(liveMarker); }
+      var liveIcon = L.divIcon({
+        html: '<div style="width:14px;height:14px;background:#2563eb;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(37,99,235,0.5)"></div>',
+        iconSize:[14,14], iconAnchor:[7,7], className:''
+      });
+      liveMarker = L.marker(ll, { icon: liveIcon })
+        .bindTooltip('You (live)', { permanent:true, direction:'top', offset:[0,-10] })
+        .addTo(map);
+    }, function() {
+      var target = userLatLng || wpLatLng;
+      map.setView(target, 17, { animate:true });
+    }, { enableHighAccuracy:true, timeout:8000 });
+  });
+
+  var fsActive = false;
+  document.getElementById('btn-fs').addEventListener('click', function(){
+    fsActive = !fsActive;
+    document.body.classList.toggle('fs', fsActive);
+    this.textContent = fsActive ? '⤡' : '⤢';
+    setTimeout(function(){ map.invalidateSize(); }, 100);
+  });
 </script>
 </body>
 </html>`;
@@ -214,7 +335,7 @@ export default function AttendanceScreen() {
   const [state, setState]             = useState<ScreenState>({ phase: "loading" });
   const [actionLoading, setActionLoading] = useState(false);
   const [showModal, setShowModal]     = useState(false);
-  const [pendingAction, setPendingAction] = useState<"clock-in" | "clock-out" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"clock-in" | "clock-out" | "break-start" | "break-end" | null>(null);
   const [now, setNow]                 = useState(new Date());
   const [userCoords, setUserCoords]   = useState<{ latitude: number; longitude: number } | null>(null);
   const slideAnim                     = useRef(new Animated.Value(SCREEN_H)).current;
@@ -254,7 +375,7 @@ export default function AttendanceScreen() {
       allowedRadiusMeters: 9999999,
     };
     const today = result.ok ? result.today : { clockedIn: false, clockedOut: false, onBreak: false };
-    const { granted, withinRadius, coords } = await resolveLocation(workplace);
+    const { granted, withinRadius, coords, distanceMeters } = await resolveLocation(workplace);
     if (coords) setUserCoords(coords);
 
     setState({
@@ -265,6 +386,7 @@ export default function AttendanceScreen() {
       today,
       withinRadius: result.ok ? withinRadius : true,
       locationDenied: !granted,
+      distanceMeters: result.ok ? distanceMeters : null,
     });
   }, []);
 
@@ -304,7 +426,7 @@ export default function AttendanceScreen() {
     }
   };
 
-  const openConfirm = (action: "clock-in" | "clock-out") => {
+  const openConfirm = (action: "clock-in" | "clock-out" | "break-start" | "break-end") => {
     setPendingAction(action);
     setShowModal(true);
   };
@@ -328,6 +450,7 @@ export default function AttendanceScreen() {
   const today        = state.phase === "ready" ? state.today        : { clockedIn: false, clockedOut: false, onBreak: false } as TodayAttendanceState;
   const withinRadius = state.phase === "ready" ? state.withinRadius : false;
   const locationDenied = state.phase === "ready" ? state.locationDenied : false;
+  const distanceMeters = state.phase === "ready" ? state.distanceMeters : null;
   const workplace    = state.phase === "ready" ? state.workplace    : null;
   const displayName  = state.phase === "ready" ? state.displayName  : "";
   const checkedIn  = today.clockedIn && !today.clockedOut;
@@ -402,6 +525,19 @@ export default function AttendanceScreen() {
             </View>
           </View>
 
+          {/* ── Outside zone warning ── */}
+          {workplace && workplace.workplaceId !== "dev" && !withinRadius && !locationDenied && !isLoading && (
+            <View style={{ backgroundColor: "#fff7ed", borderRadius: 10, padding: 12, marginBottom: 10, flexDirection: "row", alignItems: "flex-start", gap: 10, borderWidth: 1, borderColor: "#fed7aa" }}>
+              <MapPin size={15} color="#f97316" strokeWidth={2} style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#c2410c", marginBottom: 2 }}>You are outside the workplace zone</Text>
+                <Text style={{ fontSize: 11, color: "#9a3412", lineHeight: 16 }}>
+                  Please go to your designated workplace location to clock in. Attendance is only allowed within {workplace?.allowedRadiusMeters ?? 15}m of the workplace.
+                </Text>
+              </View>
+            </View>
+          )}
+
           <View style={s.clockActions}>
             {/* Clock In */}
             <TouchableOpacity
@@ -428,7 +564,7 @@ export default function AttendanceScreen() {
             {/* Break toggle */}
             <TouchableOpacity
               style={[s.clockBtn, { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border }]}
-              onPress={() => checkedIn && (onBreak ? runAttendanceAction("break-end") : runAttendanceAction("break-start"))}
+              onPress={() => checkedIn && (onBreak ? openConfirm("break-end") : openConfirm("break-start"))}
               disabled={!checkedIn || checkedOut || actionLoading}
             >
               {actionLoading && (onBreak || today.onBreak) ? (
@@ -472,37 +608,60 @@ export default function AttendanceScreen() {
 
         <View style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border }]}>
           <View style={[s.detailIconBg, { backgroundColor: c.surfaceAlt }]}>
-            <MapPin size={18} color={locationIcon} strokeWidth={1.8} />
+            <MapPin size={18}
+              color={!workplace || workplace.workplaceId === "dev" ? c.textMuted : locationIcon}
+              strokeWidth={1.8}
+            />
           </View>
           <View style={s.detailBody}>
             <Text style={[s.detailTitle, { color: c.text }]}>Location Zone</Text>
             <Text style={[s.detailSub, { color: c.textMuted }]}>
-              {locationDenied
+              {!workplace || workplace.workplaceId === "dev"
+                ? "No location set up — contact your admin"
+                : locationDenied
                 ? "Permission denied"
                 : withinRadius
-                ? "Within workplace"
-                : `Outside — must be within ${workplace?.allowedRadiusMeters ?? "—"}m`}
+                ? `Within workplace${distanceMeters != null ? ` · ${distanceMeters}m away` : ""}`
+                : `Outside — ${distanceMeters != null ? `${distanceMeters}m away, ` : ""}must be within ${workplace.allowedRadiusMeters}m`}
             </Text>
           </View>
-          {withinRadius && !locationDenied && <CheckCircle2 size={18} color="#16a34a" strokeWidth={1.8} />}
+          {workplace && workplace.workplaceId !== "dev" && withinRadius && !locationDenied && (
+            <CheckCircle2 size={18} color="#16a34a" strokeWidth={1.8} />
+          )}
         </View>
 
         {/* ── Map View ── */}
         {workplace && workplace.workplaceId !== "dev" && (
           <View style={[s.mapCard, { borderColor: c.border, ...cardShadow }]}>
-            <WebView
-              source={{ html: buildAttendanceMapHtml(
-                workplace.workplaceLatitude,
-                workplace.workplaceLongitude,
-                workplace.allowedRadiusMeters,
-                userCoords?.latitude,
-                userCoords?.longitude,
-                withinRadius,
-              )}}
-              style={{ flex: 1, borderRadius: 14 }}
-              javaScriptEnabled
-              scrollEnabled={false}
-            />
+            {Platform.OS === "web" ? (
+              <Map
+                center={[workplace.workplaceLongitude, workplace.workplaceLatitude]}
+                zoom={16}
+                marker={userCoords
+                  ? { lat: userCoords.latitude, lng: userCoords.longitude }
+                  : { lat: workplace.workplaceLatitude, lng: workplace.workplaceLongitude }
+                }
+                radiusMeters={workplace.allowedRadiusMeters}
+                inside={withinRadius}
+              >
+                <MapControls position="top-right" showZoom showLocate showFullscreen />
+              </Map>
+            ) : (
+              <WebView
+                source={{ html: buildAttendanceMapHtml(
+                  workplace.workplaceLatitude,
+                  workplace.workplaceLongitude,
+                  workplace.allowedRadiusMeters,
+                  userCoords?.latitude,
+                  userCoords?.longitude,
+                  withinRadius,
+                )}}
+                style={{ flex: 1, borderRadius: 14 }}
+                javaScriptEnabled
+                geolocationEnabled
+                scrollEnabled={false}
+              />
+            )}
             <View style={{ padding: 10, flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: withinRadius ? "#16a34a" : "#dc2626" }} />
               <Text style={{ fontSize: 11, color: c.textMuted }}>
@@ -532,33 +691,68 @@ export default function AttendanceScreen() {
           <View style={[s.modalHandle, { backgroundColor: c.border }]} />
 
           <View style={s.modalHeader}>
-            <Text style={[s.modalTitle, { color: c.text }]}>Confirm Attendance</Text>
+            <View>
+              <Text style={[s.modalTitle, { color: c.text }]}>
+                {pendingAction === "clock-in" ? "Clock In"
+                  : pendingAction === "clock-out" ? "Clock Out"
+                  : pendingAction === "break-start" ? "Start Break"
+                  : "End Break"}
+              </Text>
+              <Text style={[s.modalSub, { color: c.textMuted }]}>Confirm your location to proceed</Text>
+            </View>
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <X size={20} color={c.textMuted} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
-          <View style={[s.locationBadge, { backgroundColor: c.surfaceAlt }]}>
-            <CheckCircle2 size={14} color="#16a34a" strokeWidth={2} />
-            <Text style={[s.locationBadgeText, { color: c.text }]}>Location Verified</Text>
-          </View>
-
-          <Text style={[s.modalReadyText, { color: c.text }]}>
-            {pendingAction === "clock-in" ? "Ready to Clock In" : "Ready to Clock Out"}
-          </Text>
-
-          <View style={s.mapPlaceholder}>
-            <View style={[s.mapCircle, { backgroundColor: c.surfaceAlt }]}>
-              <MapPin size={28} color={c.text} strokeWidth={1.8} />
+          {/* Live map in modal */}
+          {workplace && workplace.workplaceId !== "dev" && (
+            <View style={s.modalMapWrapper}>
+              {Platform.OS === "web" ? (
+                <Map
+                  center={[workplace.workplaceLongitude, workplace.workplaceLatitude]}
+                  zoom={16}
+                  marker={userCoords
+                    ? { lat: userCoords.latitude, lng: userCoords.longitude }
+                    : { lat: workplace.workplaceLatitude, lng: workplace.workplaceLongitude }
+                  }
+                  radiusMeters={workplace.allowedRadiusMeters}
+                  inside={withinRadius}
+                >
+                  <MapControls position="top-right" showZoom showLocate />
+                </Map>
+              ) : (
+                <WebView
+                  source={{ html: buildAttendanceMapHtml(
+                    workplace.workplaceLatitude,
+                    workplace.workplaceLongitude,
+                    workplace.allowedRadiusMeters,
+                    userCoords?.latitude,
+                    userCoords?.longitude,
+                    withinRadius,
+                  )}}
+                  style={{ flex: 1 }}
+                  javaScriptEnabled
+                  geolocationEnabled
+                  scrollEnabled={false}
+                />
+              )}
             </View>
-          </View>
+          )}
 
-          <Text style={[s.modalWorkplace, { color: c.text }]}>
-            {workplace?.workplaceId === "dev" ? "Your Workplace" : (workplace?.workplaceId ?? "—")}
-          </Text>
+          {/* Status row */}
+          <View style={[s.modalStatusRow, { backgroundColor: c.surfaceAlt }]}>
+            <View style={[s.modalStatusDot, { backgroundColor: withinRadius ? "#16a34a" : "#dc2626" }]} />
+            <Text style={[s.modalStatusText, { color: c.text }]}>
+              {withinRadius
+                ? `Within zone${distanceMeters != null ? ` · ${distanceMeters}m away` : ""}`
+                : `Outside zone${distanceMeters != null ? ` · ${distanceMeters}m away` : ""}`}
+            </Text>
+            {withinRadius && <CheckCircle2 size={14} color="#16a34a" strokeWidth={2} />}
+          </View>
 
           <TouchableOpacity
-            style={[s.confirmBtn, { backgroundColor: c.text }]}
+            style={[s.confirmBtn, { backgroundColor: c.text, opacity: actionLoading ? 0.7 : 1 }]}
             onPress={() => pendingAction && runAttendanceAction(pendingAction)}
             activeOpacity={0.9}
             disabled={actionLoading}
@@ -566,7 +760,10 @@ export default function AttendanceScreen() {
             {actionLoading
               ? <ActivityIndicator color={c.backgroundStart} />
               : <Text style={[s.confirmBtnText, { color: c.backgroundStart }]}>
-                  Confirm {pendingAction === "clock-in" ? "Clock In" : "Clock Out"}
+                  Confirm {pendingAction === "clock-in" ? "Clock In"
+                    : pendingAction === "clock-out" ? "Clock Out"
+                    : pendingAction === "break-start" ? "Start Break"
+                    : "End Break"}
                 </Text>
             }
           </TouchableOpacity>
@@ -636,13 +833,12 @@ const s = StyleSheet.create({
   modalSheet:       { position: "absolute", bottom: 0, left: 0, right: 0, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40 },
   modalHandle:      { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 20 },
   modalHeader:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  modalTitle:       { fontSize: 17, fontWeight: "800" },
-  locationBadge:    { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, alignSelf: "flex-start", marginBottom: 12 },
-  locationBadgeText:{ fontSize: 12, fontWeight: "700" },
-  modalReadyText:   { fontSize: 20, fontWeight: "800", marginBottom: 20 },
-  mapPlaceholder:   { alignSelf: "center", marginBottom: 12 },
-  mapCircle:        { width: 100, height: 100, borderRadius: 50, justifyContent: "center", alignItems: "center" },
-  modalWorkplace:   { fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 24 },
+  modalTitle:       { fontSize: 18, fontWeight: "800" },
+  modalSub:         { fontSize: 12, marginTop: 2 },
+  modalMapWrapper:  { height: 220, borderRadius: 16, overflow: "hidden", marginBottom: 12 },
+  modalStatusRow:   { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 16 },
+  modalStatusDot:   { width: 8, height: 8, borderRadius: 4 },
+  modalStatusText:  { flex: 1, fontSize: 13, fontWeight: "600" },
   confirmBtn:       { borderRadius: 16, paddingVertical: 16, alignItems: "center", marginBottom: 12 },
   confirmBtnText:   { fontSize: 15, fontWeight: "800" },
   modalSecondary:   { fontSize: 12, textAlign: "center" },

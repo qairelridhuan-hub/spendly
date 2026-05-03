@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Map, MapControls } from "@/components/ui/map";
 import WebView from "react-native-webview";
 import {
   addDoc,
@@ -156,7 +157,6 @@ export default function WorkplacesScreen() {
   const [editingId, setEditingId]   = useState<string | null>(null);
   const [form, setForm]             = useState<FormState>(emptyForm());
   const [saving, setSaving]         = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showMap, setShowMap]       = useState(false);
   const mapRef                      = useRef<WebView>(null);
 
@@ -197,11 +197,17 @@ export default function WorkplacesScreen() {
     setSaving(true);
     try {
       const payload = { name: form.name.trim(), latitude: lat, longitude: lng, allowedRadiusMeters: radius };
+      let workplaceId = editingId;
       if (editingId) {
         await setDoc(doc(db, "users", adminId, "workplaces", editingId), payload);
       } else {
-        await addDoc(collection(db, "users", adminId, "workplaces"), payload);
+        const ref = await addDoc(collection(db, "users", adminId, "workplaces"), payload);
+        workplaceId = ref.id;
       }
+      // Auto-assign ALL workers to this workplace
+      await Promise.all(
+        workers.map(w => updateDoc(doc(db, "users", w.id), { adminId, workplaceId }))
+      );
       setShowForm(false);
       setEditingId(null);
       setForm(emptyForm());
@@ -229,19 +235,12 @@ export default function WorkplacesScreen() {
     }
   };
 
-  const handleAssign = async (worker: Worker, workplaceId: string) => {
-    if (!adminId) return;
-    const alreadyAssigned = worker.workplaceId === workplaceId;
-    await updateDoc(doc(db, "users", worker.id), {
-      adminId: alreadyAssigned ? null : adminId,
-      workplaceId: alreadyAssigned ? null : workplaceId,
-    });
-  };
 
   const openEdit = (wp: Workplace) => {
     setEditingId(wp.id);
     setForm({ name: wp.name, latitude: String(wp.latitude), longitude: String(wp.longitude), allowedRadiusMeters: String(wp.allowedRadiusMeters) });
     setShowForm(true);
+    setShowMap(true);
   };
 
   const inputStyle = [st.input, { backgroundColor: S.input, borderColor: S.inputBorder, color: S.text }];
@@ -289,28 +288,66 @@ export default function WorkplacesScreen() {
               </View>
 
               {showMap && (
-                <View style={{ height: 280, borderRadius: 10, overflow: "hidden", marginTop: 8, borderWidth: 1, borderColor: S.inputBorder }}>
-                  <WebView
-                    ref={mapRef}
-                    source={{ html: buildMapHtml(
-                      form.latitude ? parseFloat(form.latitude) : undefined,
-                      form.longitude ? parseFloat(form.longitude) : undefined,
-                      form.allowedRadiusMeters ? parseInt(form.allowedRadiusMeters) : undefined,
-                    )}}
-                    style={{ flex: 1 }}
-                    javaScriptEnabled
-                    onMessage={e => {
-                      try {
-                        const { lat, lng, radius } = JSON.parse(e.nativeEvent.data);
+                <View style={{ height: 420, borderRadius: 10, overflow: "hidden", marginTop: 8, borderWidth: 1, borderColor: S.inputBorder }}>
+                  {Platform.OS === "web" ? (
+                    <Map
+                      center={
+                        form.latitude && form.longitude
+                          ? [parseFloat(form.longitude), parseFloat(form.latitude)]
+                          : undefined
+                      }
+                      zoom={form.latitude && form.longitude ? 16 : 6}
+                      marker={
+                        form.latitude && form.longitude
+                          ? { lat: parseFloat(form.latitude), lng: parseFloat(form.longitude) }
+                          : null
+                      }
+                      radiusMeters={parseInt(form.allowedRadiusMeters) || 100}
+                      onClick={({ lat, lng }) => {
                         setForm(f => ({
                           ...f,
                           latitude: lat.toFixed(6),
                           longitude: lng.toFixed(6),
-                          allowedRadiusMeters: String(radius),
                         }));
-                      } catch {}
-                    }}
-                  />
+                      }}
+                      onConfirm={({ lat, lng }) => {
+                        setForm(f => ({
+                          ...f,
+                          latitude: lat.toFixed(6),
+                          longitude: lng.toFixed(6),
+                        }));
+                      }}
+                    >
+                      <MapControls
+                        position="top-right"
+                        showZoom
+                        showLocate
+                        showFullscreen
+                      />
+                    </Map>
+                  ) : (
+                    <WebView
+                      ref={mapRef}
+                      source={{ html: buildMapHtml(
+                        form.latitude ? parseFloat(form.latitude) : undefined,
+                        form.longitude ? parseFloat(form.longitude) : undefined,
+                        form.allowedRadiusMeters ? parseInt(form.allowedRadiusMeters) : undefined,
+                      )}}
+                      style={{ flex: 1 }}
+                      javaScriptEnabled
+                      onMessage={e => {
+                        try {
+                          const { lat, lng, radius } = JSON.parse(e.nativeEvent.data);
+                          setForm(f => ({
+                            ...f,
+                            latitude: lat.toFixed(6),
+                            longitude: lng.toFixed(6),
+                            allowedRadiusMeters: String(radius),
+                          }));
+                        } catch {}
+                      }}
+                    />
+                  )}
                 </View>
               )}
 
@@ -323,25 +360,6 @@ export default function WorkplacesScreen() {
               )}
             </View>
 
-            <View style={st.formRow}>
-              <View style={[st.formField, { flex: 1 }]}>
-                <Text style={[st.label, { color: S.muted }]}>Radius (m)</Text>
-                <TextInput
-                  style={inputStyle}
-                  placeholder="e.g. 100"
-                  placeholderTextColor={S.muted}
-                  keyboardType="number-pad"
-                  value={form.allowedRadiusMeters}
-                  onChangeText={v => {
-                    setForm(f => ({ ...f, allowedRadiusMeters: v }));
-                    const r = parseInt(v);
-                    if (!isNaN(r) && r > 0) {
-                      mapRef.current?.injectJavaScript(`updateRadius(${r}); true;`);
-                    }
-                  }}
-                />
-              </View>
-            </View>
           </View>
 
           <View style={st.formActions}>
@@ -355,14 +373,29 @@ export default function WorkplacesScreen() {
 
       {workplaces.length === 0 && !showForm && (
         <View style={[st.emptyCard, { backgroundColor: S.card, borderColor: S.border }]}>
-          <MapPin size={28} color={S.muted} strokeWidth={1.5} />
-          <Text style={[st.emptyText, { color: S.muted }]}>No workplaces yet. Create one to enable real location-based attendance.</Text>
+          <View style={st.emptyMapWrapper}>
+            {Platform.OS === "web" ? (
+              <Map zoom={5} center={[109.5, 4.0]}>
+                <MapControls position="top-right" showZoom />
+              </Map>
+            ) : (
+              <WebView
+                source={{ html: buildMapHtml() }}
+                style={{ flex: 1 }}
+                javaScriptEnabled
+                scrollEnabled={false}
+              />
+            )}
+            <View style={[st.emptyMapOverlay, { backgroundColor: isDark ? "rgba(8,8,14,0.7)" : "rgba(255,255,255,0.75)" }]}>
+              <MapPin size={22} color={S.text} strokeWidth={1.5} />
+              <Text style={[st.emptyText, { color: S.text }]}>No workplaces yet</Text>
+              <Text style={[st.emptySubText, { color: S.muted }]}>Create one to enable real location-based attendance</Text>
+            </View>
+          </View>
         </View>
       )}
 
       {workplaces.map(wp => {
-        const assignedWorkers = workers.filter(w => w.workplaceId === wp.id);
-        const isExpanded = expandedId === wp.id;
         return (
           <View key={wp.id} style={[st.card, { backgroundColor: S.card, borderColor: S.border }, adminCardShadow]}>
             <View style={st.wpRow}>
@@ -385,36 +418,12 @@ export default function WorkplacesScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={[st.workerToggle, { borderTopColor: S.border }]} onPress={() => setExpandedId(isExpanded ? null : wp.id)}>
+            <View style={[st.workerToggle, { borderTopColor: S.border }]}>
               <Users size={13} color={S.muted} strokeWidth={1.8} />
-              <Text style={[st.workerToggleText, { color: S.muted }]}>{assignedWorkers.length} worker{assignedWorkers.length !== 1 ? "s" : ""} assigned</Text>
-              <Text style={{ color: S.muted, fontSize: 10 }}>{isExpanded ? "▲" : "▼"}</Text>
-            </TouchableOpacity>
-
-            {isExpanded && (
-              <View style={[st.workerList, { borderTopColor: S.border }]}>
-                {workers.length === 0 && <Text style={[st.workerEmpty, { color: S.muted }]}>No workers found.</Text>}
-                {workers.map(worker => {
-                  const isAssigned = worker.workplaceId === wp.id;
-                  return (
-                    <View key={worker.id} style={[st.workerRow, { borderBottomColor: S.border }]}>
-                      <Text style={[st.workerName, { color: S.text }]}>{worker.name}</Text>
-                      {worker.workplaceId && worker.workplaceId !== wp.id && (
-                        <Text style={[st.workerBadge, { backgroundColor: S.tag, color: S.muted }]}>Other</Text>
-                      )}
-                      <TouchableOpacity
-                        style={[st.assignBtn, isAssigned ? { backgroundColor: S.tag, borderColor: S.border } : { backgroundColor: S.btnBg, borderColor: S.btnBg }]}
-                        onPress={() => handleAssign(worker, wp.id)}
-                      >
-                        <Text style={[st.assignBtnText, { color: isAssigned ? S.muted : S.btnText }]}>
-                          {isAssigned ? "Unassign" : "Assign"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
+              <Text style={[st.workerToggleText, { color: S.muted }]}>
+                {workers.length} worker{workers.length !== 1 ? "s" : ""} · attendance zone enforced
+              </Text>
+            </View>
           </View>
         );
       })}
@@ -441,8 +450,11 @@ const st = StyleSheet.create({
   formActions:      { marginTop: 14, flexDirection: "row", justifyContent: "flex-end" },
   saveBtn:          { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10 },
   saveBtnText:      { fontSize: 13, fontWeight: "600" },
-  emptyCard:        { borderRadius: 14, borderWidth: 1, borderStyle: "dashed", padding: 32, alignItems: "center", gap: 10 },
-  emptyText:        { fontSize: 13, textAlign: "center", lineHeight: 20 },
+  emptyCard:        { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
+  emptyMapWrapper:  { height: 260, position: "relative" },
+  emptyMapOverlay:  { position: "absolute", bottom: 0, left: 0, right: 0, padding: 20, alignItems: "center", gap: 4 },
+  emptyText:        { fontSize: 14, fontWeight: "700", textAlign: "center" },
+  emptySubText:     { fontSize: 12, textAlign: "center", lineHeight: 18 },
   wpRow:            { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 14 },
   wpIconBg:         { width: 38, height: 38, borderRadius: 10, justifyContent: "center", alignItems: "center" },
   wpName:           { fontSize: 14, fontWeight: "700" },
