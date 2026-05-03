@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme, useCalendar } from "@/lib/context";
-import { Image } from "react-native";
 import { router } from "expo-router";
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import {
   ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,7 +17,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import {
@@ -26,7 +25,6 @@ import {
   clockOut,
   startBreak,
   endBreak,
-  ATTENDANCE_CONFIG,
   type WorkplaceSettings,
   type TodayAttendanceState,
 } from "../../src/utils/attendanceFetch";
@@ -35,7 +33,6 @@ import {
   getCurrentLocation,
   isWithinAllowedRadius,
 } from "../../src/utils/locationHelpers";
-import { captureSelfie } from "../../src/utils/selfieHelper";
 import {
   Bell,
   CheckCircle2,
@@ -75,7 +72,6 @@ function getUserInfo(): Promise<{ uid: string; displayName: string } | null> {
     const unsub = onAuthStateChanged(auth, async user => {
       unsub();
       if (!user) { resolve(null); return; }
-      // Try Firestore name first, fallback to auth displayName
       try {
         const snap = await getDoc(doc(db, "users", user.uid));
         const name = snap.data()?.name ?? snap.data()?.displayName ?? user.displayName ?? "there";
@@ -122,8 +118,6 @@ function getGreeting() {
   return "Good Evening";
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 // ─── Shift helpers ────────────────────────────────────────────────────────────
 
 type Shift = { date: string; start: string; end: string; status?: string };
@@ -146,9 +140,9 @@ function formatDateLabel(value: string) {
   if (!value) return "-";
   const d = new Date(`${value}T00:00:00`);
   if (Number.isNaN(d.getTime())) return value;
-  const today = new Date().toISOString().slice(0, 10);
+  const today    = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  if (value === today) return "Today";
+  if (value === today)    return "Today";
   if (value === tomorrow) return "Tomorrow";
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
@@ -159,23 +153,18 @@ export default function AttendanceScreen() {
   const { colors: c, mode, toggleTheme } = useTheme();
   const { shifts } = useCalendar();
 
-  const handleLogout = async () => {
-    try { await signOut(auth); router.replace("/login"); } catch {}
-  };
-  const [state, setState]               = useState<ScreenState>({ phase: "loading" });
+  const [state, setState]             = useState<ScreenState>({ phase: "loading" });
   const [actionLoading, setActionLoading] = useState(false);
-  const [showModal, setShowModal]       = useState(false);
+  const [showModal, setShowModal]     = useState(false);
   const [pendingAction, setPendingAction] = useState<"clock-in" | "clock-out" | null>(null);
-  const [now, setNow]                   = useState(new Date());
-  const slideAnim                       = useRef(new Animated.Value(SCREEN_H)).current;
+  const [now, setNow]                 = useState(new Date());
+  const slideAnim                     = useRef(new Animated.Value(SCREEN_H)).current;
 
-  // Live clock
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Modal animation
   useEffect(() => {
     Animated.spring(slideAnim, {
       toValue: showModal ? 0 : SCREEN_H,
@@ -184,6 +173,10 @@ export default function AttendanceScreen() {
       friction: 11,
     }).start();
   }, [showModal]);
+
+  const handleLogout = async () => {
+    try { await signOut(auth); router.replace("/login"); } catch {}
+  };
 
   // ── Load ──────────────────────────────────────────────────────────────────
 
@@ -202,7 +195,6 @@ export default function AttendanceScreen() {
       allowedRadiusMeters: 9999999,
     };
     const today = result.ok ? result.today : { clockedIn: false, clockedOut: false, onBreak: false };
-
     const { granted, withinRadius } = await resolveLocation(workplace);
 
     setState({
@@ -222,10 +214,6 @@ export default function AttendanceScreen() {
 
   type AttendanceAction = "clock-in" | "clock-out" | "break-start" | "break-end";
 
-  const needsSelfie = (action: AttendanceAction) =>
-    action === "clock-in" || action === "clock-out" ||
-    (ATTENDANCE_CONFIG.requireSelfieForBreak && (action === "break-start" || action === "break-end"));
-
   const runAttendanceAction = async (action: AttendanceAction) => {
     if (state.phase !== "ready" || actionLoading) return;
     setActionLoading(true);
@@ -233,28 +221,20 @@ export default function AttendanceScreen() {
 
     try {
       const { granted, coords, withinRadius } = await resolveLocation(state.workplace);
-      if (!granted) { Alert.alert("Permission Required", "Location permission is needed."); return; }
+
+      if (!granted) {
+        Alert.alert("Permission Required", "Location permission is needed.");
+        return;
+      }
       if (!withinRadius || !coords) {
         Alert.alert("Outside Workplace", `You must be within ${state.workplace.allowedRadiusMeters}m of your workplace.`);
         return;
       }
 
-      let selfieUrl: string | undefined;
-      if (needsSelfie(action)) {
-        const selfie = await captureSelfie(state.userId, action === "clock-in" || action === "clock-out" ? action : "clock-in");
-        if (!selfie.captured) {
-          if (selfie.reason === "cancelled") return;
-          if (selfie.reason === "permission-denied") { Alert.alert("Camera Required", "Camera permission is needed."); return; }
-          Alert.alert("Upload Failed", "Could not upload selfie. Please try again.");
-          return;
-        }
-        selfieUrl = selfie.url;
-      }
-
-      if (action === "clock-in")      await clockIn(state.userId, coords, selfieUrl!, state.workplace);
-      else if (action === "clock-out") await clockOut(state.userId, coords, selfieUrl!, state.workplace);
-      else if (action === "break-start") await startBreak(state.userId, coords, state.workplace, selfieUrl);
-      else                             await endBreak(state.userId, coords, state.workplace, state.today.breakStartTs, selfieUrl);
+      if (action === "clock-in")       await clockIn(state.userId, coords, state.workplace);
+      else if (action === "clock-out") await clockOut(state.userId, coords, state.workplace);
+      else if (action === "break-start") await startBreak(state.userId, coords, state.workplace);
+      else                             await endBreak(state.userId, coords, state.workplace, state.today.breakStartTs);
 
       await load();
     } catch {
@@ -269,7 +249,7 @@ export default function AttendanceScreen() {
     setShowModal(true);
   };
 
-  // ── Loading ───────────────────────────────────────────────────────────────
+  // ── Loading / Error ───────────────────────────────────────────────────────
 
   if (state.phase === "loading") {
     return (
@@ -294,41 +274,26 @@ export default function AttendanceScreen() {
   // ── Ready ─────────────────────────────────────────────────────────────────
 
   const { today, withinRadius, locationDenied, workplace, displayName } = state;
-
   const checkedIn  = today.clockedIn && !today.clockedOut;
   const checkedOut = today.clockedOut;
   const onBreak    = today.onBreak;
-
-  const statusLabel = checkedOut
-    ? "Checked out"
-    : onBreak
-    ? "On break"
-    : checkedIn
-    ? "Checked in"
-    : "Not checked in yet";
-
-  const statusDotColor = checkedOut ? "#9ca3af" : checkedIn ? "#22c55e" : "#9ca3af";
+  const nextShift  = getNextShift(shifts as Shift[]);
 
   const locationIcon = locationDenied ? "#ca8a04" : withinRadius ? "#16a34a" : "#dc2626";
-  const nextShift = getNextShift(shifts as Shift[]);
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: c.backgroundStart }]} edges={["top"]}>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Header (matches calendar/home) ── */}
+        {/* ── Header ── */}
         <View style={s.header}>
           <View style={s.headerLeft}>
             <TouchableOpacity style={[s.logo, { backgroundColor: c.surface, borderColor: c.border }]}>
-              <Image
-                source={require("../../assets/images/spendly-logo.png")}
-                style={s.logoImage}
-                resizeMode="contain"
-              />
+              <Image source={require("../../assets/images/spendly-logo.png")} style={s.logoImage} resizeMode="contain" />
             </TouchableOpacity>
             <View>
               <Text style={[s.appName, { color: c.text }]}>Spendly</Text>
-              <Text style={[s.headerGreet, { color: c.textMuted }]}>Hey, {state.phase === "ready" ? state.displayName : "…"}!</Text>
+              <Text style={[s.headerGreet, { color: c.textMuted }]}>Hey, {displayName}!</Text>
             </View>
           </View>
           <View style={[s.iconPill, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -350,8 +315,7 @@ export default function AttendanceScreen() {
           </View>
         </View>
 
-        {/* ── Time Card ── */}
-
+        {/* ── Time card ── */}
         <View style={[s.timeCard, { backgroundColor: c.surface, borderColor: c.border }]}>
           <Text style={[s.timeCardLabel, { color: c.textMuted }]}>CURRENT TIME</Text>
           <Text style={[s.timeCardClock, { color: c.text }]}>{formatTime(now)}</Text>
@@ -360,8 +324,6 @@ export default function AttendanceScreen() {
 
         {/* ── Clock timestamps + buttons ── */}
         <View style={[s.shiftCard, { backgroundColor: c.surface, borderColor: c.border }]}>
-
-          {/* Timestamps row */}
           <View style={s.stampsRow}>
             <View style={s.stampCol}>
               <Text style={[s.clockLabel, { color: c.textMuted }]}>Clock in</Text>
@@ -383,40 +345,42 @@ export default function AttendanceScreen() {
             </View>
           </View>
 
-          {/* Action buttons */}
           <View style={s.clockActions}>
+            {/* Clock In */}
             <TouchableOpacity
               style={[s.clockBtn, checkedIn || checkedOut ? { backgroundColor: c.border } : { backgroundColor: c.text }]}
               onPress={() => !checkedIn && !checkedOut && openConfirm("clock-in")}
               disabled={checkedIn || checkedOut || actionLoading}
             >
-              <Text style={[s.clockBtnText, { color: checkedIn || checkedOut ? c.textMuted : c.backgroundStart }]}>
-                Clock in
-              </Text>
+              {actionLoading && pendingAction === null && !checkedIn ? (
+                <ActivityIndicator size="small" color={c.backgroundStart} />
+              ) : (
+                <Text style={[s.clockBtnText, { color: checkedIn || checkedOut ? c.textMuted : c.backgroundStart }]}>Clock in</Text>
+              )}
             </TouchableOpacity>
 
+            {/* Clock Out */}
             <TouchableOpacity
               style={[s.clockBtn, (!checkedIn || checkedOut || onBreak) ? { backgroundColor: c.border } : { backgroundColor: c.text }]}
               onPress={() => checkedIn && !checkedOut && !onBreak && openConfirm("clock-out")}
               disabled={!checkedIn || checkedOut || onBreak || actionLoading}
             >
-              <Text style={[s.clockBtnText, { color: !checkedIn || checkedOut ? c.textMuted : c.backgroundStart }]}>
-                Clock out
-              </Text>
+              <Text style={[s.clockBtnText, { color: !checkedIn || checkedOut ? c.textMuted : c.backgroundStart }]}>Clock out</Text>
             </TouchableOpacity>
 
+            {/* Break toggle */}
             <TouchableOpacity
               style={[s.clockBtn, { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border }]}
               onPress={() => checkedIn && (onBreak ? runAttendanceAction("break-end") : runAttendanceAction("break-start"))}
               disabled={!checkedIn || checkedOut || actionLoading}
             >
-              <Text style={[s.clockBtnText, { color: c.text }]}>
-                {onBreak ? "End break" : "Break"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => {/* reset handled by admin */}}>
-              <Text style={s.resetText}>Reset</Text>
+              {actionLoading && (onBreak || today.onBreak) ? (
+                <ActivityIndicator size="small" color={c.text} />
+              ) : (
+                <Text style={[s.clockBtnText, { color: checkedIn && !checkedOut ? c.text : c.textMuted }]}>
+                  {onBreak ? "End break" : "Break"}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -456,7 +420,11 @@ export default function AttendanceScreen() {
           <View style={s.detailBody}>
             <Text style={[s.detailTitle, { color: c.text }]}>Location Zone</Text>
             <Text style={[s.detailSub, { color: c.textMuted }]}>
-              {locationDenied ? "Permission denied" : withinRadius ? "Within workplace" : `Outside (${workplace.allowedRadiusMeters}m radius)`}
+              {locationDenied
+                ? "Permission denied"
+                : withinRadius
+                ? "Within workplace"
+                : `Outside — must be within ${workplace.allowedRadiusMeters}m`}
             </Text>
           </View>
           {withinRadius && !locationDenied && <CheckCircle2 size={18} color="#16a34a" strokeWidth={1.8} />}
@@ -468,7 +436,7 @@ export default function AttendanceScreen() {
           </View>
           <View style={s.detailBody}>
             <Text style={[s.detailTitle, { color: c.text }]}>Verification</Text>
-            <Text style={[s.detailSub, { color: c.textMuted }]}>Selfie + GPS required</Text>
+            <Text style={[s.detailSub, { color: c.textMuted }]}>GPS location required</Text>
           </View>
           <CheckCircle2 size={18} color="#16a34a" strokeWidth={1.8} />
         </View>
@@ -482,7 +450,7 @@ export default function AttendanceScreen() {
           <View style={[s.modalHandle, { backgroundColor: c.border }]} />
 
           <View style={s.modalHeader}>
-            <Text style={[s.modalTitle, { color: c.text }]}>Attendance System</Text>
+            <Text style={[s.modalTitle, { color: c.text }]}>Confirm Attendance</Text>
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <X size={20} color={c.textMuted} strokeWidth={1.8} />
             </TouchableOpacity>
@@ -490,15 +458,15 @@ export default function AttendanceScreen() {
 
           <View style={[s.locationBadge, { backgroundColor: c.surfaceAlt }]}>
             <CheckCircle2 size={14} color="#16a34a" strokeWidth={2} />
-            <Text style={[s.locationBadgeText, { color: c.text }]}>Location Detected</Text>
+            <Text style={[s.locationBadgeText, { color: c.text }]}>Location Verified</Text>
           </View>
 
           <Text style={[s.modalReadyText, { color: c.text }]}>
-            {pendingAction === "clock-in" ? "Ready to Check In" : "Ready to Check Out"}
+            {pendingAction === "clock-in" ? "Ready to Clock In" : "Ready to Clock Out"}
           </Text>
 
           <View style={s.mapPlaceholder}>
-            <View style={[s.mapGradient, { backgroundColor: c.surfaceAlt }]}>
+            <View style={[s.mapCircle, { backgroundColor: c.surfaceAlt }]}>
               <MapPin size={28} color={c.text} strokeWidth={1.8} />
             </View>
           </View>
@@ -516,12 +484,12 @@ export default function AttendanceScreen() {
             {actionLoading
               ? <ActivityIndicator color={c.backgroundStart} />
               : <Text style={[s.confirmBtnText, { color: c.backgroundStart }]}>
-                  Confirm {pendingAction === "clock-in" ? "Check-In" : "Check-Out"}
+                  Confirm {pendingAction === "clock-in" ? "Clock In" : "Clock Out"}
                 </Text>
             }
           </TouchableOpacity>
 
-          <Text style={[s.modalSecondary, { color: c.textMuted }]}>Not at this location?</Text>
+          <Text style={[s.modalSecondary, { color: c.textMuted }]}>Location is verified before saving</Text>
         </Animated.View>
       </Modal>
     </SafeAreaView>
@@ -533,8 +501,13 @@ export default function AttendanceScreen() {
 const s = StyleSheet.create({
   safe:             { flex: 1 },
   scroll:           { padding: 16, paddingTop: 20, paddingBottom: 120 },
+  loadingCenter:    { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  loadingText:      { fontSize: 13 },
+  errorText:        { fontSize: 14, fontWeight: "600", textAlign: "center" },
+  retryBtn:         { marginTop: 8, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
+  retryText:        { fontSize: 13, fontWeight: "600" },
 
-  // Header — matches calendar/home exactly
+  // Header
   header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   headerLeft:       { flexDirection: "row", alignItems: "center", gap: 12 },
   logo:             { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 1 },
@@ -544,21 +517,9 @@ const s = StyleSheet.create({
   iconPill:         { flexDirection: "row", alignItems: "center", borderRadius: 999, borderWidth: 1, paddingHorizontal: 4, paddingVertical: 4, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   iconPillBtn:      { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
   iconPillDivider:  { width: 1, height: 16 },
-  loadingCenter:    { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
-  loadingText:      { fontSize: 13 },
-  errorText:        { fontSize: 14, fontWeight: "600", textAlign: "center" },
-  retryBtn:         { marginTop: 8, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
-  retryText:        { fontSize: 13, fontWeight: "600" },
-
-  // Greeting
-  greetRow:         { marginBottom: 20 },
-  greetText:        { fontSize: 22, fontWeight: "800", letterSpacing: -0.4 },
-  statusBadge:      { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 },
-  statusDot:        { width: 7, height: 7, borderRadius: 4 },
-  statusLabel:      { fontSize: 13 },
 
   // Time card
-  timeCard:         { borderRadius: 20, padding: 24, marginBottom: 20, borderWidth: 1, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  timeCard:         { borderRadius: 20, padding: 24, marginBottom: 16, borderWidth: 1, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   timeCardLabel:    { fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 6 },
   timeCardClock:    { fontSize: 52, fontWeight: "800", letterSpacing: -1 },
   timeCardDate:     { fontSize: 14, marginTop: 4 },
@@ -571,10 +532,9 @@ const s = StyleSheet.create({
   clockLabel:       { fontSize: 9, fontWeight: "500" },
   clockValue:       { fontWeight: "700", marginTop: 2, fontSize: 11 },
   clockActions:     { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
-  clockBtn:         { flex: 1, paddingVertical: 7, paddingHorizontal: 6, borderRadius: 8, alignItems: "center" },
+  clockBtn:         { flex: 1, paddingVertical: 9, paddingHorizontal: 6, borderRadius: 10, alignItems: "center" },
   clockBtnText:     { fontWeight: "600", fontSize: 11 },
-  resetText:        { fontSize: 10, fontWeight: "600", color: "#ef4444", paddingHorizontal: 4 },
-  upcomingRow:      { marginTop: 10, paddingTop: 10, borderTopWidth: 1 },
+  upcomingRow:      { marginTop: 12, paddingTop: 12, borderTopWidth: 1 },
   upcomingLabel:    { fontSize: 11, fontWeight: "600", marginBottom: 2 },
   shiftMeta:        { fontSize: 12 },
 
@@ -597,7 +557,7 @@ const s = StyleSheet.create({
   locationBadgeText:{ fontSize: 12, fontWeight: "700" },
   modalReadyText:   { fontSize: 20, fontWeight: "800", marginBottom: 20 },
   mapPlaceholder:   { alignSelf: "center", marginBottom: 12 },
-  mapGradient:      { width: 100, height: 100, borderRadius: 50, justifyContent: "center", alignItems: "center" },
+  mapCircle:        { width: 100, height: 100, borderRadius: 50, justifyContent: "center", alignItems: "center" },
   modalWorkplace:   { fontSize: 15, fontWeight: "700", textAlign: "center", marginBottom: 24 },
   confirmBtn:       { borderRadius: 16, paddingVertical: 16, alignItems: "center", marginBottom: 12 },
   confirmBtnText:   { fontSize: 15, fontWeight: "800" },

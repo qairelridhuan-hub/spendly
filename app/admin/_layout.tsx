@@ -22,6 +22,7 @@ import {
   FileText,
   Settings,
   ShieldCheck,
+  MapPin,
   LogOut,
   Bell,
   Moon,
@@ -42,11 +43,12 @@ const navSections = [
   {
     label: "Management",
     items: [
-      { label: "Setup",      href: "/admin/setup",      icon: Settings       },
-      { label: "Rules",      href: "/admin/settings",   icon: ShieldCheck    },
-      { label: "Calendar",   href: "/admin/calendar",   icon: Calendar       },
-      { label: "Workers",    href: "/admin/workers",    icon: Users          },
-      { label: "Attendance", href: "/admin/attendance", icon: ClipboardCheck },
+      { label: "Setup",       href: "/admin/setup",       icon: Settings       },
+      { label: "Rules",       href: "/admin/settings",    icon: ShieldCheck    },
+      { label: "Workplaces",  href: "/admin/workplaces",  icon: MapPin         },
+      { label: "Calendar",    href: "/admin/calendar",    icon: Calendar       },
+      { label: "Workers",     href: "/admin/workers",     icon: Users          },
+      { label: "Attendance",  href: "/admin/attendance",  icon: ClipboardCheck },
     ],
   },
   {

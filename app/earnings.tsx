@@ -18,7 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react-native";
 import { router } from "expo-router";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, doc } from "firebase/firestore";
 import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { auth, db } from "@/lib/firebase";

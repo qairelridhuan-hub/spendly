@@ -25,6 +25,9 @@ import {
   X,
   Moon,
   Sun,
+  Clock,
+  CalendarClock,
+  BarChart2,
 } from "lucide-react-native";
 import Svg, { Circle, Line } from "react-native-svg";
 import { router } from "expo-router";
@@ -1446,6 +1449,110 @@ export default function WorkerHomeScreen() {
               );
             })()}
 
+            {/* ── Card 1: Today's Shift ── */}
+            {(() => {
+              if (!todayShift) return (
+                <View style={[styles.card, { marginBottom: 12 }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <Clock size={14} color={colors.textMuted} strokeWidth={1.8} />
+                    <Text style={[styles.cardTitle, { fontSize: 13 }]}>Today's Shift</Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>No shift scheduled today.</Text>
+                </View>
+              );
+              const progressPct = Math.min(100, Math.round(todayProgress * 100));
+              const statusColor =
+                todayStatus === "completed" ? "#16a34a" :
+                todayStatus === "absent"    ? "#dc2626" : colors.textMuted;
+              return (
+                <View style={[styles.card, { marginBottom: 12 }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <Clock size={14} color={colors.textMuted} strokeWidth={1.8} />
+                    <Text style={[styles.cardTitle, { fontSize: 13 }]}>Today's Shift</Text>
+                    <View style={{ marginLeft: "auto", backgroundColor: colors.surfaceAlt, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 10, fontWeight: "700", color: statusColor }}>{todayStatus}</Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5, marginBottom: 4 }}>
+                    {todayShift.start} – {todayShift.end}
+                  </Text>
+                  {todayShift.location ? (
+                    <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 12 }}>{todayShift.location}</Text>
+                  ) : <View style={{ marginBottom: 12 }} />}
+                  <View style={{ height: 5, backgroundColor: colors.border, borderRadius: 999, overflow: "hidden" }}>
+                    <View style={{ height: 5, borderRadius: 999, backgroundColor: todayStatus === "completed" ? "#16a34a" : colors.text, width: `${progressPct}%` }} />
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
+                    <Text style={{ fontSize: 10, color: colors.textMuted }}>{progressPct}% complete</Text>
+                    {todayAttendance?.clockIn && (
+                      <Text style={{ fontSize: 10, color: colors.textMuted }}>
+                        Clocked in {todayAttendance.clockIn}{todayAttendance.clockOut ? ` · Out ${todayAttendance.clockOut}` : ""}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              );
+            })()}
+
+            {/* ── Card 2: This Week Snapshot ── */}
+            {(() => {
+              const today = new Date();
+              const thisWeekLogs = approvedLogs.filter(log => {
+                if (!log.date) return false;
+                const d = new Date(`${log.date}T00:00:00`);
+                const dayOfWeek = today.getDay();
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+                monday.setHours(0, 0, 0, 0);
+                return d >= monday;
+              });
+              const weekHours = thisWeekLogs.reduce((sum, log) => sum + (log.netHours ?? log.hours ?? 0), 0);
+              const weekShifts = thisWeekLogs.length;
+              const weekBreakMins = thisWeekLogs.reduce((sum, log) => sum + (log.breakMinutes ?? 0), 0);
+              return (
+                <View style={[styles.card, { marginBottom: 12 }]}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <BarChart2 size={14} color={colors.textMuted} strokeWidth={1.8} />
+                    <Text style={[styles.cardTitle, { fontSize: 13 }]}>This Week</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <View style={{ alignItems: "center", flex: 1 }}>
+                      <Text style={{ fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5 }}>{weekHours.toFixed(1)}</Text>
+                      <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>Hours Worked</Text>
+                    </View>
+                    <View style={{ width: 1, backgroundColor: colors.border }} />
+                    <View style={{ alignItems: "center", flex: 1 }}>
+                      <Text style={{ fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5 }}>{weekShifts}</Text>
+                      <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>Shifts Done</Text>
+                    </View>
+                    <View style={{ width: 1, backgroundColor: colors.border }} />
+                    <View style={{ alignItems: "center", flex: 1 }}>
+                      <Text style={{ fontSize: 22, fontWeight: "800", color: colors.text, letterSpacing: -0.5 }}>{weekBreakMins}</Text>
+                      <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>Break Mins</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })()}
+
+            {/* ── Card 5: Next Shift Reminder ── */}
+            {nextShift && (
+              <View style={[styles.card, { marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 14 }]}>
+                <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: colors.surfaceAlt, justifyContent: "center", alignItems: "center" }}>
+                  <CalendarClock size={20} color={colors.text} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "600", marginBottom: 2 }}>NEXT SHIFT</Text>
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: colors.text }}>
+                    {formatDateLabel(nextShift.date)} · {nextShift.start} – {nextShift.end}
+                  </Text>
+                  {nextShift.location ? (
+                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>{nextShift.location}</Text>
+                  ) : null}
+                </View>
+                <ChevronRight size={16} color={colors.textMuted} strokeWidth={1.8} />
+              </View>
+            )}
 
           </Animated.View>
         </ScrollView>

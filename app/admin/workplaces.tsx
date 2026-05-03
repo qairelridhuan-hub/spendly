@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
+  Alert,
+  Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -22,7 +24,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useAdminTheme } from "@/lib/admin/theme";
 import { adminCardShadow } from "@/lib/admin/shadows";
-import { MapPin, Pencil, Plus, Trash2, UserPlus, X } from "lucide-react-native";
+import { MapPin, Plus, Trash2, Pencil, X, Check, Users } from "lucide-react-native";
 
 type Workplace = {
   id: string;
@@ -35,7 +37,6 @@ type Workplace = {
 type Worker = {
   id: string;
   name: string;
-  email: string;
   workplaceId?: string;
   adminId?: string;
 };
@@ -47,700 +48,277 @@ type FormState = {
   allowedRadiusMeters: string;
 };
 
-const EMPTY_FORM: FormState = {
-  name: "",
-  latitude: "",
-  longitude: "",
-  allowedRadiusMeters: "",
-};
+const emptyForm = (): FormState => ({ name: "", latitude: "", longitude: "", allowedRadiusMeters: "100" });
 
-export default function AdminWorkplaces() {
-  const { colors: p } = useAdminTheme();
+export default function WorkplacesScreen() {
+  const { mode } = useAdminTheme();
+  const isDark = mode === "dark";
 
-  const [adminId, setAdminId] = useState<string | null>(null);
+  const S = {
+    bg:          isDark ? "#08080e"                : "#f4f4f6",
+    card:        isDark ? "rgba(20,20,28,0.95)"    : "#ffffff",
+    border:      isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)",
+    text:        isDark ? "#e4e4e7"                : "#18181b",
+    muted:       isDark ? "#71717a"                : "#6b7280",
+    input:       isDark ? "rgba(255,255,255,0.05)" : "#f9fafb",
+    inputBorder: isDark ? "rgba(255,255,255,0.1)"  : "#e5e7eb",
+    btnBg:       isDark ? "#ffffff"                : "#18181b",
+    btnText:     isDark ? "#18181b"                : "#ffffff",
+    tag:         isDark ? "rgba(255,255,255,0.07)" : "#f3f4f6",
+    danger:      "#ef4444",
+  };
+
+  const [adminId, setAdminId]       = useState<string | null>(null);
   const [workplaces, setWorkplaces] = useState<Workplace[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [formError, setFormError] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const [expandedWorkplace, setExpandedWorkplace] = useState<string | null>(null);
-  const [assigningWorkerId, setAssigningWorkerId] = useState<string | null>(null);
-
-  const [status, setStatus] = useState("");
-
-  const card = {
-    backgroundColor: p.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: p.border,
-    marginTop: 12,
-    ...adminCardShadow,
-  };
-  const cardHeader = {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: p.border,
-  };
-  const inp = {
-    borderWidth: 1,
-    borderColor: p.border,
-    borderRadius: 8,
-    padding: 10,
-    color: p.text,
-    backgroundColor: p.surfaceAlt,
-    fontSize: 13,
-  };
-  const FL = { color: p.textMuted, fontSize: 11, marginBottom: 6 };
+  const [workers, setWorkers]       = useState<Worker[]>([]);
+  const [showForm, setShowForm]     = useState(false);
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [form, setForm]             = useState<FormState>(emptyForm());
+  const [saving, setSaving]         = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, user => {
-      if (user) setAdminId(user.uid);
-    });
+    const unsub = onAuthStateChanged(auth, user => setAdminId(user?.uid ?? null));
     return unsub;
   }, []);
 
   useEffect(() => {
     if (!adminId) return;
-
-    const unsubWorkplaces = onSnapshot(
-      collection(db, "users", adminId, "workplaces"),
-      snapshot => {
-        const list = snapshot.docs.map(docSnap => {
-          const d = docSnap.data() as any;
-          return {
-            id: docSnap.id,
-            name: d.name || "",
-            latitude: Number(d.latitude ?? 0),
-            longitude: Number(d.longitude ?? 0),
-            allowedRadiusMeters: Number(d.allowedRadiusMeters ?? 0),
-          };
-        });
-        setWorkplaces(list);
-      }
-    );
-
-    const workersQuery = query(
-      collection(db, "users"),
-      where("role", "==", "worker")
-    );
-    const unsubWorkers = onSnapshot(workersQuery, snapshot => {
-      const list = snapshot.docs.map(docSnap => {
-        const d = docSnap.data() as any;
-        return {
-          id: docSnap.id,
-          name: d.fullName || d.displayName || "Worker",
-          email: d.email || "",
-          workplaceId: d.workplaceId || "",
-          adminId: d.adminId || "",
-        };
-      });
-      setWorkers(list);
+    const unsub = onSnapshot(collection(db, "users", adminId, "workplaces"), snap => {
+      setWorkplaces(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Workplace, "id">) })));
     });
-
-    return () => {
-      unsubWorkplaces();
-      unsubWorkers();
-    };
+    return unsub;
   }, [adminId]);
 
-  const openCreate = () => {
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-    setFormError("");
-    setShowForm(true);
-  };
-
-  const openEdit = (wp: Workplace) => {
-    setEditingId(wp.id);
-    setForm({
-      name: wp.name,
-      latitude: String(wp.latitude),
-      longitude: String(wp.longitude),
-      allowedRadiusMeters: String(wp.allowedRadiusMeters),
+  useEffect(() => {
+    const unsub = onSnapshot(query(collection(db, "users"), where("role", "==", "worker")), snap => {
+      setWorkers(snap.docs.map(d => ({
+        id: d.id,
+        name: d.data().name ?? d.data().displayName ?? "Unnamed",
+        workplaceId: d.data().workplaceId,
+        adminId: d.data().adminId,
+      })));
     });
-    setFormError("");
-    setShowForm(true);
-  };
-
-  const closeForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-    setFormError("");
-  };
-
-  const validateForm = (): string => {
-    if (!form.name.trim()) return "Name is required.";
-    const lat = Number(form.latitude);
-    const lng = Number(form.longitude);
-    const radius = Number(form.allowedRadiusMeters);
-    if (form.latitude.trim() === "" || isNaN(lat) || lat < -90 || lat > 90)
-      return "Latitude must be a number between -90 and 90.";
-    if (form.longitude.trim() === "" || isNaN(lng) || lng < -180 || lng > 180)
-      return "Longitude must be a number between -180 and 180.";
-    if (form.allowedRadiusMeters.trim() === "" || isNaN(radius) || radius <= 0)
-      return "Allowed radius must be greater than 0.";
-    return "";
-  };
+    return unsub;
+  }, []);
 
   const handleSave = async () => {
     if (!adminId) return;
-    const err = validateForm();
-    if (err) {
-      setFormError(err);
-      return;
-    }
+    const lat = parseFloat(form.latitude);
+    const lng = parseFloat(form.longitude);
+    const radius = parseInt(form.allowedRadiusMeters, 10);
+    if (!form.name.trim()) { alert("Name is required."); return; }
+    if (isNaN(lat) || isNaN(lng)) { alert("Enter valid latitude and longitude."); return; }
+    if (isNaN(radius) || radius <= 0) { alert("Enter a valid radius."); return; }
+
     setSaving(true);
-    setFormError("");
-    const payload = {
-      name: form.name.trim(),
-      latitude: Number(form.latitude),
-      longitude: Number(form.longitude),
-      allowedRadiusMeters: Number(form.allowedRadiusMeters),
-    };
     try {
+      const payload = { name: form.name.trim(), latitude: lat, longitude: lng, allowedRadiusMeters: radius };
       if (editingId) {
-        await setDoc(
-          doc(db, "users", adminId, "workplaces", editingId),
-          payload
-        );
-        setStatus("Workplace updated.");
+        await setDoc(doc(db, "users", adminId, "workplaces", editingId), payload);
       } else {
         await addDoc(collection(db, "users", adminId, "workplaces"), payload);
-        setStatus("Workplace created.");
       }
-      closeForm();
+      setShowForm(false);
+      setEditingId(null);
+      setForm(emptyForm());
     } catch {
-      setFormError("Failed to save workplace. Please try again.");
+      alert("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (workplaceId: string) => {
+  const handleDelete = (wp: Workplace) => {
     if (!adminId) return;
-    try {
-      await deleteDoc(doc(db, "users", adminId, "workplaces", workplaceId));
-      setStatus("Workplace deleted.");
-      if (expandedWorkplace === workplaceId) setExpandedWorkplace(null);
-    } catch {
-      setStatus("Failed to delete workplace.");
+    const doDelete = async () => {
+      await deleteDoc(doc(db, "users", adminId, "workplaces", wp.id));
+      const assigned = workers.filter(w => w.workplaceId === wp.id);
+      await Promise.all(assigned.map(w => updateDoc(doc(db, "users", w.id), { workplaceId: null, adminId: null })));
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`Delete "${wp.name}"? Workers will be unlinked.`)) void doDelete();
+    } else {
+      Alert.alert("Delete Workplace", `Delete "${wp.name}"?`, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: doDelete },
+      ]);
     }
   };
 
-  const handleAssignWorker = async (workerId: string, workplaceId: string) => {
+  const handleAssign = async (worker: Worker, workplaceId: string) => {
     if (!adminId) return;
-    setAssigningWorkerId(workerId);
-    try {
-      await updateDoc(doc(db, "users", workerId), {
-        adminId,
-        workplaceId,
-      });
-      setStatus("Worker assigned to workplace.");
-    } catch {
-      setStatus("Failed to assign worker.");
-    } finally {
-      setAssigningWorkerId(null);
-    }
+    const alreadyAssigned = worker.workplaceId === workplaceId;
+    await updateDoc(doc(db, "users", worker.id), {
+      adminId: alreadyAssigned ? null : adminId,
+      workplaceId: alreadyAssigned ? null : workplaceId,
+    });
   };
 
-  const handleUnassignWorker = async (workerId: string) => {
-    setAssigningWorkerId(workerId);
-    try {
-      await updateDoc(doc(db, "users", workerId), {
-        adminId: "",
-        workplaceId: "",
-      });
-      setStatus("Worker unassigned.");
-    } catch {
-      setStatus("Failed to unassign worker.");
-    } finally {
-      setAssigningWorkerId(null);
-    }
+  const openEdit = (wp: Workplace) => {
+    setEditingId(wp.id);
+    setForm({ name: wp.name, latitude: String(wp.latitude), longitude: String(wp.longitude), allowedRadiusMeters: String(wp.allowedRadiusMeters) });
+    setShowForm(true);
   };
 
-  const sanitizeNumberInput = (value: string) =>
-    value.replace(/[^0-9.\-]/g, "");
+  const inputStyle = [st.input, { backgroundColor: S.input, borderColor: S.inputBorder, color: S.text }];
 
   return (
-    <View style={{ flex: 1, backgroundColor: p.backgroundStart }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <View>
-            <Text
-              style={{
-                color: p.text,
-                fontSize: 16,
-                fontWeight: "700",
-                letterSpacing: -0.3,
-              }}
-            >
-              Workplaces
-            </Text>
-            <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 2 }}>
-              Manage locations and assign workers
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={openCreate}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              backgroundColor: p.text,
-              paddingVertical: 8,
-              paddingHorizontal: 14,
-              borderRadius: 8,
-            }}
-          >
-            <Plus size={14} color={p.surface} />
-            <Text style={{ color: p.surface, fontWeight: "600", fontSize: 13 }}>
-              New Workplace
-            </Text>
-          </TouchableOpacity>
-        </View>
+    <ScrollView style={[st.root, { backgroundColor: S.bg }]} contentContainerStyle={st.content}>
 
-        {/* Status bar */}
-        {status !== "" && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              backgroundColor: p.surface,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: p.border,
-              padding: 12,
-              marginBottom: 4,
-            }}
-          >
-            <Text style={{ color: p.textMuted, fontSize: 12, flex: 1 }}>
-              {status}
-            </Text>
-            <TouchableOpacity onPress={() => setStatus("")}>
-              <X size={14} color={p.textMuted} />
+      <View style={st.headerRow}>
+        <View>
+          <Text style={[st.pageTitle, { color: S.text }]}>Workplaces</Text>
+          <Text style={[st.pageSub, { color: S.muted }]}>Set location zones and assign workers</Text>
+        </View>
+        <TouchableOpacity style={[st.addBtn, { backgroundColor: S.btnBg }]} onPress={() => { setEditingId(null); setForm(emptyForm()); setShowForm(true); }}>
+          <Plus size={14} color={S.btnText} strokeWidth={2.5} />
+          <Text style={[st.addBtnText, { color: S.btnText }]}>New Workplace</Text>
+        </TouchableOpacity>
+      </View>
+
+      {showForm && (
+        <View style={[st.card, { backgroundColor: S.card, borderColor: S.border }, adminCardShadow]}>
+          <View style={st.cardHeader}>
+            <Text style={[st.cardTitle, { color: S.text }]}>{editingId ? "Edit Workplace" : "New Workplace"}</Text>
+            <TouchableOpacity onPress={() => { setShowForm(false); setEditingId(null); }}>
+              <X size={16} color={S.muted} strokeWidth={2} />
             </TouchableOpacity>
           </View>
-        )}
 
-        {/* Create / Edit form */}
-        {showForm && (
-          <View style={{ ...card }}>
-            <View
-              style={{
-                ...cardHeader,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <Text style={{ color: p.text, fontSize: 13, fontWeight: "700" }}>
-                {editingId ? "Edit Workplace" : "New Workplace"}
-              </Text>
-              <TouchableOpacity onPress={closeForm}>
-                <X size={16} color={p.textMuted} />
-              </TouchableOpacity>
+          <View style={st.formGrid}>
+            <View style={st.formField}>
+              <Text style={[st.label, { color: S.muted }]}>Name</Text>
+              <TextInput style={inputStyle} placeholder="e.g. Main Office" placeholderTextColor={S.muted} value={form.name} onChangeText={v => setForm(f => ({ ...f, name: v }))} />
             </View>
-            <View style={{ padding: 16, gap: 12 }}>
-              <View>
-                <Text style={FL}>Name</Text>
-                <TextInput
-                  placeholder="e.g. HQ Office"
-                  placeholderTextColor={p.textMuted}
-                  value={form.name}
-                  onChangeText={v => setForm(prev => ({ ...prev, name: v }))}
-                  style={inp}
-                />
+            <View style={st.formRow}>
+              <View style={[st.formField, { flex: 1 }]}>
+                <Text style={[st.label, { color: S.muted }]}>Latitude</Text>
+                <TextInput style={inputStyle} placeholder="e.g. 3.1390" placeholderTextColor={S.muted} keyboardType="decimal-pad" value={form.latitude} onChangeText={v => setForm(f => ({ ...f, latitude: v }))} />
               </View>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={FL}>Latitude</Text>
-                  <TextInput
-                    placeholder="3.1390"
-                    placeholderTextColor={p.textMuted}
-                    keyboardType="numeric"
-                    value={form.latitude}
-                    onChangeText={v =>
-                      setForm(prev => ({
-                        ...prev,
-                        latitude: sanitizeNumberInput(v),
-                      }))
-                    }
-                    style={inp}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={FL}>Longitude</Text>
-                  <TextInput
-                    placeholder="101.6869"
-                    placeholderTextColor={p.textMuted}
-                    keyboardType="numeric"
-                    value={form.longitude}
-                    onChangeText={v =>
-                      setForm(prev => ({
-                        ...prev,
-                        longitude: sanitizeNumberInput(v),
-                      }))
-                    }
-                    style={inp}
-                  />
-                </View>
+              <View style={[st.formField, { flex: 1 }]}>
+                <Text style={[st.label, { color: S.muted }]}>Longitude</Text>
+                <TextInput style={inputStyle} placeholder="e.g. 101.6869" placeholderTextColor={S.muted} keyboardType="decimal-pad" value={form.longitude} onChangeText={v => setForm(f => ({ ...f, longitude: v }))} />
               </View>
-              <View>
-                <Text style={FL}>Allowed Radius (meters)</Text>
-                <TextInput
-                  placeholder="100"
-                  placeholderTextColor={p.textMuted}
-                  keyboardType="numeric"
-                  value={form.allowedRadiusMeters}
-                  onChangeText={v =>
-                    setForm(prev => ({
-                      ...prev,
-                      allowedRadiusMeters: sanitizeNumberInput(v),
-                    }))
-                  }
-                  style={inp}
-                />
-              </View>
-              {formError !== "" && (
-                <Text style={{ color: "#ef4444", fontSize: 12 }}>
-                  {formError}
-                </Text>
-              )}
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
-                <TouchableOpacity
-                  onPress={closeForm}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: p.border,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ color: p.textMuted, fontWeight: "600", fontSize: 13 }}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleSave}
-                  disabled={saving}
-                  style={{
-                    flex: 2,
-                    paddingVertical: 10,
-                    borderRadius: 8,
-                    backgroundColor: p.text,
-                    alignItems: "center",
-                    opacity: saving ? 0.6 : 1,
-                  }}
-                >
-                  {saving ? (
-                    <ActivityIndicator size="small" color={p.surface} />
-                  ) : (
-                    <Text
-                      style={{
-                        color: p.surface,
-                        fontWeight: "600",
-                        fontSize: 13,
-                      }}
-                    >
-                      {editingId ? "Update Workplace" : "Create Workplace"}
-                    </Text>
-                  )}
-                </TouchableOpacity>
+              <View style={[st.formField, { flex: 1 }]}>
+                <Text style={[st.label, { color: S.muted }]}>Radius (m)</Text>
+                <TextInput style={inputStyle} placeholder="e.g. 100" placeholderTextColor={S.muted} keyboardType="number-pad" value={form.allowedRadiusMeters} onChangeText={v => setForm(f => ({ ...f, allowedRadiusMeters: v }))} />
               </View>
             </View>
           </View>
-        )}
 
-        {/* Workplace list */}
-        {workplaces.length === 0 && !showForm && (
-          <View
-            style={{
-              ...card,
-              padding: 32,
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <MapPin size={28} color={p.textMuted} />
-            <Text style={{ color: p.textMuted, fontSize: 13, textAlign: "center" }}>
-              No workplaces yet.{"\n"}Create one to get started.
-            </Text>
+          <View style={st.formActions}>
+            <TouchableOpacity style={[st.saveBtn, { backgroundColor: S.btnBg, opacity: saving ? 0.6 : 1 }]} onPress={handleSave} disabled={saving}>
+              <Check size={14} color={S.btnText} strokeWidth={2.5} />
+              <Text style={[st.saveBtnText, { color: S.btnText }]}>{saving ? "Saving…" : editingId ? "Update" : "Create"}</Text>
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
+      )}
 
-        {workplaces.map(wp => {
-          const isExpanded = expandedWorkplace === wp.id;
-          const assignedWorkers = workers.filter(
-            w => w.workplaceId === wp.id && w.adminId === adminId
-          );
-          const unassignedWorkers = workers.filter(
-            w => w.workplaceId !== wp.id || w.adminId !== adminId
-          );
+      {workplaces.length === 0 && !showForm && (
+        <View style={[st.emptyCard, { backgroundColor: S.card, borderColor: S.border }]}>
+          <MapPin size={28} color={S.muted} strokeWidth={1.5} />
+          <Text style={[st.emptyText, { color: S.muted }]}>No workplaces yet. Create one to enable real location-based attendance.</Text>
+        </View>
+      )}
 
-          return (
-            <View key={wp.id} style={{ ...card }}>
-              {/* Card header row */}
-              <View
-                style={{
-                  ...cardHeader,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{ color: p.text, fontSize: 13, fontWeight: "700" }}
-                  >
-                    {wp.name}
-                  </Text>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                      marginTop: 3,
-                    }}
-                  >
-                    <MapPin size={11} color={p.textMuted} />
-                    <Text style={{ color: p.textMuted, fontSize: 11 }}>
-                      {wp.latitude.toFixed(6)}, {wp.longitude.toFixed(6)}
-                    </Text>
-                  </View>
-                  <Text style={{ color: p.textMuted, fontSize: 11, marginTop: 2 }}>
-                    Radius: {wp.allowedRadiusMeters} m
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-                  <TouchableOpacity
-                    onPress={() => openEdit(wp)}
-                    style={{
-                      padding: 7,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: p.border,
-                      backgroundColor: p.surfaceAlt,
-                    }}
-                  >
-                    <Pencil size={13} color={p.textMuted} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(wp.id)}
-                    style={{
-                      padding: 7,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: "#fecaca",
-                      backgroundColor: "#fef2f2",
-                    }}
-                  >
-                    <Trash2 size={13} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
+      {workplaces.map(wp => {
+        const assignedWorkers = workers.filter(w => w.workplaceId === wp.id);
+        const isExpanded = expandedId === wp.id;
+        return (
+          <View key={wp.id} style={[st.card, { backgroundColor: S.card, borderColor: S.border }, adminCardShadow]}>
+            <View style={st.wpRow}>
+              <View style={[st.wpIconBg, { backgroundColor: S.tag }]}>
+                <MapPin size={16} color={S.text} strokeWidth={1.8} />
               </View>
-
-              {/* Assigned workers summary */}
-              <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 }}>
-                <Text style={{ color: p.textMuted, fontSize: 11, marginBottom: 6 }}>
-                  {assignedWorkers.length === 0
-                    ? "No workers assigned"
-                    : `${assignedWorkers.length} worker${assignedWorkers.length > 1 ? "s" : ""} assigned`}
+              <View style={{ flex: 1 }}>
+                <Text style={[st.wpName, { color: S.text }]}>{wp.name}</Text>
+                <Text style={[st.wpMeta, { color: S.muted }]}>
+                  {wp.latitude.toFixed(5)}, {wp.longitude.toFixed(5)} · {wp.allowedRadiusMeters}m radius
                 </Text>
-                {assignedWorkers.map(w => (
-                  <View
-                    key={w.id}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      paddingVertical: 7,
-                      borderTopWidth: 1,
-                      borderTopColor: p.border,
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: p.text, fontSize: 12, fontWeight: "600" }}>
-                        {w.name}
-                      </Text>
-                      <Text style={{ color: p.textMuted, fontSize: 11 }}>
-                        {w.email}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleUnassignWorker(w.id)}
-                      disabled={assigningWorkerId === w.id}
-                      style={{
-                        paddingVertical: 5,
-                        paddingHorizontal: 10,
-                        borderRadius: 999,
-                        borderWidth: 1,
-                        borderColor: p.border,
-                        backgroundColor: p.surfaceAlt,
-                        opacity: assigningWorkerId === w.id ? 0.5 : 1,
-                      }}
-                    >
-                      <Text style={{ color: p.textMuted, fontSize: 11 }}>
-                        Unassign
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
               </View>
+              <View style={st.wpActions}>
+                <TouchableOpacity style={st.iconBtn} onPress={() => openEdit(wp)}>
+                  <Pencil size={14} color={S.muted} strokeWidth={1.8} />
+                </TouchableOpacity>
+                <TouchableOpacity style={st.iconBtn} onPress={() => handleDelete(wp)}>
+                  <Trash2 size={14} color={S.danger} strokeWidth={1.8} />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-              {/* Expand / collapse assign section */}
-              <TouchableOpacity
-                onPress={() =>
-                  setExpandedWorkplace(isExpanded ? null : wp.id)
-                }
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  margin: 12,
-                  marginTop: 4,
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: p.border,
-                  backgroundColor: p.surfaceAlt,
-                  justifyContent: "center",
-                }}
-              >
-                <UserPlus size={13} color={p.textMuted} />
-                <Text style={{ color: p.textMuted, fontSize: 12, fontWeight: "600" }}>
-                  {isExpanded ? "Hide worker list" : "Assign a worker"}
-                </Text>
-              </TouchableOpacity>
+            <TouchableOpacity style={[st.workerToggle, { borderTopColor: S.border }]} onPress={() => setExpandedId(isExpanded ? null : wp.id)}>
+              <Users size={13} color={S.muted} strokeWidth={1.8} />
+              <Text style={[st.workerToggleText, { color: S.muted }]}>{assignedWorkers.length} worker{assignedWorkers.length !== 1 ? "s" : ""} assigned</Text>
+              <Text style={{ color: S.muted, fontSize: 10 }}>{isExpanded ? "▲" : "▼"}</Text>
+            </TouchableOpacity>
 
-              {/* Assign worker panel */}
-              {isExpanded && (
-                <View
-                  style={{
-                    borderTopWidth: 1,
-                    borderTopColor: p.border,
-                    paddingHorizontal: 16,
-                    paddingBottom: 12,
-                    paddingTop: 10,
-                    gap: 6,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: p.textMuted,
-                      fontSize: 11,
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                      letterSpacing: 0.5,
-                      marginBottom: 4,
-                    }}
-                  >
-                    Available Workers
-                  </Text>
-                  {unassignedWorkers.length === 0 ? (
-                    <Text style={{ color: p.textMuted, fontSize: 12 }}>
-                      All workers are already assigned here.
-                    </Text>
-                  ) : (
-                    unassignedWorkers.map(w => (
-                      <View
-                        key={w.id}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          borderRadius: 10,
-                          borderWidth: 1,
-                          borderColor: p.border,
-                          backgroundColor: p.surfaceAlt,
-                        }}
+            {isExpanded && (
+              <View style={[st.workerList, { borderTopColor: S.border }]}>
+                {workers.length === 0 && <Text style={[st.workerEmpty, { color: S.muted }]}>No workers found.</Text>}
+                {workers.map(worker => {
+                  const isAssigned = worker.workplaceId === wp.id;
+                  return (
+                    <View key={worker.id} style={[st.workerRow, { borderBottomColor: S.border }]}>
+                      <Text style={[st.workerName, { color: S.text }]}>{worker.name}</Text>
+                      {worker.workplaceId && worker.workplaceId !== wp.id && (
+                        <Text style={[st.workerBadge, { backgroundColor: S.tag, color: S.muted }]}>Other</Text>
+                      )}
+                      <TouchableOpacity
+                        style={[st.assignBtn, isAssigned ? { backgroundColor: S.tag, borderColor: S.border } : { backgroundColor: S.btnBg, borderColor: S.btnBg }]}
+                        onPress={() => handleAssign(worker, wp.id)}
                       >
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            style={{
-                              color: p.text,
-                              fontSize: 12,
-                              fontWeight: "600",
-                            }}
-                          >
-                            {w.name}
-                          </Text>
-                          <Text style={{ color: p.textMuted, fontSize: 11 }}>
-                            {w.email}
-                          </Text>
-                          {w.workplaceId && w.adminId === adminId && (
-                            <Text
-                              style={{
-                                color: p.textMuted,
-                                fontSize: 10,
-                                marginTop: 2,
-                              }}
-                            >
-                              Currently:{" "}
-                              {workplaces.find(x => x.id === w.workplaceId)
-                                ?.name ?? w.workplaceId}
-                            </Text>
-                          )}
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => handleAssignWorker(w.id, wp.id)}
-                          disabled={assigningWorkerId === w.id}
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 5,
-                            paddingVertical: 6,
-                            paddingHorizontal: 12,
-                            borderRadius: 999,
-                            backgroundColor: p.text,
-                            opacity: assigningWorkerId === w.id ? 0.5 : 1,
-                          }}
-                        >
-                          {assigningWorkerId === w.id ? (
-                            <ActivityIndicator size="small" color={p.surface} />
-                          ) : (
-                            <>
-                              <UserPlus size={11} color={p.surface} />
-                              <Text
-                                style={{
-                                  color: p.surface,
-                                  fontSize: 11,
-                                  fontWeight: "600",
-                                }}
-                              >
-                                Assign
-                              </Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    ))
-                  )}
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </ScrollView>
-    </View>
+                        <Text style={[st.assignBtnText, { color: isAssigned ? S.muted : S.btnText }]}>
+                          {isAssigned ? "Unassign" : "Assign"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </ScrollView>
   );
 }
+
+const st = StyleSheet.create({
+  root:             { flex: 1 },
+  content:          { padding: 24, gap: 16, paddingBottom: 60 },
+  headerRow:        { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 },
+  pageTitle:        { fontSize: 20, fontWeight: "700", letterSpacing: -0.3 },
+  pageSub:          { fontSize: 13, marginTop: 2 },
+  addBtn:           { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10 },
+  addBtnText:       { fontSize: 13, fontWeight: "600" },
+  card:             { borderRadius: 14, borderWidth: 1, padding: 18 },
+  cardHeader:       { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  cardTitle:        { fontSize: 15, fontWeight: "700" },
+  formGrid:         { gap: 12 },
+  formRow:          { flexDirection: "row", gap: 10 },
+  formField:        { gap: 5 },
+  label:            { fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 },
+  input:            { borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13 },
+  formActions:      { marginTop: 14, flexDirection: "row", justifyContent: "flex-end" },
+  saveBtn:          { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10 },
+  saveBtnText:      { fontSize: 13, fontWeight: "600" },
+  emptyCard:        { borderRadius: 14, borderWidth: 1, borderStyle: "dashed", padding: 32, alignItems: "center", gap: 10 },
+  emptyText:        { fontSize: 13, textAlign: "center", lineHeight: 20 },
+  wpRow:            { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 14 },
+  wpIconBg:         { width: 38, height: 38, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  wpName:           { fontSize: 14, fontWeight: "700" },
+  wpMeta:           { fontSize: 12, marginTop: 2 },
+  wpActions:        { flexDirection: "row", gap: 4 },
+  iconBtn:          { padding: 7, borderRadius: 8 },
+  workerToggle:     { flexDirection: "row", alignItems: "center", gap: 6, borderTopWidth: 1, paddingTop: 12 },
+  workerToggleText: { flex: 1, fontSize: 12 },
+  workerList:       { borderTopWidth: 1, marginTop: 10, paddingTop: 10, gap: 2 },
+  workerEmpty:      { fontSize: 12, paddingVertical: 8 },
+  workerRow:        { flexDirection: "row", alignItems: "center", paddingVertical: 8, borderBottomWidth: 1, gap: 8 },
+  workerName:       { flex: 1, fontSize: 13, fontWeight: "500" },
+  workerBadge:      { fontSize: 10, fontWeight: "600", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  assignBtn:        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
+  assignBtnText:    { fontSize: 12, fontWeight: "600" },
+});
