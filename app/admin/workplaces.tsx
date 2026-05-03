@@ -376,7 +376,7 @@ export default function WorkplacesScreen() {
           <View style={st.emptyMapWrapper}>
             {Platform.OS === "web" ? (
               <Map zoom={5} center={[109.5, 4.0]}>
-                <MapControls position="top-right" showZoom />
+                <MapControls position="top-right" showZoom showLocate showFullscreen />
               </Map>
             ) : (
               <WebView
