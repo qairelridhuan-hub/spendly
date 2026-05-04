@@ -301,6 +301,8 @@ export default function ChartsScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
+  const [goalsLoaded, setGoalsLoaded] = useState(false);
+  const [payrollLoaded, setPayrollLoaded] = useState(false);
   const [ready, setReady] = useState(false);
   const [showYAxis, setShowYAxis] = useState(true);
   const [showXAxis, setShowXAxis] = useState(true);
@@ -313,7 +315,7 @@ export default function ChartsScreen() {
   }, []);
 
   useEffect(() => {
-    if (!userId) { setGoals([]); setPayrollRecords([]); return; }
+    if (!userId) { setGoals([]); setPayrollRecords([]); setGoalsLoaded(false); setPayrollLoaded(false); return; }
     const goalsRef = collection(db, "users", userId, "goals");
     const payrollRef = collection(db, "users", userId, "payroll");
     const unsubGoals = safeSnapshot(goalsRef, snapshot => {
@@ -321,19 +323,26 @@ export default function ChartsScreen() {
         const g = d.data() as any;
         const saved = Number(g.savedAmount ?? 0);
         const target = Number(g.targetAmount ?? 0);
-        return { id: d.id, name: String(g.name ?? g.title ?? "Unnamed"), savedAmount: saved, targetAmount: target, completed: target > 0 && saved >= target };
+        return { id: d.id, name: String(g.name ?? "Unnamed"), savedAmount: saved, targetAmount: target, completed: target > 0 && saved >= target };
       });
       setGoals(list);
+      setGoalsLoaded(true);
     });
     const unsubPayroll = safeSnapshot(payrollRef, snapshot => {
       setPayrollRecords(snapshot.docs.map((d: any) => d.data() as any));
-      setTimeout(() => {
-        setReady(true);
-        Animated.timing(fadeIn, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-      }, 150);
+      setPayrollLoaded(true);
     });
     return () => { unsubGoals(); unsubPayroll(); };
   }, [userId]);
+
+  useEffect(() => {
+    if (!goalsLoaded || !payrollLoaded || ready) return;
+    const t = setTimeout(() => {
+      setReady(true);
+      Animated.timing(fadeIn, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    }, 100);
+    return () => clearTimeout(t);
+  }, [goalsLoaded, payrollLoaded]);
 
   const completedCount = goals.filter(g => g.completed).length;
   const total = goals.length;
