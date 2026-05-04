@@ -20,6 +20,10 @@ import {
   Image,
   StyleSheet,
   Alert,
+  Modal,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -83,6 +87,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
   const [editOpen, setEditOpen] = useState(false);
+  const editSlideAnim = useRef(new Animated.Value(400)).current;
   const [showStats, setShowStats] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -160,9 +165,9 @@ export default function ProfileScreen() {
 
       const goalsRef = collection(db, "users", user.uid, "goals");
       const unsubGoals = safeSnapshot(goalsRef, snapshot => {
-        const goals = snapshot.docs.map(docSnap => docSnap.data() as any);
+        const goals = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
         const completed = goals.filter(
-          goal => Number(goal.savedAmount ?? 0) >= Number(goal.targetAmount ?? 0)
+          (goal: any) => Number(goal.savedAmount ?? 0) >= Number(goal.targetAmount ?? 0)
         ).length;
         setStats(prev => ({
           ...prev,
@@ -173,19 +178,19 @@ export default function ProfileScreen() {
 
       const attendanceRef = collection(db, "users", user.uid, "attendance");
       const unsubAttendance = safeSnapshot(attendanceRef, snapshot => {
-        const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+        const logs = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
         setAttendanceLogs(logs);
       });
       const challengeRef = collection(db, "users", user.uid, "challenges");
       const unsubChallenges = safeSnapshot(challengeRef, snapshot => {
-        const list = snapshot.docs.map(docSnap => docSnap.data() as any);
-        const completed = list.filter(item => item?.completed).length;
+        const list = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
+        const completed = list.filter((item: any) => item?.completed).length;
         setChallengeCount(list.length);
         setCompletedChallengeCount(completed);
       });
       const overtimeRef = collection(db, "users", user.uid, "overtime");
       const unsubOvertime = safeSnapshot(overtimeRef, snapshot => {
-        const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+        const logs = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
         setOvertimeLogs(logs);
       });
       const arcadeRef = doc(db, "users", user.uid, "arcade", "state");
@@ -254,7 +259,21 @@ export default function ProfileScreen() {
     setEmailInput(email);
     setPhotoInput(photoUrl);
     setEditError("");
+    editSlideAnim.setValue(400);
     setEditOpen(true);
+    Animated.spring(editSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      bounciness: 4,
+    }).start();
+  };
+
+  const closeEdit = () => {
+    Animated.timing(editSlideAnim, {
+      toValue: 400,
+      duration: 220,
+      useNativeDriver: true,
+    }).start(() => setEditOpen(false));
   };
 
   const isValidEmail = (value: string) =>
@@ -310,7 +329,7 @@ export default function ProfileScreen() {
       setDisplayName(trimmedName);
       setEmail(trimmedEmail);
       setPhotoUrl(trimmedPhoto);
-      setEditOpen(false);
+      closeEdit();
     } catch (err: any) {
       const code = err?.code || "";
       if (code === "auth/requires-recent-login") {
@@ -625,35 +644,42 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* ── EDIT PROFILE FORM ── */}
-          {editOpen && (
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionLabel}>EDIT PROFILE</Text>
-              <View style={styles.formStack}>
-                <View>
-                  <Text style={styles.fieldLabel}>Username</Text>
-                  <TextInput value={nameInput} onChangeText={setNameInput} placeholder="Full name" placeholderTextColor={c.textMuted} style={styles.input} />
+          {/* ── EDIT PROFILE MODAL ── */}
+          <Modal visible={editOpen} transparent animationType="none" onRequestClose={closeEdit}>
+            <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+              <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={closeEdit} />
+              <Animated.View style={[styles.modalSheet, { transform: [{ translateY: editSlideAnim }] }]}>
+                <View style={styles.modalHandle} />
+                <Text style={styles.modalTitle}>Edit Profile</Text>
+                <View style={styles.formStack}>
+                  <View>
+                    <Text style={styles.fieldLabel}>Username</Text>
+                    <TextInput value={nameInput} onChangeText={setNameInput} placeholder="Full name" placeholderTextColor={c.textMuted} style={styles.input} />
+                  </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>Email</Text>
+                    <TextInput value={emailInput} onChangeText={setEmailInput} placeholder="Email address" placeholderTextColor={c.textMuted} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
+                  </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>Profile Picture URL</Text>
+                    <TextInput value={photoInput} onChangeText={setPhotoInput} placeholder="https://..." placeholderTextColor={c.textMuted} autoCapitalize="none" style={styles.input} />
+                  </View>
+                  {editError ? <Text style={styles.errorText}>{editError}</Text> : null}
+                  <View style={{ flexDirection: "row", gap: 12 }}>
+                    <TouchableOpacity style={styles.cancelBtn} onPress={closeEdit} disabled={saving}>
+                      <Text style={styles.cancelBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.saveBtn, { opacity: saving ? 0.7 : 1 }]} onPress={handleSaveProfile} disabled={saving}>
+                      <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save"}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.fieldLabel}>Email</Text>
-                  <TextInput value={emailInput} onChangeText={setEmailInput} placeholder="Email address" placeholderTextColor={c.textMuted} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
-                </View>
-                <View>
-                  <Text style={styles.fieldLabel}>Profile Picture URL</Text>
-                  <TextInput value={photoInput} onChangeText={setPhotoInput} placeholder="https://..." placeholderTextColor={c.textMuted} autoCapitalize="none" style={styles.input} />
-                </View>
-                {editError ? <Text style={styles.errorText}>{editError}</Text> : null}
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditOpen(false)} disabled={saving}>
-                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.saveBtn, { opacity: saving ? 0.7 : 1 }]} onPress={handleSaveProfile} disabled={saving}>
-                    <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save"}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          )}
+              </Animated.View>
+            </KeyboardAvoidingView>
+          </Modal>
 
           {/* ── LOGOUT ── */}
           <TouchableOpacity style={styles.logoutBtn} onPress={confirmLogout}>
@@ -816,6 +842,35 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center", marginBottom: 16,
     },
     logoutText: { color: c.danger, fontWeight: "700", fontSize: 14 },
+    modalBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.45)",
+    },
+    modalSheet: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: c.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 24,
+      paddingBottom: 40,
+    },
+    modalHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.border,
+      alignSelf: "center",
+      marginBottom: 18,
+    },
+    modalTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: c.text,
+      marginBottom: 20,
+    },
   });
 }
 

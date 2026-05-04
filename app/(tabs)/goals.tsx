@@ -22,6 +22,7 @@ import {
   Sun,
   Target,
   X,
+  Search,
   Pencil,
   Trash2,
   ChevronDown,
@@ -97,6 +98,7 @@ export default function GoalsScreen() {
   const [filter, setFilter] = useState<"all" | GoalPriority>("all");
   const [timeFilter, setTimeFilter] = useState<"current" | "past" | "all">("current");
   const [statusFilter, setStatusFilter] = useState<"all" | "ongoing" | "completed">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [paceUnit, setPaceUnit] = useState<"day" | "week" | "month">("week");
   const [paceMenuFor, setPaceMenuFor] = useState<string | null>(null);
@@ -501,10 +503,11 @@ export default function GoalsScreen() {
       if (timeFilter === "past" && !isPast) return false;
       if (statusFilter === "completed" && !isCompleted) return false;
       if (statusFilter === "ongoing" && isCompleted) return false;
+      if (searchQuery.trim() && !goal.name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
       })
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  }, [filter, goals, timeFilter, statusFilter]);
+  }, [filter, goals, timeFilter, statusFilter, searchQuery]);
 
   return (
     <ScreenTransition>
@@ -657,6 +660,24 @@ export default function GoalsScreen() {
             </View>
           </View>
         ) : null}
+
+        {/* Search bar */}
+        <View style={styles.searchWrap}>
+          <Search size={15} color={c.textMuted} strokeWidth={2} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search goals..."
+            placeholderTextColor={c.textMuted}
+            style={styles.searchInput}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <X size={14} color={c.textMuted} strokeWidth={2} />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {filteredGoals.length > 0 && (
           <View style={styles.goalList}>
@@ -1215,6 +1236,24 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     flexDirection: "row",
     gap: 10,
     marginBottom: 16,
+  },
+  searchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: "#000000",
+    padding: 0,
   },
   filterMenuButton: {
     paddingVertical: 8,

@@ -1453,6 +1453,23 @@ export default function WorkerHomeScreen() {
               );
             })()}
 
+            {/* ── Charts CTA ── */}
+            <TouchableOpacity
+              onPress={() => router.push("/charts")}
+              style={[styles.card, { marginBottom: 10, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <BarChart2 size={18} color={colors.text} strokeWidth={2} />
+                <View>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>Analytics</Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 1 }}>Earnings, hours & trends</Text>
+                </View>
+              </View>
+              <View style={{ backgroundColor: colors.text, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 }}>
+                <Text style={{ color: colors.backgroundStart, fontSize: 12, fontWeight: "700" }}>See Charts</Text>
+              </View>
+            </TouchableOpacity>
+
             {/* ── Card 1: Today's Shift ── */}
             {/* ── Today's Shift + This Week (merged) ── */}
             {(() => {
