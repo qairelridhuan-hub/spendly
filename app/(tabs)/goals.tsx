@@ -9,6 +9,8 @@ import {
   Modal,
   Platform,
   Image,
+  Animated,
+  Easing,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -99,7 +101,20 @@ export default function GoalsScreen() {
   const [timeFilter, setTimeFilter] = useState<"current" | "past" | "all">("current");
   const [statusFilter, setStatusFilter] = useState<"all" | "ongoing" | "completed">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchAnim = useRef(new Animated.Value(0)).current;
+  const searchInputRef = useRef<TextInput>(null);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+
+  const toggleSearch = () => {
+    if (searchOpen) {
+      setSearchQuery("");
+      Animated.timing(searchAnim, { toValue: 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => setSearchOpen(false));
+    } else {
+      setSearchOpen(true);
+      Animated.timing(searchAnim, { toValue: 1, duration: 250, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => searchInputRef.current?.focus());
+    }
+  };
   const [paceUnit, setPaceUnit] = useState<"day" | "week" | "month">("week");
   const [paceMenuFor, setPaceMenuFor] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -661,22 +676,48 @@ export default function GoalsScreen() {
           </View>
         ) : null}
 
-        {/* Search bar */}
-        <View style={styles.searchWrap}>
-          <Search size={15} color={c.textMuted} strokeWidth={2} />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search goals..."
-            placeholderTextColor={c.textMuted}
-            style={styles.searchInput}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <X size={14} color={c.textMuted} strokeWidth={2} />
+        {/* Search bar — collapsible */}
+        <View style={{ marginBottom: 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {/* Icon always visible */}
+            <TouchableOpacity
+              onPress={toggleSearch}
+              style={{
+                width: 38, height: 38, borderRadius: 19,
+                backgroundColor: searchOpen ? c.text : c.surfaceAlt,
+                borderWidth: 1, borderColor: c.border,
+                alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Search size={16} color={searchOpen ? c.backgroundStart : c.textMuted} strokeWidth={2} />
             </TouchableOpacity>
-          )}
+
+            {/* Expandable input */}
+            <Animated.View style={{
+              flex: 1,
+              overflow: "hidden",
+              maxWidth: searchAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
+              opacity: searchAnim,
+            }}>
+              <View style={styles.searchWrap}>
+                <TextInput
+                  ref={searchInputRef}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search goals..."
+                  placeholderTextColor={c.textMuted}
+                  style={styles.searchInput}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <X size={14} color={c.textMuted} strokeWidth={2} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </Animated.View>
+          </View>
         </View>
 
         {filteredGoals.length > 0 && (
@@ -1247,7 +1288,6 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     borderColor: c.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 14,
   },
   searchInput: {
     flex: 1,

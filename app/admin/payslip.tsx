@@ -237,32 +237,32 @@ export default function AdminPayslip() {
         {/* ── Stat cards ── */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
           <StatCard
-            icon={<Users size={16} color="#6366f1" />}
-            iconBg="#6366f122"
+            icon={<Users size={16} color={c.backgroundStart} />}
+            iconBg={c.text}
             label="Total Records"
             value={String(stats.total)}
             valueColor={c.text}
             c={c}
           />
           <StatCard
-            icon={<Receipt size={16} color={c.accent} />}
-            iconBg={c.accent + "22"}
+            icon={<Receipt size={16} color={c.backgroundStart} />}
+            iconBg={c.text}
             label="Paid"
             value={String(stats.paid)}
             valueColor={c.success}
             c={c}
           />
           <StatCard
-            icon={<ArrowUpDown size={16} color={c.warning} />}
-            iconBg={c.warning + "22"}
+            icon={<ArrowUpDown size={16} color={c.backgroundStart} />}
+            iconBg={c.text}
             label="Pending"
             value={String(stats.pending)}
             valueColor={c.warning}
             c={c}
           />
           <StatCard
-            icon={<Wallet size={16} color={c.success} />}
-            iconBg={c.success + "22"}
+            icon={<Wallet size={16} color={c.backgroundStart} />}
+            iconBg={c.text}
             label="Total Disbursed"
             value={`RM ${stats.totalAmount.toFixed(0)}`}
             valueColor={c.success}

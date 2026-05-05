@@ -175,10 +175,10 @@ export default function AdminDashboard() {
               <View key={stat.label} style={[card, { flex: 1, minWidth: 140, padding: 14 }]}>
                 <View style={{
                   width: 30, height: 30, borderRadius: 8,
-                  backgroundColor: p.surfaceAlt,
+                  backgroundColor: p.text,
                   alignItems: "center", justifyContent: "center", marginBottom: 10,
                 }}>
-                  <Icon size={15} color={p.textMuted} strokeWidth={1.8} />
+                  <Icon size={15} color={p.backgroundStart} strokeWidth={1.8} />
                 </View>
                 <Text style={{ color: p.text, fontSize: 20, fontWeight: "700", letterSpacing: -0.5 }}>
                   {stat.value}

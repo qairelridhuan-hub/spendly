@@ -93,7 +93,7 @@ function AdminLayoutInner() {
 
   // ── Theme-aware sidebar tokens ──
   const S = {
-    bg:         isDark ? "rgba(14,14,20,0.88)"  : "rgba(248,248,252,0.92)",
+    bg:         isDark ? "#000000"               : "rgba(248,248,252,0.92)",
     border:     isDark ? "rgba(255,255,255,0.07)": "rgba(0,0,0,0.08)",
     text:       isDark ? "#d4d4d8"               : "#18181b",
     muted:      isDark ? "#52525b"               : "#71717a",
@@ -108,7 +108,7 @@ function AdminLayoutInner() {
     avatarBg:   isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
     divider:    isDark ? "rgba(255,255,255,0.07)": "rgba(0,0,0,0.07)",
     logoutText: isDark ? "rgba(255,255,255,0.35)": "rgba(0,0,0,0.4)",
-    topbar:     isDark ? "rgba(10,10,16,0.95)"   : "rgba(255,255,255,0.95)",
+    topbar:     isDark ? "#000000"               : "rgba(255,255,255,0.95)",
     topbarBorder: isDark ? "rgba(255,255,255,0.06)": "rgba(0,0,0,0.08)",
     topbarText: isDark ? "#d4d4d8"               : "#18181b",
     iconBtn:    isDark ? "rgba(255,255,255,0.05)": "rgba(0,0,0,0.05)",

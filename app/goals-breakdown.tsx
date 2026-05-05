@@ -194,6 +194,19 @@ export default function GoalsBreakdownScreen() {
 
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchAnim = useRef(new Animated.Value(0)).current;
+  const searchInputRef = useRef<TextInput>(null);
+
+  const toggleSearch = () => {
+    if (searchOpen) {
+      setSearch("");
+      Animated.timing(searchAnim, { toValue: 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => setSearchOpen(false));
+    } else {
+      setSearchOpen(true);
+      Animated.timing(searchAnim, { toValue: 1, duration: 250, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => searchInputRef.current?.focus());
+    }
+  };
 
   const sortedGoals = useMemo(() => {
     const filtered = search.trim()
@@ -258,22 +271,45 @@ export default function GoalsBreakdownScreen() {
               </View>
             </View>
 
-            {/* Search bar */}
-            <View style={s.searchWrap}>
-              <Search size={15} color={colors.textMuted} strokeWidth={2} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search goals..."
-                placeholderTextColor={colors.textMuted}
-                style={s.searchInput}
-                returnKeyType="search"
-              />
-              {search.length > 0 && (
-                <TouchableOpacity onPress={() => setSearch("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <X size={14} color={colors.textMuted} strokeWidth={2} />
+            {/* Search bar — collapsible */}
+            <View style={{ marginBottom: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <TouchableOpacity
+                  onPress={toggleSearch}
+                  style={{
+                    width: 38, height: 38, borderRadius: 19,
+                    backgroundColor: searchOpen ? colors.text : colors.surfaceAlt,
+                    borderWidth: 1, borderColor: colors.border,
+                    alignItems: "center", justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Search size={16} color={searchOpen ? colors.backgroundStart : colors.textMuted} strokeWidth={2} />
                 </TouchableOpacity>
-              )}
+                <Animated.View style={{
+                  flex: 1,
+                  overflow: "hidden",
+                  maxWidth: searchAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
+                  opacity: searchAnim,
+                }}>
+                  <View style={s.searchWrap}>
+                    <TextInput
+                      ref={searchInputRef}
+                      value={search}
+                      onChangeText={setSearch}
+                      placeholder="Search goals..."
+                      placeholderTextColor={colors.textMuted}
+                      style={s.searchInput}
+                      returnKeyType="search"
+                    />
+                    {search.length > 0 && (
+                      <TouchableOpacity onPress={() => setSearch("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <X size={14} color={colors.textMuted} strokeWidth={2} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </Animated.View>
+              </View>
             </View>
 
             {/* Sort row */}

@@ -29,6 +29,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -156,6 +157,19 @@ export default function GameScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopError, setShopError] = useState<string | null>(null);
   const [shopQuery, setShopQuery] = useState("");
+  const [shopSearchOpen, setShopSearchOpen] = useState(false);
+  const shopSearchAnim = useRef(new Animated.Value(0)).current;
+  const shopSearchInputRef = useRef<TextInput>(null);
+
+  const toggleShopSearch = () => {
+    if (shopSearchOpen) {
+      setShopQuery("");
+      Animated.timing(shopSearchAnim, { toValue: 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => setShopSearchOpen(false));
+    } else {
+      setShopSearchOpen(true);
+      Animated.timing(shopSearchAnim, { toValue: 1, duration: 250, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => shopSearchInputRef.current?.focus());
+    }
+  };
   const [showAllShop, setShowAllShop] = useState(false);
   const xpGlowAnim = useRef(new Animated.Value(0.2)).current;
   const titleGlowAnim = useRef(new Animated.Value(0.6)).current;
@@ -1634,18 +1648,41 @@ export default function GameScreen() {
               <View style={styles.progressTrack}>
                 <Animated.View style={[styles.progressFill, { width: xpFillWidth }]} />
               </View>
-              {/* Search */}
-              <View style={styles.searchRow}>
-                <Search size={14} color={colors.textMuted} />
-                <TextInput
-                  value={shopQuery}
-                  onChangeText={setShopQuery}
-                  placeholder="Search items…"
-                  placeholderTextColor={colors.textMuted}
-                  style={styles.searchInput}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+              {/* Search — collapsible */}
+              <View style={{ marginVertical: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={toggleShopSearch}
+                    style={{
+                      width: 38, height: 38, borderRadius: 19,
+                      backgroundColor: shopSearchOpen ? colors.text : colors.surfaceAlt,
+                      borderWidth: 1, borderColor: colors.border,
+                      alignItems: "center", justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Search size={16} color={shopSearchOpen ? colors.backgroundStart : colors.textMuted} strokeWidth={2} />
+                  </TouchableOpacity>
+                  <Animated.View style={{
+                    flex: 1,
+                    overflow: "hidden",
+                    maxWidth: shopSearchAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }),
+                    opacity: shopSearchAnim,
+                  }}>
+                    <View style={styles.searchRow}>
+                      <TextInput
+                        ref={shopSearchInputRef}
+                        value={shopQuery}
+                        onChangeText={setShopQuery}
+                        placeholder="Search items…"
+                        placeholderTextColor={colors.textMuted}
+                        style={styles.searchInput}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </Animated.View>
+                </View>
               </View>
               {shopError ? (
                 <View style={styles.errorRow}>
@@ -1998,7 +2035,7 @@ const makeStyles = (c: ReturnType<typeof useTheme>["colors"]) => StyleSheet.crea
   xpMiniRow:      { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
   xpMiniLabel:    { fontSize: 12, fontWeight: "600", color: c.text },
   xpMiniHint:     { fontSize: 12, color: c.textMuted },
-  searchRow:      { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginVertical: 12 },
+  searchRow:      { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   searchInput:    { flex: 1, fontSize: 13, color: c.text },
   shopCard:       { borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, marginBottom: 10 },
   shopCardTop:    { flexDirection: "row", gap: 12, marginBottom: 10 },
