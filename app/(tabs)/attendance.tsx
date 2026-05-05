@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Easing,
   Dimensions,
   Image,
   Modal,
@@ -116,6 +117,85 @@ function formatTime(date: Date) {
 
 function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+}
+
+const TILE_H = 84;
+const TILE_W = 80;
+const TILE_FONT = 50;
+
+function FlipTile({ value, colors: c }: { value: string; colors: any }) {
+  const prevRef = useRef(value);
+  const anim = useRef(new Animated.Value(0)).current;
+  const [prev, setPrev] = useState(value);
+  const [next, setNext] = useState(value);
+
+  useEffect(() => {
+    if (value === prevRef.current) return;
+    const old = prevRef.current;
+    prevRef.current = value;
+    setPrev(old);
+    setNext(value);
+    anim.setValue(0);
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [value]);
+
+  // outgoing: slides up + fades out
+  const outY   = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -TILE_H * 0.35] });
+  const outOp  = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0] });
+  // incoming: slides up from below + fades in
+  const inY    = anim.interpolate({ inputRange: [0, 1], outputRange: [TILE_H * 0.35, 0] });
+  const inOp   = anim.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0, 1] });
+
+  const digitStyle: any = {
+    fontSize: TILE_FONT, fontWeight: "800", color: "#fff",
+    textAlign: "center", fontVariant: ["tabular-nums"],
+  };
+
+  return (
+    <View style={{ width: TILE_W, height: TILE_H, borderRadius: 16, overflow: "hidden", backgroundColor: "#1a1a1a", justifyContent: "center", alignItems: "center" }}>
+      {/* Outgoing number */}
+      <Animated.Text style={[digitStyle, { position: "absolute", opacity: outOp, transform: [{ translateY: outY }] }]}>
+        {prev}
+      </Animated.Text>
+      {/* Incoming number */}
+      <Animated.Text style={[digitStyle, { position: "absolute", opacity: inOp, transform: [{ translateY: inY }] }]}>
+        {next}
+      </Animated.Text>
+      {/* Centre divider */}
+      <View style={{ position: "absolute", top: TILE_H / 2 - 1, left: 0, right: 0, height: 1.5, backgroundColor: "rgba(255,255,255,0.08)" }} pointerEvents="none" />
+    </View>
+  );
+}
+
+function FlipClock({ now, colors: c }: { now: Date; colors: any }) {
+  let h = now.getHours();
+  const m = now.getMinutes();
+  const s = now.getSeconds();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  const hStr = String(h).padStart(2, "0");
+  const mStr = String(m).padStart(2, "0");
+  const sStr = String(s).padStart(2, "0");
+
+  const dot = <Text style={{ fontSize: 28, fontWeight: "900", color: c.text, marginBottom: 6, marginHorizontal: 4 }}>:</Text>;
+
+  return (
+    <View style={{ alignItems: "center", gap: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <FlipTile value={hStr} colors={c} />
+        {dot}
+        <FlipTile value={mStr} colors={c} />
+        {dot}
+        <FlipTile value={sStr} colors={c} />
+      </View>
+      <Text style={{ fontSize: 13, fontWeight: "700", color: c.textMuted, letterSpacing: 2 }}>{ampm}</Text>
+    </View>
+  );
 }
 
 function getGreeting() {
@@ -496,10 +576,10 @@ export default function AttendanceScreen() {
         </View>
 
         {/* ── Time card ── */}
-        <View style={[s.timeCard, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <Text style={[s.timeCardLabel, { color: c.textMuted }]}>CURRENT TIME</Text>
-          <Text style={[s.timeCardClock, { color: c.text }]}>{formatTime(now)}</Text>
-          <Text style={[s.timeCardDate, { color: c.textMuted }]}>{formatDate(now)}</Text>
+        <View style={[s.timeCard, { backgroundColor: c.surface, borderColor: c.border, alignItems: "center" }]}>
+          <Text style={[s.timeCardLabel, { color: c.textMuted, marginBottom: 16 }]}>CURRENT TIME</Text>
+          <FlipClock now={now} colors={c} />
+          <Text style={[s.timeCardDate, { color: c.textMuted, marginTop: 12 }]}>{formatDate(now)}</Text>
         </View>
 
         {/* ── Clock timestamps + buttons ── */}
@@ -594,8 +674,8 @@ export default function AttendanceScreen() {
         <Text style={[s.sectionTitle, { color: c.text }]}>Work Details</Text>
 
         <View style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <View style={[s.detailIconBg, { backgroundColor: c.surfaceAlt }]}>
-            <Clock size={18} color={c.text} strokeWidth={1.8} />
+          <View style={[s.detailIconBg, { backgroundColor: c.text }]}>
+            <Clock size={18} color={c.backgroundStart} strokeWidth={1.8} />
           </View>
           <View style={s.detailBody}>
             <Text style={[s.detailTitle, { color: c.text }]}>Work Hours</Text>
@@ -607,9 +687,9 @@ export default function AttendanceScreen() {
         </View>
 
         <View style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <View style={[s.detailIconBg, { backgroundColor: c.surfaceAlt }]}>
+          <View style={[s.detailIconBg, { backgroundColor: c.text }]}>
             <MapPin size={18}
-              color={!workplace || workplace.workplaceId === "dev" ? c.textMuted : locationIcon}
+              color={c.backgroundStart}
               strokeWidth={1.8}
             />
           </View>
@@ -672,8 +752,8 @@ export default function AttendanceScreen() {
         )}
 
         <View style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 32 }]}>
-          <View style={[s.detailIconBg, { backgroundColor: c.surfaceAlt }]}>
-            <WifiOff size={18} color={c.text} strokeWidth={1.8} />
+          <View style={[s.detailIconBg, { backgroundColor: c.text }]}>
+            <WifiOff size={18} color={c.backgroundStart} strokeWidth={1.8} />
           </View>
           <View style={s.detailBody}>
             <Text style={[s.detailTitle, { color: c.text }]}>Verification</Text>
@@ -799,7 +879,7 @@ const s = StyleSheet.create({
   iconPillDivider:  { width: 1, height: 16 },
 
   // Time card
-  timeCard:         { borderRadius: 20, padding: 24, marginBottom: 16, borderWidth: 1, ...cardShadow },
+  timeCard:         { borderRadius: 20, paddingVertical: 24, paddingHorizontal: 12, marginBottom: 16, borderWidth: 1, ...cardShadow },
   timeCardLabel:    { fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 6 },
   timeCardClock:    { fontSize: 52, fontWeight: "800", letterSpacing: -1 },
   timeCardDate:     { fontSize: 14, marginTop: 4 },

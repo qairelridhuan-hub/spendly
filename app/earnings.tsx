@@ -14,7 +14,11 @@ import {
   Bell,
   Calendar,
   DollarSign,
+  Gamepad2,
+  LogOut,
+  Moon,
   PieChart,
+  Sun,
   TrendingUp,
 } from "lucide-react-native";
 import { router } from "expo-router";
@@ -52,6 +56,7 @@ type OvertimeEntry = {
 };
 
 export default function EarningsScreen() {
+  const handleLogout = async () => { try { await signOut(auth); router.replace("/(auth)/login" as any); } catch {} };
   const [displayName, setDisplayName] = useState("User");
   const scrollRef = useRef<ScrollView>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -374,10 +379,35 @@ export default function EarningsScreen() {
     <View style={[styles.screen, { backgroundColor: c.backgroundStart }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
-          {/* ===== BACK BUTTON ===== */}
-          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginBottom: 8, alignSelf: "flex-start" }}>
-            <ArrowLeft size={20} color={c.text} />
-          </TouchableOpacity>
+          {/* ===== NAVBAR ===== */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.logo}>
+                <ArrowLeft size={20} color={c.text} strokeWidth={2} />
+              </TouchableOpacity>
+              <View>
+                <Text style={styles.appName}>Earnings</Text>
+                <Text style={styles.subText}>Hey, {displayName}!</Text>
+              </View>
+            </View>
+            <View style={styles.iconPill}>
+              <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
+                {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/game")}>
+                <Gamepad2 size={20} color={c.text} />
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
+                <Bell size={20} color={c.text} />
+              </TouchableOpacity>
+              <View style={styles.iconPillDivider} />
+              <TouchableOpacity style={styles.iconPillBtn} onPress={handleLogout}>
+                <LogOut size={20} color={c.text} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* ===== HERO CARD ===== */}
           <View style={[styles.heroCard, { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border }]}>
@@ -1030,14 +1060,13 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     safe: { flex: 1 },
     container: {
       padding: 16,
-      paddingTop: 20,
       paddingBottom: 120,
     },
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 16,
+      marginBottom: 8,
     },
     headerLeft: {
       flexDirection: "row",

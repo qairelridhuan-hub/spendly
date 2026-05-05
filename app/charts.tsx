@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, CheckCircle2, Circle as CircleIcon, Target, TrendingUp, TrendingDown, Minus } from "lucide-react-native";
+import { ArrowLeft, Bell, Gamepad2, LogOut, Minus, Moon, Sun, Target, TrendingDown, TrendingUp } from "lucide-react-native";
 import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Path, Stop, Text as SvgText, Circle as SvgCircle } from "react-native-svg";
 import { router } from "expo-router";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
@@ -296,9 +296,10 @@ function Shimmer({ width, height, borderRadius, colors }: { width: number; heigh
 }
 
 export default function ChartsScreen() {
-  const { colors } = useTheme();
+  const { colors, mode, toggleTheme } = useTheme();
   const s = makeStyles(colors);
   const [userId, setUserId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("there");
   const [goals, setGoals] = useState<Goal[]>([]);
   const [payrollRecords, setPayrollRecords] = useState<any[]>([]);
   const [goalsLoaded, setGoalsLoaded] = useState(false);
@@ -310,8 +311,13 @@ export default function ChartsScreen() {
   /* Fade-in for the whole screen */
   const fadeIn = useRef(new Animated.Value(0)).current;
 
+  const handleLogout = async () => { try { await signOut(auth); router.replace("/(auth)/login" as any); } catch {} };
+
   useEffect(() => {
-    return onAuthStateChanged(auth, user => setUserId(user ? user.uid : null));
+    return onAuthStateChanged(auth, user => {
+      setUserId(user ? user.uid : null);
+      setDisplayName(user?.displayName?.split(" ")[0] ?? "there");
+    });
   }, []);
 
   useEffect(() => {
@@ -381,11 +387,32 @@ export default function ChartsScreen() {
         <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
 
           <View style={s.header}>
-            <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-              <ArrowLeft size={20} color={colors.text} strokeWidth={2} />
-            </TouchableOpacity>
-            <Text style={s.headerTitle}>Analytics</Text>
-            <View style={{ width: 36 }} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+                <ArrowLeft size={20} color={colors.text} strokeWidth={2} />
+              </TouchableOpacity>
+              <View>
+                <Text style={s.headerTitle}>Analytics</Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted }}>Hey, {displayName}!</Text>
+              </View>
+            </View>
+            <View style={s.iconPill}>
+              <TouchableOpacity style={s.iconPillBtn} onPress={toggleTheme}>
+                {mode === "dark" ? <Moon size={20} color={colors.text} /> : <Sun size={20} color={colors.text} />}
+              </TouchableOpacity>
+              <View style={s.iconPillDivider} />
+              <TouchableOpacity style={s.iconPillBtn} onPress={() => router.push("/game")}>
+                <Gamepad2 size={20} color={colors.text} />
+              </TouchableOpacity>
+              <View style={s.iconPillDivider} />
+              <TouchableOpacity style={s.iconPillBtn} onPress={() => router.push("/notifications")}>
+                <Bell size={20} color={colors.text} />
+              </TouchableOpacity>
+              <View style={s.iconPillDivider} />
+              <TouchableOpacity style={s.iconPillBtn} onPress={handleLogout}>
+                <LogOut size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
@@ -576,34 +603,14 @@ function AnimatedTrack({ pct, colors, ready }: { pct: number; colors: any; ready
 }
 
 /* Individual goal row with animated bar */
-function GoalRow({ goal, gpct, colors, ready, isLast }: { goal: Goal; gpct: number; colors: any; ready: boolean; isLast: boolean }) {
-  const s = makeStyles(colors);
-  const dispSaved  = useCountUp(goal.savedAmount, 2, ready);
-  const dispTarget = useCountUp(goal.targetAmount, 2, ready);
-
-  return (
-    <View style={[s.goalRow, !isLast && s.goalRowBorder]}>
-      <View style={s.row}>
-        {goal.completed
-          ? <CheckCircle2 size={14} color="#16a34a" strokeWidth={2} />
-          : <CircleIcon size={14} color={colors.textMuted} strokeWidth={2} />
-        }
-        <Text style={s.goalName} numberOfLines={1}>{goal.name}</Text>
-        <Text style={[s.goalPct, { color: goal.completed ? "#16a34a" : colors.text }]}>{gpct}%</Text>
-      </View>
-      <AnimatedTrack pct={gpct} colors={{ ...colors, text: goal.completed ? "#16a34a" : colors.text }} ready={ready} />
-      <View style={[s.row, { marginTop: 5 }]}>
-        <Text style={s.goalAmt}>RM {dispSaved} saved</Text>
-        <Text style={[s.goalAmt, { textAlign: "right" }]}>of RM {dispTarget}</Text>
-      </View>
-    </View>
-  );
-}
 
 const makeStyles = (c: any) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.backgroundStart },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, marginBottom: 8 },
+  iconPill: { flexDirection: "row", alignItems: "center", backgroundColor: c.surface, borderRadius: 999, borderWidth: 1, borderColor: c.border, paddingHorizontal: 4, paddingVertical: 4, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
+  iconPillDivider: { width: 1, height: 16, backgroundColor: c.border },
+  backBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 16, fontWeight: "700", color: c.text },
   scroll: { padding: 16, paddingBottom: 48 },
 

@@ -525,11 +525,11 @@ export default function ProfileScreen() {
                 <Text style={styles.profileEmail}>{email || "No email"}</Text>
                 <View style={styles.profileMetaRow}>
                   <View style={styles.metaChip}>
-                    <Target size={12} color={c.textMuted} />
+                    <Target size={12} color={c.backgroundStart} />
                     <Text style={styles.metaText}>{stats.goalsCount} Goals</Text>
                   </View>
                   <View style={styles.metaChip}>
-                    <Sparkles size={12} color={c.textMuted} />
+                    <Sparkles size={12} color={c.backgroundStart} />
                     <Text style={styles.metaText}>Lv {level}</Text>
                   </View>
                 </View>
@@ -727,9 +727,9 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     profileMetaRow: { flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" },
     metaChip: {
       flexDirection: "row", alignItems: "center", gap: 4,
-      backgroundColor: c.surfaceAlt, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999,
+      backgroundColor: c.text, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999,
     },
-    metaText: { fontSize: 11, color: c.textMuted, fontWeight: "600" },
+    metaText: { fontSize: 11, color: c.backgroundStart, fontWeight: "600" },
     editAvatarBtn: {
       width: 34, height: 34, borderRadius: 17,
       backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
