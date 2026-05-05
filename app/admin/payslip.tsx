@@ -190,23 +190,14 @@ export default function AdminPayslip() {
     );
   };
 
-  const handleDownload = (row: PayslipRow) => {
-    const html = buildPayslipHtml({ worker: row.worker, payroll: row.payroll });
-    const filename = `payslip-${row.worker.name.replace(/\s+/g, "-")}-${row.payroll.period}.pdf`;
-    Alert.alert(
-      "Download Payslip",
-      `Generate PDF for ${row.worker.name} — ${row.payroll.period}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Download",
-          onPress: () =>
-            printReport(html, filename).catch(err =>
-              Alert.alert("Error", `Could not generate PDF: ${err?.message ?? err}`)
-            ),
-        },
-      ]
-    );
+  const handleDownload = async (row: PayslipRow) => {
+    try {
+      const html = buildPayslipHtml({ worker: row.worker, payroll: row.payroll });
+      const filename = `payslip-${row.worker.name.replace(/\s+/g, "-")}-${row.payroll.period}.pdf`;
+      await printReport(html, filename);
+    } catch (err: any) {
+      Alert.alert("Error", `Could not generate PDF: ${err?.message ?? String(err)}`);
+    }
   };
 
   const SortBtn = ({ field, label }: { field: SortField; label: string }) => (
