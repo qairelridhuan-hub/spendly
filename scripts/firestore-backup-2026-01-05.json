@@ -1,0 +1,6138 @@
+{
+  "config": {
+    "system": {
+      "overtimeRate": 10,
+      "preferredStart": "3 january 2026",
+      "durationMonths": 1,
+      "workingDaysPerWeek": 5,
+      "preferredEnd": "3 february 2026",
+      "hourlyRate": 8,
+      "hoursPerDay": 8,
+      "updatedAt": "2026-01-02T15:10:26.492Z"
+    }
+  },
+  "workSchedules": [
+    {
+      "id": "61pwUJrq86C2zEhYDBlD",
+      "endTime": "15:00",
+      "hourlyRate": 12.5,
+      "startTime": "09:00",
+      "description": "Weekend coverage shift",
+      "name": "Weekend Shift",
+      "days": [
+        "Saturday",
+        "Sunday"
+      ],
+      "createdAt": {
+        "_seconds": 1767607451,
+        "_nanoseconds": 882000000
+      },
+      "updatedAt": {
+        "_seconds": 1767607451,
+        "_nanoseconds": 882000000
+      }
+    },
+    {
+      "id": "9ZCPmttYxrdppvXU5Upb",
+      "hourlyRate": 12,
+      "name": "Evening Shift",
+      "description": "Standard evening shift",
+      "endTime": "20:00",
+      "startTime": "12:00",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "createdAt": {
+        "_seconds": 1767379931,
+        "_nanoseconds": 998000000
+      },
+      "updatedAt": {
+        "_seconds": 1767379931,
+        "_nanoseconds": 998000000
+      }
+    },
+    {
+      "id": "Zg7yP2GVBadptj525fxk",
+      "endTime": "18:00",
+      "startTime": "10:00",
+      "name": "Midday Shift",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "description": "Standard midday shift",
+      "hourlyRate": 11,
+      "createdAt": {
+        "_seconds": 1767607451,
+        "_nanoseconds": 878000000
+      },
+      "updatedAt": {
+        "_seconds": 1767607451,
+        "_nanoseconds": 878000000
+      }
+    },
+    {
+      "id": "syauqina-morning",
+      "name": "Morning Shift",
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "description": "Main weekday shift",
+      "startTime": "09:00",
+      "endTime": "17:00",
+      "hourlyRate": 10,
+      "updatedAt": {
+        "_seconds": 1767514551,
+        "_nanoseconds": 915000000
+      }
+    },
+    {
+      "id": "v50A2PLoIPIT4tK2rwfR",
+      "name": "Morning Shift",
+      "endTime": "17:00",
+      "description": "Standard morning shift",
+      "startTime": "09:00",
+      "hourlyRate": 10,
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "createdAt": {
+        "_seconds": 1767379931,
+        "_nanoseconds": 507000000
+      },
+      "updatedAt": {
+        "_seconds": 1767379931,
+        "_nanoseconds": 507000000
+      }
+    },
+    {
+      "id": "zjrqp3cvljY4UEtT7Lbz",
+      "startTime": "14:00",
+      "name": "Closing Shift",
+      "endTime": "22:00",
+      "hourlyRate": 13,
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "description": "Evening closing shift",
+      "createdAt": {
+        "_seconds": 1767607451,
+        "_nanoseconds": 889000000
+      },
+      "updatedAt": {
+        "_seconds": 1767607451,
+        "_nanoseconds": 889000000
+      }
+    }
+  ],
+  "shifts": [
+    {
+      "id": "043npheFjb7FODSAyXDs",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "role": "Shift",
+      "type": "normal",
+      "end": "12:24",
+      "status": "completed",
+      "date": "2025-12-25",
+      "location": "Main Branch",
+      "start": "08:00",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 59000000
+      },
+      "hours": 4.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "3cFfHEMs8AX5KEQ4Jtvo",
+      "type": "normal",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "end": "17:58",
+      "location": "Main Branch",
+      "role": "Shift",
+      "start": "11:30",
+      "date": "2025-12-31",
+      "createdAt": {
+        "_seconds": 1767390338,
+        "_nanoseconds": 859000000
+      },
+      "status": "completed",
+      "hours": 6.25,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "5eFttYhk6Ym7DIi3hEkg",
+      "location": "Main Branch",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "start": "10:30",
+      "type": "normal",
+      "role": "Shift",
+      "end": "15:20",
+      "date": "2025-12-16",
+      "status": "completed",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 7000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "66lEoMCGeEV6tYtgDe53",
+      "location": "Main Branch",
+      "date": "2026-01-11",
+      "role": "Shift",
+      "end": "17:00",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "start": "09:00",
+      "status": "completed",
+      "type": "normal",
+      "createdAt": {
+        "_seconds": 1767592710,
+        "_nanoseconds": 772000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "6CUlCcwRSCjAt3hi8PIN",
+      "date": "2025-12-11",
+      "type": "normal",
+      "hours": 4.1,
+      "end": "13:35",
+      "start": "09:30",
+      "location": "Main Branch",
+      "role": "Shift",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 73000000
+      },
+      "updatedAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 73000000
+      },
+      "status": "completed"
+    },
+    {
+      "id": "7Jqpm9dQvhEV2LsnM0H5",
+      "start": "09:00",
+      "role": "Shift",
+      "date": "2025-12-12",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "end": "13:52",
+      "status": "completed",
+      "type": "normal",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 82000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "8EErfgP0Is2UBcajI3l7",
+      "date": "2025-12-17",
+      "end": "12:59",
+      "type": "normal",
+      "location": "Main Branch",
+      "role": "Shift",
+      "hours": 5,
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "start": "08:00",
+      "status": "completed",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 12000000
+      },
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "8d3Kpcf5KapFPhEA0w9j",
+      "type": "normal",
+      "end": "14:36",
+      "role": "Shift",
+      "location": "Main Branch",
+      "date": "2025-12-18",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "status": "completed",
+      "start": "08:30",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 70000000
+      },
+      "hours": 5.75,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "91iioALUvDuBrSAaDrXn",
+      "type": "normal",
+      "status": "completed",
+      "date": "2025-12-17",
+      "role": "Shift",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "location": "Main Branch",
+      "end": "15:17",
+      "start": "10:00",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 70000000
+      },
+      "hours": 5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "9CbM9euu0ckendObfAie",
+      "type": "normal",
+      "date": "2025-12-23",
+      "role": "Shift",
+      "status": "completed",
+      "end": "17:27",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "start": "11:00",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 8000000
+      },
+      "hours": 6.25,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "9hXh87YU4B5lu9WzFRjW",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "date": "2026-01-08",
+      "role": "Shift",
+      "type": "normal",
+      "status": "completed",
+      "location": "Main Branch",
+      "end": "18:00",
+      "start": "10:00",
+      "createdAt": {
+        "_seconds": 1767592720,
+        "_nanoseconds": 920000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "9qh5UvkLrb0iSmxb9zkz",
+      "date": "2026-01-06",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "status": "completed",
+      "role": "Shift",
+      "type": "normal",
+      "start": "10:00",
+      "location": "Main Branch",
+      "end": "18:00",
+      "createdAt": {
+        "_seconds": 1767592752,
+        "_nanoseconds": 544000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "Dr7D5q9yC1khUNNJQDva",
+      "type": "normal",
+      "end": "13:09",
+      "location": "Main Branch",
+      "role": "Shift",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "date": "2025-12-17",
+      "status": "completed",
+      "start": "08:30",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 691000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "EcD9bhWY9SiqwGPzpCGi",
+      "role": "Shift",
+      "location": "Main Branch",
+      "start": "10:00",
+      "status": "completed",
+      "date": "2025-12-15",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "end": "16:06",
+      "type": "normal",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 71000000
+      },
+      "hours": 5.75,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "FF68QT8zHzScDDAH7VEt",
+      "date": "2025-12-30",
+      "start": "09:00",
+      "location": "Main Branch",
+      "end": "13:07",
+      "status": "completed",
+      "type": "normal",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 5000000
+      },
+      "hours": 4,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "FIn4oJmFGDZsRcSS96pv",
+      "type": "normal",
+      "status": "completed",
+      "date": "2025-12-16",
+      "role": "Shift",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "location": "Main Branch",
+      "end": "16:04",
+      "start": "10:30",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 68000000
+      },
+      "hours": 5.25,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "FuYwwRWjNsIf49WNdIXY",
+      "start": "09:00",
+      "date": "2025-12-26",
+      "location": "Main Branch",
+      "role": "Shift",
+      "status": "completed",
+      "end": "14:41",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "type": "normal",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 63000000
+      },
+      "hours": 5.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "HyCbIV8wn9YnigSH8hfi",
+      "location": "Main Branch",
+      "end": "13:33",
+      "status": "completed",
+      "type": "normal",
+      "start": "09:00",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Shift",
+      "date": "2025-12-18",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 693000000
+      },
+      "hours": 4.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "INIC7hoE07ROzI1ZWhEb",
+      "status": "completed",
+      "date": "2025-12-29",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "type": "normal",
+      "location": "Main Branch",
+      "end": "17:12",
+      "start": "11:30",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 68000000
+      },
+      "hours": 5.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "IRdRV0Lu9pnmss45DvvG",
+      "start": "09:30",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "end": "14:19",
+      "status": "completed",
+      "type": "normal",
+      "location": "Main Branch",
+      "date": "2025-12-25",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 67000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "JOHSMvEiOT8sBoCdrk0w",
+      "type": "normal",
+      "start": "10:00",
+      "location": "Main Branch",
+      "date": "2026-01-05",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "end": "15:23",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 78000000
+      },
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "LZTesV2tEkOWDwtA2WKG",
+      "date": "2026-01-09",
+      "status": "completed",
+      "role": "Shift",
+      "start": "09:00",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "type": "normal",
+      "location": "Main Branch",
+      "end": "17:00",
+      "createdAt": {
+        "_seconds": 1767592723,
+        "_nanoseconds": 607000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "Lyqd925QybL3AWXqvjQA",
+      "location": "Main Branch",
+      "status": "completed",
+      "type": "normal",
+      "start": "10:30",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "hours": 4.5,
+      "date": "2025-12-12",
+      "role": "Shift",
+      "end": "14:57",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 693000000
+      },
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "MgmN3cidmKUdpJCCq7E4",
+      "status": "completed",
+      "date": "2026-01-06",
+      "end": "18:00",
+      "start": "10:00",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "role": "Shift",
+      "location": "Main Branch",
+      "type": "normal",
+      "createdAt": {
+        "_seconds": 1767592734,
+        "_nanoseconds": 689000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "NCDJhEEeywpXP1xyLpKn",
+      "end": "12:47",
+      "type": "normal",
+      "start": "08:00",
+      "role": "Shift",
+      "location": "Main Branch",
+      "date": "2025-12-08",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "status": "completed",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 696000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "NpDDjOXE2Inru7mItJX7",
+      "start": "08:30",
+      "end": "14:24",
+      "date": "2025-12-19",
+      "type": "normal",
+      "status": "completed",
+      "location": "Main Branch",
+      "role": "Shift",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 7000000
+      },
+      "hours": 5.75,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "NtSWFPCaf8TqH7oIV7KW",
+      "role": "Shift",
+      "date": "2025-12-22",
+      "type": "normal",
+      "start": "10:30",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "location": "Main Branch",
+      "end": "16:14",
+      "status": "completed",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 69000000
+      },
+      "hours": 5.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "PNXLV2BQNu5BGeTYXMFY",
+      "location": "Main Branch",
+      "type": "normal",
+      "date": "2025-12-31",
+      "status": "completed",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "role": "Shift",
+      "end": "15:39",
+      "start": "09:30",
+      "createdAt": {
+        "_seconds": 1767390333,
+        "_nanoseconds": 798000000
+      },
+      "hours": 6,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "PqgPyoWIOFcmRZ79QFJY",
+      "role": "Shift",
+      "location": "Main Branch",
+      "status": "completed",
+      "type": "normal",
+      "date": "2026-01-10",
+      "end": "18:00",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "start": "10:00",
+      "createdAt": {
+        "_seconds": 1767592708,
+        "_nanoseconds": 151000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "QUYvfZDyDf7LUuVPTyJG",
+      "type": "normal",
+      "location": "Main Branch",
+      "start": "09:00",
+      "end": "17:00",
+      "status": "completed",
+      "date": "2026-01-11",
+      "role": "Shift",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "createdAt": {
+        "_seconds": 1767592747,
+        "_nanoseconds": 202000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "RTE4E4NFjohlAPrMbdiV",
+      "role": "Shift",
+      "start": "11:30",
+      "end": "17:56",
+      "location": "Main Branch",
+      "date": "2025-12-10",
+      "status": "completed",
+      "type": "normal",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 689000000
+      },
+      "hours": 6.25,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "RmrbxyW4bpMcMzsJ4VaI",
+      "status": "completed",
+      "date": "2025-12-19",
+      "type": "normal",
+      "location": "Main Branch",
+      "end": "14:55",
+      "start": "09:00",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 68000000
+      },
+      "hours": 5.75,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "S4OdftlhdkD7PtgXisXs",
+      "role": "Shift",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "location": "Main Branch",
+      "end": "14:11",
+      "start": "09:00",
+      "type": "normal",
+      "date": "2026-01-05",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 76000000
+      },
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "SG2Ux0FtVOEYH8VuanxV",
+      "hours": 4,
+      "end": "13:01",
+      "status": "completed",
+      "date": "2025-12-16",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "type": "normal",
+      "role": "Shift",
+      "location": "Main Branch",
+      "start": "09:00",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 690000000
+      },
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "SPM9pp5EE7iy4KACIUv9",
+      "location": "Main Branch",
+      "type": "normal",
+      "role": "Shift",
+      "date": "2026-01-11",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "start": "09:00",
+      "status": "completed",
+      "end": "17:00",
+      "createdAt": {
+        "_seconds": 1767592761,
+        "_nanoseconds": 703000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "SY1V82QGj2En484vyRw8",
+      "status": "completed",
+      "end": "14:05",
+      "date": "2025-12-31",
+      "location": "Main Branch",
+      "role": "Shift",
+      "start": "09:30",
+      "type": "normal",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "createdAt": {
+        "_seconds": 1767390329,
+        "_nanoseconds": 246000000
+      },
+      "hours": 4.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "T5o2IJkbutqlGV9XKc2W",
+      "role": "Shift",
+      "location": "Main Branch",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "date": "2026-01-09",
+      "end": "14:47",
+      "type": "normal",
+      "start": "09:00",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 694000000
+      },
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "TSTzklJcI44kAgIipR2y",
+      "location": "Main Branch",
+      "status": "completed",
+      "end": "15:01",
+      "role": "Shift",
+      "start": "11:00",
+      "date": "2025-12-22",
+      "type": "normal",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "hours": 4,
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 69000000
+      },
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "TauFPwuWwKfgnEBVJ1la",
+      "start": "09:00",
+      "date": "2026-01-09",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "status": "completed",
+      "location": "Main Branch",
+      "end": "17:00",
+      "type": "normal",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767592759,
+        "_nanoseconds": 403000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "U1rt1C3z1Yi6nGDvBMp9",
+      "type": "normal",
+      "status": "completed",
+      "role": "Shift",
+      "location": "Main Branch",
+      "end": "14:18",
+      "date": "2025-12-08",
+      "start": "10:00",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 74000000
+      },
+      "hours": 4.25,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "WXh1LHMjROD5RIOOYgiC",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "end": "14:40",
+      "location": "Main Branch",
+      "date": "2025-12-23",
+      "role": "Shift",
+      "start": "09:00",
+      "type": "normal",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 684000000
+      },
+      "status": "completed",
+      "hours": 5.25,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "WcRuvXTjh82PFkqFiSbZ",
+      "end": "17:00",
+      "start": "09:00",
+      "type": "normal",
+      "status": "completed",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "role": "Shift",
+      "date": "2026-01-11",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767592728,
+        "_nanoseconds": 987000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "Y5XhpVYxsFuevoC9SkKF",
+      "status": "completed",
+      "date": "2026-01-06",
+      "role": "Shift",
+      "type": "normal",
+      "end": "18:00",
+      "start": "10:00",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767592716,
+        "_nanoseconds": 336000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "ZVj6ze07Kp0tCOlIqIrv",
+      "end": "13:02",
+      "date": "2025-12-09",
+      "status": "completed",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "type": "normal",
+      "role": "Shift",
+      "start": "08:00",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 71000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "cClPy69YxlLlg6pyO4y2",
+      "date": "2025-12-15",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "location": "Main Branch",
+      "type": "normal",
+      "end": "14:46",
+      "status": "completed",
+      "role": "Shift",
+      "start": "09:00",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 9000000
+      },
+      "hours": 5.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "cGlxndiBWWwEZoBE0M8E",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "status": "completed",
+      "type": "normal",
+      "end": "14:38",
+      "start": "08:30",
+      "location": "Main Branch",
+      "role": "Shift",
+      "date": "2025-12-15",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 688000000
+      },
+      "hours": 6,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "clorVUZkam1bb3nBtplp",
+      "end": "15:45",
+      "status": "completed",
+      "start": "11:00",
+      "date": "2025-12-10",
+      "type": "normal",
+      "role": "Shift",
+      "location": "Main Branch",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 10000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "d6czaQdogabRB2ZXXjZC",
+      "role": "Shift",
+      "start": "10:30",
+      "location": "Main Branch",
+      "date": "2025-12-29",
+      "type": "normal",
+      "end": "15:16",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 5000000
+      },
+      "status": "completed",
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "dcIoLxJvXAvzN2Bv3ud9",
+      "location": "Main Branch",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "end": "13:50",
+      "type": "normal",
+      "role": "Shift",
+      "status": "completed",
+      "start": "09:30",
+      "date": "2026-01-01",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 68000000
+      },
+      "hours": 4.25,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "e0Df46y1c7bhNx6LMLL0",
+      "end": "18:00",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "type": "normal",
+      "location": "Main Branch",
+      "role": "Shift",
+      "date": "2026-01-10",
+      "start": "10:00",
+      "status": "completed",
+      "createdAt": {
+        "_seconds": 1767592760,
+        "_nanoseconds": 689000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "e4eO40bdDbpzCfBdQWVT",
+      "end": "15:08",
+      "location": "Main Branch",
+      "role": "Shift",
+      "hours": 4.6,
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "start": "10:30",
+      "type": "normal",
+      "date": "2025-12-12",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 13000000
+      },
+      "updatedAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 13000000
+      },
+      "status": "completed"
+    },
+    {
+      "id": "goCIUylfsOmCdZa3dsjf",
+      "start": "10:00",
+      "role": "Shift",
+      "location": "Main Branch",
+      "date": "2025-12-29",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "end": "15:00",
+      "type": "normal",
+      "hours": 5,
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 58000000
+      },
+      "updatedAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 58000000
+      },
+      "status": "completed"
+    },
+    {
+      "id": "h5kV3ttWzs618oXAbI9w",
+      "type": "normal",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "start": "11:30",
+      "status": "completed",
+      "role": "Shift",
+      "date": "2025-12-11",
+      "end": "15:49",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 10000000
+      },
+      "hours": 4.25,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "ij0qGV5qoKZKbTNTdHYE",
+      "hours": 0,
+      "end": "17:00",
+      "date": "2026-01-03",
+      "status": "completed",
+      "type": "normal",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "start": "08:52",
+      "role": "Shift",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767603819,
+        "_nanoseconds": 690000000
+      },
+      "updatedAt": {
+        "_seconds": 1767603819,
+        "_nanoseconds": 690000000
+      }
+    },
+    {
+      "id": "iy0mSxKhekoXJpB6ewu7",
+      "type": "normal",
+      "end": "16:25",
+      "start": "11:00",
+      "status": "completed",
+      "role": "Shift",
+      "date": "2025-12-09",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 77000000
+      },
+      "hours": 5.25,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "j0QMyNIeV1kq0lICyTMG",
+      "type": "normal",
+      "location": "Main Branch",
+      "end": "13:17",
+      "date": "2025-12-15",
+      "status": "completed",
+      "role": "Shift",
+      "start": "08:00",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 70000000
+      },
+      "hours": 5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "jSVffYZr0XrDzhTQ9zXr",
+      "date": "2026-01-07",
+      "start": "09:00",
+      "location": "Main Branch",
+      "role": "Shift",
+      "type": "normal",
+      "end": "14:48",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 11000000
+      },
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "k0Bh0I2onIpPNYz70SaV",
+      "start": "09:00",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "status": "completed",
+      "role": "Shift",
+      "type": "normal",
+      "end": "14:29",
+      "date": "2025-12-11",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 697000000
+      },
+      "hours": 5.25,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "kfovq1gG7qPQZl6H08Jz",
+      "location": "Main Branch",
+      "status": "completed",
+      "end": "17:00",
+      "date": "2026-01-09",
+      "role": "Shift",
+      "type": "normal",
+      "start": "09:00",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "createdAt": {
+        "_seconds": 1767592741,
+        "_nanoseconds": 889000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "l6pAw7Jqx8ORPXcbHQMP",
+      "type": "normal",
+      "role": "Shift",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "start": "10:00",
+      "status": "completed",
+      "date": "2026-01-08",
+      "location": "Main Branch",
+      "end": "18:00",
+      "createdAt": {
+        "_seconds": 1767592756,
+        "_nanoseconds": 782000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "nBXEtFhdRvULrgfS4K0U",
+      "role": "Shift",
+      "start": "08:30",
+      "date": "2025-12-24",
+      "type": "normal",
+      "end": "14:11",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 60000000
+      },
+      "status": "completed",
+      "hours": 5.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "o5ED8yCjbmbZoBeAWdol",
+      "status": "completed",
+      "start": "08:00",
+      "date": "2025-12-22",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "type": "normal",
+      "role": "Shift",
+      "end": "13:11",
+      "location": "Main Branch",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 6000000
+      },
+      "hours": 5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "oEFCpZUzGnxeSRCZ2xbj",
+      "status": "completed",
+      "end": "18:00",
+      "type": "normal",
+      "location": "Main Branch",
+      "date": "2026-01-10",
+      "start": "10:00",
+      "role": "Shift",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "createdAt": {
+        "_seconds": 1767592726,
+        "_nanoseconds": 381000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "opEOuDZu27sOA6uRErP9",
+      "location": "Main Branch",
+      "type": "normal",
+      "date": "2026-01-10",
+      "role": "Shift",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "end": "18:00",
+      "status": "completed",
+      "start": "10:00",
+      "createdAt": {
+        "_seconds": 1767592744,
+        "_nanoseconds": 495000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "qnBMaLAH9yMi9pfJRRVZ",
+      "role": "Shift",
+      "end": "15:31",
+      "date": "2026-01-02",
+      "hours": 4,
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "start": "11:30",
+      "location": "Main Branch",
+      "type": "normal",
+      "status": "completed",
+      "createdAt": {
+        "_seconds": 1767390338,
+        "_nanoseconds": 862000000
+      },
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "r70iLMqcXTR0O2eIj3oY",
+      "role": "Shift",
+      "date": "2026-01-05",
+      "end": "15:43",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "start": "11:00",
+      "location": "Main Branch",
+      "type": "normal",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 11000000
+      },
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "rCqeB7tbksuxXdnJ5qOq",
+      "start": "11:30",
+      "role": "Shift",
+      "type": "normal",
+      "location": "Main Branch",
+      "date": "2026-01-07",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "end": "15:49",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 75000000
+      },
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "rIv66as6qsStGKsj881k",
+      "role": "Shift",
+      "date": "2025-12-23",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "location": "Main Branch",
+      "end": "15:58",
+      "status": "completed",
+      "start": "11:30",
+      "type": "normal",
+      "hours": 4.5,
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 67000000
+      },
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "rwaOdEPAkWB4q8N1VBHM",
+      "type": "normal",
+      "date": "2026-01-01",
+      "status": "completed",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "start": "09:00",
+      "location": "Main Branch",
+      "role": "Shift",
+      "end": "13:21",
+      "createdAt": {
+        "_seconds": 1767390320,
+        "_nanoseconds": 661000000
+      },
+      "hours": 4,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2025-12-22",
+      "date": "2025-12-22",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 7.5
+    },
+    {
+      "id": "syauqina-2025-12-24",
+      "date": "2025-12-24",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 7.5
+    },
+    {
+      "id": "syauqina-2025-12-25",
+      "date": "2025-12-25",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 4,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2025-12-29",
+      "date": "2025-12-29",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 4,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2025-12-30",
+      "date": "2025-12-30",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 5.25,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2025-12-31",
+      "date": "2025-12-31",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 7.6
+    },
+    {
+      "id": "syauqina-2026-01-02",
+      "date": "2026-01-02",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2026-01-05",
+      "date": "2026-01-05",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2026-01-06",
+      "date": "2026-01-06",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2026-01-07",
+      "date": "2026-01-07",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "syauqina-2026-01-08",
+      "date": "2026-01-08",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "role": "Barista",
+      "start": "09:00",
+      "end": "17:00",
+      "location": "Spendly Cafe",
+      "type": "normal",
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "tV1hVC4w9tkgpHr05zVI",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "end": "12:55",
+      "type": "normal",
+      "role": "Shift",
+      "status": "completed",
+      "location": "Main Branch",
+      "start": "08:00",
+      "date": "2025-12-10",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 72000000
+      },
+      "hours": 5,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "taeLNO2rm1VSPY198PFp",
+      "type": "normal",
+      "status": "completed",
+      "date": "2025-12-25",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "location": "Main Branch",
+      "role": "Shift",
+      "end": "17:12",
+      "start": "11:30",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 7000000
+      },
+      "hours": 5.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "tqbSp5DNH7gqZW1Mui8I",
+      "role": "Shift",
+      "end": "12:18",
+      "status": "completed",
+      "location": "Main Branch",
+      "date": "2025-12-26",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "type": "normal",
+      "start": "08:00",
+      "createdAt": {
+        "_seconds": 1767390321,
+        "_nanoseconds": 689000000
+      },
+      "hours": 3.75,
+      "updatedAt": {
+        "_seconds": 1767603468,
+        "_nanoseconds": 965000000
+      }
+    },
+    {
+      "id": "ttd56HfGe5psIKO6OrDk",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "role": "Shift",
+      "end": "16:23",
+      "date": "2025-12-30",
+      "location": "Main Branch",
+      "start": "11:30",
+      "type": "normal",
+      "status": "completed",
+      "createdAt": {
+        "_seconds": 1767390329,
+        "_nanoseconds": 255000000
+      },
+      "hours": 5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "uvLsbhiOIUOPHlA0Xt9o",
+      "location": "Main Branch",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "role": "Shift",
+      "date": "2025-12-26",
+      "start": "10:30",
+      "end": "16:40",
+      "status": "completed",
+      "type": "normal",
+      "createdAt": {
+        "_seconds": 1767390334,
+        "_nanoseconds": 5000000
+      },
+      "hours": 6,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "vGszavn3ReFaZjrDbERw",
+      "start": "10:00",
+      "status": "completed",
+      "date": "2026-01-08",
+      "end": "18:00",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "type": "normal",
+      "location": "Main Branch",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767592739,
+        "_nanoseconds": 134000000
+      },
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603473,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "wWY3QFHBa2yjqebf9Peh",
+      "start": "08:30",
+      "status": "completed",
+      "type": "normal",
+      "date": "2025-12-08",
+      "end": "14:54",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "location": "Main Branch",
+      "role": "Shift",
+      "createdAt": {
+        "_seconds": 1767390339,
+        "_nanoseconds": 74000000
+      },
+      "hours": 6.25,
+      "updatedAt": {
+        "_seconds": 1767603475,
+        "_nanoseconds": 508000000
+      }
+    },
+    {
+      "id": "ywGEE74S2XsYBxwXVUvv",
+      "start": "11:00",
+      "type": "normal",
+      "status": "completed",
+      "role": "Shift",
+      "date": "2026-01-02",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "location": "Main Branch",
+      "end": "16:07",
+      "createdAt": {
+        "_seconds": 1767390329,
+        "_nanoseconds": 52000000
+      },
+      "hours": 4.75,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    },
+    {
+      "id": "zFDuGeQMLxAIzM7N0m4T",
+      "end": "16:28",
+      "date": "2026-01-07",
+      "type": "normal",
+      "role": "Shift",
+      "start": "11:30",
+      "location": "Main Branch",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "createdAt": {
+        "_seconds": 1767390330,
+        "_nanoseconds": 80000000
+      },
+      "status": "completed",
+      "hours": 7.5,
+      "updatedAt": {
+        "_seconds": 1767603471,
+        "_nanoseconds": 95000000
+      }
+    }
+  ],
+  "notifications": [
+    {
+      "id": "27Nj6rXWdAUJVSXm5c36",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-30 was approved.",
+      "status": "approved",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767378861,
+        "_nanoseconds": 871000000
+      },
+      "readAt": {
+        "_seconds": 1767531932,
+        "_nanoseconds": 292000000
+      }
+    },
+    {
+      "id": "6QYd49oAsVCxe1Rn4i0Q",
+      "type": "attendance",
+      "title": "Attendance rejected",
+      "message": "Your attendance for 2026-01-04 was rejected.",
+      "status": "rejected",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767593052,
+        "_nanoseconds": 833000000
+      },
+      "readAt": {
+        "_seconds": 1767606685,
+        "_nanoseconds": 796000000
+      }
+    },
+    {
+      "id": "B2qd5RutN5VXSGIbwGbi",
+      "type": "attendance",
+      "title": "Attendance rejected",
+      "message": "Your attendance for 2026-01-03 was rejected.",
+      "status": "rejected",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767401610,
+        "_nanoseconds": 707000000
+      },
+      "readAt": {
+        "_seconds": 1767531935,
+        "_nanoseconds": 643000000
+      }
+    },
+    {
+      "id": "DIcdrbnzZWm9dImgDBK8",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-24 was approved.",
+      "status": "approved",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767389760,
+        "_nanoseconds": 311000000
+      }
+    },
+    {
+      "id": "DzxVRP8rseaFNJGR74jK",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-16 was approved.",
+      "status": "approved",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388579,
+        "_nanoseconds": 579000000
+      },
+      "readAt": {
+        "_seconds": 1767531937,
+        "_nanoseconds": 820000000
+      }
+    },
+    {
+      "id": "Jm0Ie6iOJgjCBmMujeJa",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-30 was approved.",
+      "status": "approved",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767378042,
+        "_nanoseconds": 520000000
+      },
+      "readAt": {
+        "_seconds": 1767531930,
+        "_nanoseconds": 681000000
+      }
+    },
+    {
+      "id": "Oez5Ij88oYg25CFtF569",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-22 was approved.",
+      "status": "approved",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388579,
+        "_nanoseconds": 807000000
+      },
+      "readAt": {
+        "_seconds": 1767531941,
+        "_nanoseconds": 458000000
+      }
+    },
+    {
+      "id": "R0qaiPwHUKvwGi1tyVHR",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2026-01-01 was approved.",
+      "status": "approved",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388590,
+        "_nanoseconds": 536000000
+      }
+    },
+    {
+      "id": "TFYWjUpWpJD4iTbgNwJZ",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-26 was approved.",
+      "status": "approved",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388580,
+        "_nanoseconds": 614000000
+      },
+      "readAt": {
+        "_seconds": 1767531936,
+        "_nanoseconds": 520000000
+      }
+    },
+    {
+      "id": "YtVGHQE03oPVrTkFSlCK",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-19 was approved.",
+      "status": "approved",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388586,
+        "_nanoseconds": 105000000
+      }
+    },
+    {
+      "id": "etkegx4y7E502vR34U26",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-17 was approved.",
+      "status": "approved",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388594,
+        "_nanoseconds": 414000000
+      }
+    },
+    {
+      "id": "fnNdGbJKXUflszC6Eor0",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-31 was approved.",
+      "status": "approved",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388581,
+        "_nanoseconds": 882000000
+      },
+      "readAt": {
+        "_seconds": 1767531934,
+        "_nanoseconds": 428000000
+      }
+    },
+    {
+      "id": "k62mLKTSj4no6cx4QXKd",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-30 was approved.",
+      "status": "approved",
+      "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388581,
+        "_nanoseconds": 203000000
+      },
+      "readAt": {
+        "_seconds": 1767531929,
+        "_nanoseconds": 897000000
+      }
+    },
+    {
+      "id": "mxZBtrs1sCXWo1ha61pF",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-29 was approved.",
+      "status": "approved",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388593,
+        "_nanoseconds": 198000000
+      }
+    },
+    {
+      "id": "qK9arP7LtmnePThq84O3",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-31 was approved.",
+      "status": "approved",
+      "workerId": "ppNDAY7h73ohMMhzrqOH",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388595,
+        "_nanoseconds": 592000000
+      }
+    },
+    {
+      "id": "ypDtT1uXvyX68uanHPnR",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-11 was approved.",
+      "status": "approved",
+      "workerId": "XerpsurHIcY7XJchXF6Q",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388583,
+        "_nanoseconds": 648000000
+      }
+    },
+    {
+      "id": "zX3hx3WSu63QXmfY8maV",
+      "type": "attendance",
+      "title": "Attendance approved",
+      "message": "Your attendance for 2025-12-17 was approved.",
+      "status": "approved",
+      "workerId": "m131gGMEN4nKrSbMPmPj",
+      "targetRole": "worker",
+      "createdAt": {
+        "_seconds": 1767388591,
+        "_nanoseconds": 532000000
+      }
+    }
+  ],
+  "auditLogs": [],
+  "users": [
+    {
+      "id": "6NUTfT31DkPgOfYZ41vL6peNdTg2",
+      "fullName": "Qairel ridhuan",
+      "email": "qayyumqairel1811@gmail.com",
+      "createdAt": {
+        "_seconds": 1767302451,
+        "_nanoseconds": 192000000
+      },
+      "attendance": [],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [],
+      "audit": []
+    },
+    {
+      "id": "AyLnqOqsyHPtmVsBB1zTM9Pdv8v2",
+      "fullName": "Fariez is ok",
+      "email": "fariez@gmail.com",
+      "createdAt": {
+        "_seconds": 1767303449,
+        "_nanoseconds": 410000000
+      },
+      "attendance": [],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [],
+      "audit": []
+    },
+    {
+      "id": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+      "email": "syauqina@gmail.com",
+      "createdAt": {
+        "_seconds": 1767364407,
+        "_nanoseconds": 135000000
+      },
+      "scheduleTemplate": "new work shift",
+      "joinDate": "2026-01-02",
+      "role": "worker",
+      "phone": "01162293464",
+      "position": "barista",
+      "status": "active",
+      "scheduleName": "morning shift",
+      "budgetAllocation": [
+        {
+          "category": "Savings",
+          "color": "#22c55e",
+          "amount": 450
+        },
+        {
+          "color": "#3b82f6",
+          "amount": 320,
+          "category": "Goals"
+        },
+        {
+          "amount": 280,
+          "color": "#f59e0b",
+          "category": "Expenses"
+        }
+      ],
+      "fullName": "Syauqina",
+      "hourlyRate": 10,
+      "scheduleId": "syauqina-morning",
+      "updatedAt": {
+        "_seconds": 1767514551,
+        "_nanoseconds": 915000000
+      },
+      "attendance": [
+        {
+          "id": "2025-12-08",
+          "clockInTs": 1765152000000,
+          "date": "2025-12-08",
+          "clockIn": "08:00",
+          "clockOut": "12:47",
+          "breakMinutes": 0,
+          "clockOutTs": 1765169220000,
+          "breakEnd": null,
+          "breakStart": null,
+          "status": "approved",
+          "breakStartTs": null,
+          "breakEndTs": null,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 691000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "12:47",
+          "dailyPay": 47.5,
+          "rawMinutes": 287,
+          "netMinutes": 287,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 47.5,
+          "basePay": 47.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-10",
+          "breakEndTs": 1765349880000,
+          "breakMinutes": 15,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockInTs": 1765337400000,
+          "date": "2025-12-10",
+          "status": "approved",
+          "breakStart": "14:43",
+          "clockOutTs": 1765360560000,
+          "breakStartTs": 1765348980000,
+          "breakEnd": "14:58",
+          "clockOut": "17:56",
+          "clockIn": "11:30",
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 696000000
+          },
+          "lateMinutes": 0,
+          "netHours": 6.25,
+          "hours": 6.25,
+          "overtimeHours": 0,
+          "plannedEnd": "17:56",
+          "dailyPay": 62.5,
+          "rawMinutes": 386,
+          "netMinutes": 371,
+          "regularHours": 6.25,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 375,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 62.5,
+          "basePay": 62.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-11",
+          "breakMinutes": 15,
+          "clockOut": "14:29",
+          "date": "2025-12-11",
+          "clockOutTs": 1765434540000,
+          "breakStart": "11:45",
+          "breakStartTs": 1765424700000,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockInTs": 1765414800000,
+          "status": "approved",
+          "breakEndTs": 1765425600000,
+          "breakEnd": "12:00",
+          "clockIn": "09:00",
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 693000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.25,
+          "hours": 5.25,
+          "overtimeHours": 0,
+          "plannedEnd": "14:29",
+          "dailyPay": 52.5,
+          "rawMinutes": 329,
+          "netMinutes": 314,
+          "regularHours": 5.25,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 315,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 52.5,
+          "basePay": 52.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-12",
+          "clockOut": "14:57",
+          "status": "approved",
+          "breakStart": null,
+          "clockInTs": 1765506600000,
+          "date": "2025-12-12",
+          "hours": 4.5,
+          "breakStartTs": null,
+          "breakEnd": null,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOutTs": 1765522620000,
+          "clockIn": "10:30",
+          "breakMinutes": 0,
+          "breakEndTs": null,
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 690000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:57",
+          "dailyPay": 45,
+          "rawMinutes": 267,
+          "netMinutes": 267,
+          "regularHours": 4.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 270,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 45,
+          "basePay": 45,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-15",
+          "clockInTs": 1765758600000,
+          "breakMinutes": 15,
+          "status": "approved",
+          "breakEndTs": 1765770540000,
+          "clockOutTs": 1765780680000,
+          "breakStart": "11:34",
+          "clockIn": "08:30",
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "breakEnd": "11:49",
+          "date": "2025-12-15",
+          "breakStartTs": 1765769640000,
+          "clockOut": "14:38",
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 686000000
+          },
+          "lateMinutes": 0,
+          "netHours": 6,
+          "hours": 6,
+          "overtimeHours": 0,
+          "plannedEnd": "14:38",
+          "dailyPay": 60,
+          "rawMinutes": 368,
+          "netMinutes": 353,
+          "regularHours": 6,
+          "isEarlyLeave": false,
+          "plannedStart": "08:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 360,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 60,
+          "basePay": 60,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-16",
+          "status": "approved",
+          "date": "2025-12-16",
+          "breakStart": null,
+          "breakEndTs": null,
+          "clockOutTs": 1765861260000,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "breakEnd": null,
+          "clockInTs": 1765846800000,
+          "breakStartTs": null,
+          "clockIn": "09:00",
+          "clockOut": "13:01",
+          "hours": 4,
+          "breakMinutes": 0,
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 690000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4,
+          "overtimeHours": 0,
+          "plannedEnd": "13:01",
+          "dailyPay": 40,
+          "rawMinutes": 241,
+          "netMinutes": 241,
+          "regularHours": 4,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 240,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 40,
+          "basePay": 40,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-17",
+          "breakEndTs": null,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "13:09",
+          "breakEnd": null,
+          "clockOutTs": 1765948140000,
+          "breakMinutes": 0,
+          "breakStartTs": null,
+          "clockInTs": 1765931400000,
+          "breakStart": null,
+          "clockIn": "08:30",
+          "status": "approved",
+          "date": "2025-12-17",
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 687000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "13:09",
+          "dailyPay": 47.5,
+          "rawMinutes": 279,
+          "netMinutes": 279,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "08:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 47.5,
+          "basePay": 47.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-18",
+          "breakEnd": null,
+          "clockOutTs": 1766035980000,
+          "clockIn": "09:00",
+          "breakStartTs": null,
+          "clockInTs": 1766019600000,
+          "date": "2025-12-18",
+          "breakMinutes": 0,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "status": "approved",
+          "clockOut": "13:33",
+          "breakEndTs": null,
+          "breakStart": null,
+          "createdAt": {
+            "_seconds": 1767390321,
+            "_nanoseconds": 693000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.5,
+          "hours": 4.5,
+          "overtimeHours": 0,
+          "plannedEnd": "13:33",
+          "dailyPay": 45,
+          "rawMinutes": 273,
+          "netMinutes": 273,
+          "regularHours": 4.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 270,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 45,
+          "basePay": 45,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-22",
+          "breakMinutes": 30,
+          "date": "2025-12-22",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "17:05",
+          "breakEnd": "13:30",
+          "breakStart": "13:00",
+          "clockIn": "09:02",
+          "status": "approved",
+          "updatedAt": {
+            "_seconds": 1767515249,
+            "_nanoseconds": 764000000
+          }
+        },
+        {
+          "id": "2025-12-23",
+          "clockInTs": 1766451600000,
+          "breakStartTs": 1766461800000,
+          "date": "2025-12-23",
+          "clockOutTs": 1766472000000,
+          "breakEndTs": 1766462700000,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "clockOut": "17:05",
+          "breakEnd": "13:30",
+          "breakStart": "13:00",
+          "clockIn": "09:02",
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 5.25,
+          "hours": 5.25,
+          "overtimeHours": 0,
+          "plannedEnd": "14:40",
+          "dailyPay": 52.5,
+          "rawMinutes": 340,
+          "netMinutes": 310,
+          "regularHours": 5.25,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 315,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 52.5,
+          "basePay": 52.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-24",
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "date": "2025-12-24",
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "hours": 7.5,
+          "clockOut": "17:05",
+          "breakEnd": "13:30",
+          "breakStart": "13:00",
+          "clockIn": "09:02",
+          "status": "approved",
+          "updatedAt": {
+            "_seconds": 1767515249,
+            "_nanoseconds": 764000000
+          }
+        },
+        {
+          "id": "2025-12-25",
+          "clockInTs": 1766628000000,
+          "status": "approved",
+          "date": "2025-12-25",
+          "clockOutTs": 1766644380000,
+          "breakEndTs": null,
+          "breakStartTs": null,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "clockOut": "17:05",
+          "breakEnd": "13:30",
+          "breakStart": "13:00",
+          "clockIn": "09:02",
+          "lateMinutes": 55,
+          "netHours": 4,
+          "hours": 4,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 40,
+          "rawMinutes": 273,
+          "netMinutes": 243,
+          "regularHours": 4,
+          "isEarlyLeave": true,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 240,
+          "isLate": true,
+          "earlyLeaveMinutes": 142,
+          "finalPay": 40,
+          "basePay": 40,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-26",
+          "clockOutTs": 1766722680000,
+          "date": "2025-12-26",
+          "breakEndTs": null,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockInTs": 1766707200000,
+          "breakStartTs": null,
+          "status": "approved",
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "clockOut": "17:05",
+          "breakEnd": "13:30",
+          "breakStart": "13:00",
+          "clockIn": "09:02",
+          "lateMinutes": 0,
+          "netHours": 3.75,
+          "hours": 3.75,
+          "overtimeHours": 0,
+          "plannedEnd": "12:18",
+          "dailyPay": 37.5,
+          "rawMinutes": 258,
+          "netMinutes": 228,
+          "regularHours": 3.75,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 225,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 37.5,
+          "basePay": 37.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-29",
+          "breakEndTs": null,
+          "breakStartTs": null,
+          "clockInTs": 1766971800000,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "status": "approved",
+          "clockOutTs": 1766988300000,
+          "date": "2025-12-29",
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "clockOut": "17:05",
+          "breakEnd": "13:30",
+          "breakStart": "13:00",
+          "clockIn": "09:02",
+          "lateMinutes": 25,
+          "netHours": 4,
+          "hours": 4,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 40,
+          "rawMinutes": 275,
+          "netMinutes": 245,
+          "regularHours": 4,
+          "isEarlyLeave": true,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 240,
+          "isLate": true,
+          "earlyLeaveMinutes": 170,
+          "finalPay": 40,
+          "basePay": 40,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-30",
+          "breakStartTs": 1767072180000,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "status": "approved",
+          "date": "2025-12-30",
+          "breakEndTs": 1767073080000,
+          "clockInTs": 1767061800000,
+          "clockOutTs": 1767082560000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "clockOut": "17:05",
+          "breakEnd": "13:30",
+          "breakStart": "13:00",
+          "clockIn": "09:02",
+          "lateMinutes": 85,
+          "netHours": 5.25,
+          "hours": 5.25,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 52.5,
+          "rawMinutes": 346,
+          "netMinutes": 316,
+          "regularHours": 5.25,
+          "isEarlyLeave": true,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 315,
+          "isLate": true,
+          "earlyLeaveMinutes": 39,
+          "finalPay": 52.5,
+          "basePay": 52.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2025-12-31",
+          "breakMinutes": 25,
+          "date": "2025-12-31",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "hours": 7.6,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "17:10",
+          "breakEnd": "13:30",
+          "breakStart": "13:05",
+          "clockIn": "09:05",
+          "status": "approved",
+          "updatedAt": {
+            "_seconds": 1767515249,
+            "_nanoseconds": 764000000
+          }
+        },
+        {
+          "id": "2026-01-01",
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "breakEndTs": null,
+          "clockInTs": 1767229200000,
+          "clockOutTs": 1767244860000,
+          "date": "2026-01-01",
+          "breakStartTs": null,
+          "breakMinutes": 25,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "clockOut": "17:10",
+          "breakEnd": "13:30",
+          "breakStart": "13:05",
+          "clockIn": "09:05",
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 4,
+          "hours": 4,
+          "overtimeHours": 0,
+          "plannedEnd": "13:21",
+          "dailyPay": 40,
+          "rawMinutes": 261,
+          "netMinutes": 236,
+          "regularHours": 4,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 240,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 40,
+          "basePay": 40,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-02",
+          "clockInTs": 1767324600000,
+          "breakStartTs": 1767334080000,
+          "breakEndTs": 1767334980000,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "date": "2026-01-02",
+          "clockOutTs": 1767343500000,
+          "breakMinutes": 25,
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "clockOut": "17:10",
+          "breakEnd": "13:30",
+          "breakStart": "13:05",
+          "clockIn": "09:05",
+          "status": "approved",
+          "lateMinutes": 145,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 47.5,
+          "rawMinutes": 315,
+          "netMinutes": 290,
+          "regularHours": 4.75,
+          "isEarlyLeave": true,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": true,
+          "earlyLeaveMinutes": 10,
+          "finalPay": 47.5,
+          "basePay": 47.5,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-03",
+          "date": "2026-01-03",
+          "createdAt": {
+            "_seconds": 1767401577,
+            "_nanoseconds": 377000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockIn": "08:52",
+          "clockInTs": 1767401575639,
+          "status": "approved",
+          "updatedAt": {
+            "_seconds": 1767515249,
+            "_nanoseconds": 764000000
+          }
+        },
+        {
+          "id": "2026-01-04",
+          "date": "2026-01-04",
+          "createdAt": {
+            "_seconds": 1767531985,
+            "_nanoseconds": 299000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "hours": 0,
+          "breakMinutes": 0,
+          "breakStartTs": null,
+          "clockOut": null,
+          "breakEnd": null,
+          "clockOutTs": null,
+          "breakEndTs": null,
+          "breakStart": null,
+          "clockIn": null,
+          "clockInTs": null,
+          "updatedAt": {
+            "_seconds": 1767531987,
+            "_nanoseconds": 377000000
+          },
+          "status": "rejected"
+        },
+        {
+          "id": "2026-01-05",
+          "breakStartTs": 1767589200000,
+          "date": "2026-01-05",
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767603600000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767575100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592699,
+            "_nanoseconds": 856000000
+          },
+          "breakEndTs": 1767591000000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 75,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 75,
+          "basePay": 75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-06",
+          "breakStartTs": 1767679200000,
+          "date": "2026-01-06",
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767693600000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767665100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592702,
+            "_nanoseconds": 232000000
+          },
+          "breakEndTs": 1767681000000,
+          "status": "approved",
+          "lateMinutes": 60,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 75,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": true,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 75,
+          "basePay": 75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-07",
+          "breakStartTs": 1767762000000,
+          "date": "2026-01-07",
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767776400000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767747900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592704,
+            "_nanoseconds": 82000000
+          },
+          "breakEndTs": 1767763800000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 75,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 75,
+          "basePay": 75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-08",
+          "breakStartTs": 1767852000000,
+          "date": "2026-01-08",
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767866400000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767837900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592705,
+            "_nanoseconds": 754000000
+          },
+          "breakEndTs": 1767853800000,
+          "status": "approved",
+          "lateMinutes": 60,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 75,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": true,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 75,
+          "basePay": 75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-09",
+          "breakStartTs": 1767934800000,
+          "date": "2026-01-09",
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767949200000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767920700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592707,
+            "_nanoseconds": 524000000
+          },
+          "breakEndTs": 1767936600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:47",
+          "dailyPay": 75,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 75,
+          "basePay": 75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-10",
+          "breakStartTs": 1768024800000,
+          "date": "2026-01-10",
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1768039200000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1768010700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592709,
+            "_nanoseconds": 443000000
+          },
+          "breakEndTs": 1768026600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 75,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 93.75,
+          "basePay": 75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        },
+        {
+          "id": "2026-01-11",
+          "breakStartTs": 1768107600000,
+          "date": "2026-01-11",
+          "hours": 7.5,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1768122000000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1768093500000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592712,
+            "_nanoseconds": 217000000
+          },
+          "breakEndTs": 1768109400000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 75,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 93.75,
+          "basePay": 75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603468,
+            "_nanoseconds": 965000000
+          }
+        }
+      ],
+      "breaks": [
+        {
+          "id": "2025-12-22",
+          "date": "2025-12-22",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:00",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-23",
+          "date": "2025-12-23",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:00",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-24",
+          "date": "2025-12-24",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:00",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-25",
+          "date": "2025-12-25",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:00",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-26",
+          "date": "2025-12-26",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:00",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-29",
+          "date": "2025-12-29",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:00",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-30",
+          "date": "2025-12-30",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:00",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-31",
+          "date": "2025-12-31",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:05",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2026-01-01",
+          "date": "2026-01-01",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:05",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2026-01-02",
+          "date": "2026-01-02",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "13:05",
+          "endTime": "13:30",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2026-01-04",
+          "date": "2026-01-04",
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": null,
+          "endTime": null,
+          "updatedAt": {
+            "_seconds": 1767531987,
+            "_nanoseconds": 678000000
+          }
+        }
+      ],
+      "overtime": [
+        {
+          "id": "2025-12-22",
+          "date": "2025-12-22",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "hours": 2,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "17:00",
+          "endTime": "19:00",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2025-12-23",
+          "date": "2025-12-23",
+          "createdAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          },
+          "hours": 2,
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "startTime": "17:00",
+          "endTime": "19:00",
+          "updatedAt": {
+            "_seconds": 1767514551,
+            "_nanoseconds": 915000000
+          }
+        },
+        {
+          "id": "2026-01-04",
+          "date": "2026-01-04",
+          "createdAt": {
+            "_seconds": 1767531986,
+            "_nanoseconds": 321000000
+          },
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "hours": 0,
+          "startTime": null,
+          "endTime": null,
+          "updatedAt": {
+            "_seconds": 1767531987,
+            "_nanoseconds": 970000000
+          }
+        }
+      ],
+      "notifications": [],
+      "payroll": [
+        {
+          "id": "2025-12",
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "period": "2025-12",
+          "totalEarnings": 1340,
+          "overtimeHours": 6,
+          "totalHours": 128,
+          "absenceDeductions": 0,
+          "status": "paid",
+          "updatedAt": "2026-01-01T16:00:00.000Z"
+        },
+        {
+          "id": "2026-01",
+          "absenceDeductions": 0,
+          "period": "2026-01",
+          "status": "pending",
+          "workerId": "GBw2ptfjt5MnA0T4IAkMMVlvye12",
+          "totalEarnings": 780,
+          "overtimeHours": 2,
+          "totalHours": 72,
+          "updatedAt": "2026-01-04T08:15:51.203Z"
+        }
+      ],
+      "audit": []
+    },
+    {
+      "id": "IvHSCA77k4QDWvncFuq5blUZhEm1",
+      "fullName": "Qairel",
+      "email": "qairel@gmail.com",
+      "createdAt": {
+        "_seconds": 1767311634,
+        "_nanoseconds": 330000000
+      },
+      "attendance": [],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [],
+      "audit": []
+    },
+    {
+      "id": "XerpsurHIcY7XJchXF6Q",
+      "fullName": "Faris Hakim",
+      "email": "faris.hakim@spendly.local",
+      "position": "Server",
+      "role": "worker",
+      "joinDate": "2026-01-02",
+      "status": "active",
+      "phone": "+60 12-345 7782",
+      "createdAt": "2026-01-02T18:54:23.319Z",
+      "hourlyRate": 9.24,
+      "scheduleName": "morning shift",
+      "scheduleId": "syauqina-morning",
+      "updatedAt": "2026-01-05T09:51:00.128Z",
+      "attendance": [
+        {
+          "id": "2025-12-08",
+          "breakEndTs": null,
+          "breakStart": null,
+          "clockOutTs": 1765174680000,
+          "breakStartTs": null,
+          "clockIn": "10:00",
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "breakMinutes": 0,
+          "clockOut": "14:18",
+          "breakEnd": null,
+          "clockInTs": 1765159200000,
+          "date": "2025-12-08",
+          "status": "approved",
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 77000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.25,
+          "hours": 4.25,
+          "overtimeHours": 0,
+          "plannedEnd": "14:18",
+          "dailyPay": 39.27,
+          "rawMinutes": 258,
+          "netMinutes": 258,
+          "regularHours": 4.25,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 255,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 39.27,
+          "basePay": 39.27,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-09",
+          "breakStartTs": 1765258980000,
+          "breakEnd": "13:58",
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOutTs": 1765268700000,
+          "breakStart": "13:43",
+          "clockIn": "11:00",
+          "date": "2025-12-09",
+          "clockInTs": 1765249200000,
+          "breakMinutes": 15,
+          "breakEndTs": 1765259880000,
+          "status": "approved",
+          "clockOut": "16:25",
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 78000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.25,
+          "hours": 5.25,
+          "overtimeHours": 0,
+          "plannedEnd": "16:25",
+          "dailyPay": 48.51,
+          "rawMinutes": 325,
+          "netMinutes": 310,
+          "regularHours": 5.25,
+          "isEarlyLeave": false,
+          "plannedStart": "11:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 315,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 48.51,
+          "basePay": 48.51,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-12",
+          "breakMinutes": 0,
+          "breakStart": null,
+          "breakEnd": null,
+          "status": "approved",
+          "breakStartTs": null,
+          "breakEndTs": null,
+          "clockOutTs": 1765518720000,
+          "date": "2025-12-12",
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "13:52",
+          "clockInTs": 1765501200000,
+          "clockIn": "09:00",
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 77000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "13:52",
+          "dailyPay": 43.89,
+          "rawMinutes": 292,
+          "netMinutes": 292,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 43.89,
+          "basePay": 43.89,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-15",
+          "breakEndTs": 1765767240000,
+          "clockInTs": 1765756800000,
+          "status": "approved",
+          "clockOutTs": 1765775820000,
+          "hours": 5,
+          "breakStartTs": 1765766340000,
+          "date": "2025-12-15",
+          "breakMinutes": 15,
+          "clockOut": "13:17",
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockIn": "08:00",
+          "breakStart": "10:39",
+          "breakEnd": "10:54",
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 78000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5,
+          "overtimeHours": 0,
+          "plannedEnd": "13:17",
+          "dailyPay": 46.2,
+          "rawMinutes": 317,
+          "netMinutes": 302,
+          "regularHours": 5,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 300,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 46.2,
+          "basePay": 46.2,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-16",
+          "breakStart": "13:17",
+          "date": "2025-12-16",
+          "clockOut": "16:04",
+          "clockInTs": 1765852200000,
+          "clockIn": "10:30",
+          "breakEnd": "13:32",
+          "breakMinutes": 15,
+          "status": "approved",
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOutTs": 1765872240000,
+          "breakEndTs": 1765863120000,
+          "breakStartTs": 1765862220000,
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 71000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.25,
+          "hours": 5.25,
+          "overtimeHours": 0,
+          "plannedEnd": "16:04",
+          "dailyPay": 48.51,
+          "rawMinutes": 334,
+          "netMinutes": 319,
+          "regularHours": 5.25,
+          "isEarlyLeave": false,
+          "plannedStart": "10:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 315,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 48.51,
+          "basePay": 48.51,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-19",
+          "clockIn": "09:00",
+          "breakEnd": "12:13",
+          "breakStartTs": 1766116680000,
+          "status": "approved",
+          "breakStart": "11:58",
+          "clockInTs": 1766106000000,
+          "clockOut": "14:55",
+          "breakEndTs": 1766117580000,
+          "breakMinutes": 15,
+          "clockOutTs": 1766127300000,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "date": "2025-12-19",
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 71000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.75,
+          "hours": 5.75,
+          "overtimeHours": 0,
+          "plannedEnd": "14:55",
+          "dailyPay": 53.13,
+          "rawMinutes": 355,
+          "netMinutes": 340,
+          "regularHours": 5.75,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 345,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 53.13,
+          "basePay": 53.13,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-22",
+          "clockIn": "10:30",
+          "status": "approved",
+          "clockOut": "16:14",
+          "clockOutTs": 1766391240000,
+          "date": "2025-12-22",
+          "breakMinutes": 15,
+          "breakStartTs": 1766380920000,
+          "breakStart": "13:22",
+          "clockInTs": 1766370600000,
+          "breakEndTs": 1766381820000,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "hours": 5.5,
+          "breakEnd": "13:37",
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 68000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.5,
+          "overtimeHours": 0,
+          "plannedEnd": "16:14",
+          "dailyPay": 50.82,
+          "rawMinutes": 344,
+          "netMinutes": 329,
+          "regularHours": 5.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 330,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 50.82,
+          "basePay": 50.82,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-24",
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "breakStartTs": 1766546460000,
+          "clockOutTs": 1766556660000,
+          "date": "2025-12-24",
+          "breakEndTs": 1766547360000,
+          "breakStart": "11:21",
+          "breakEnd": "11:36",
+          "clockOut": "14:11",
+          "clockIn": "08:30",
+          "clockInTs": 1766536200000,
+          "breakMinutes": 15,
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 60000000
+          },
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 5.5,
+          "hours": 5.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:11",
+          "dailyPay": 50.82,
+          "rawMinutes": 341,
+          "netMinutes": 326,
+          "regularHours": 5.5,
+          "isEarlyLeave": false,
+          "plannedStart": "08:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 330,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 50.82,
+          "basePay": 50.82,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-25",
+          "breakStartTs": null,
+          "clockOut": "12:24",
+          "status": "approved",
+          "clockIn": "08:00",
+          "clockOutTs": 1766636640000,
+          "breakEndTs": null,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "date": "2025-12-25",
+          "clockInTs": 1766620800000,
+          "breakEnd": null,
+          "breakStart": null,
+          "breakMinutes": 0,
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 60000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.5,
+          "hours": 4.5,
+          "overtimeHours": 0,
+          "plannedEnd": "12:24",
+          "dailyPay": 41.58,
+          "rawMinutes": 264,
+          "netMinutes": 264,
+          "regularHours": 4.5,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 270,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 41.58,
+          "basePay": 41.58,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-26",
+          "breakEnd": "12:06",
+          "clockOut": "14:41",
+          "status": "approved",
+          "clockInTs": 1766710800000,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "breakStartTs": 1766721060000,
+          "breakStart": "11:51",
+          "clockOutTs": 1766731260000,
+          "clockIn": "09:00",
+          "breakMinutes": 15,
+          "date": "2025-12-26",
+          "breakEndTs": 1766721960000,
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 67000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.5,
+          "hours": 5.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:41",
+          "dailyPay": 50.82,
+          "rawMinutes": 341,
+          "netMinutes": 326,
+          "regularHours": 5.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 330,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 50.82,
+          "basePay": 50.82,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-29",
+          "date": "2025-12-29",
+          "hours": 0,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "createdAt": {
+            "_seconds": 1767390330,
+            "_nanoseconds": 56000000
+          },
+          "status": "approved",
+          "updatedAt": {
+            "_seconds": 1767515249,
+            "_nanoseconds": 764000000
+          }
+        },
+        {
+          "id": "2025-12-30",
+          "date": "2025-12-30",
+          "clockOutTs": 1767082980000,
+          "clockInTs": 1767065400000,
+          "breakStartTs": null,
+          "status": "approved",
+          "clockIn": "11:30",
+          "breakEnd": null,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "breakEndTs": null,
+          "breakStart": null,
+          "breakMinutes": 0,
+          "clockOut": "16:23",
+          "createdAt": {
+            "_seconds": 1767390329,
+            "_nanoseconds": 261000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5,
+          "hours": 5,
+          "overtimeHours": 0,
+          "plannedEnd": "16:23",
+          "dailyPay": 46.2,
+          "rawMinutes": 293,
+          "netMinutes": 293,
+          "regularHours": 5,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 300,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 46.2,
+          "basePay": 46.2,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2025-12-31",
+          "clockIn": "09:30",
+          "clockInTs": 1767144600000,
+          "breakMinutes": 0,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "status": "approved",
+          "date": "2025-12-31",
+          "breakEndTs": null,
+          "clockOutTs": 1767161100000,
+          "clockOut": "14:05",
+          "breakStartTs": null,
+          "breakStart": null,
+          "breakEnd": null,
+          "createdAt": {
+            "_seconds": 1767390329,
+            "_nanoseconds": 253000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.5,
+          "hours": 4.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:05",
+          "dailyPay": 41.58,
+          "rawMinutes": 275,
+          "netMinutes": 275,
+          "regularHours": 4.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 270,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 41.58,
+          "basePay": 41.58,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-02",
+          "clockIn": "11:00",
+          "breakEndTs": 1767332940000,
+          "clockInTs": 1767322800000,
+          "breakMinutes": 15,
+          "breakStartTs": 1767332040000,
+          "clockOut": "16:07",
+          "date": "2026-01-02",
+          "breakEnd": "13:49",
+          "clockOutTs": 1767341220000,
+          "breakStart": "13:34",
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "status": "approved",
+          "createdAt": {
+            "_seconds": 1767390329,
+            "_nanoseconds": 40000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "16:07",
+          "dailyPay": 43.89,
+          "rawMinutes": 307,
+          "netMinutes": 292,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "11:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 43.89,
+          "basePay": 43.89,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-05",
+          "breakStartTs": 1767589200000,
+          "date": "2026-01-05",
+          "hours": 7.5,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767603600000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767575100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592715,
+            "_nanoseconds": 65000000
+          },
+          "breakEndTs": 1767591000000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "15:23",
+          "dailyPay": 69.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 69.3,
+          "basePay": 69.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-06",
+          "breakStartTs": 1767679200000,
+          "date": "2026-01-06",
+          "hours": 7.5,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767693600000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767665100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592717,
+            "_nanoseconds": 730000000
+          },
+          "breakEndTs": 1767681000000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 69.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 69.3,
+          "basePay": 69.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-07",
+          "breakStartTs": 1767762000000,
+          "date": "2026-01-07",
+          "hours": 7.5,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767776400000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767747900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592720,
+            "_nanoseconds": 130000000
+          },
+          "breakEndTs": 1767763800000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "16:28",
+          "dailyPay": 69.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 69.3,
+          "basePay": 69.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-08",
+          "breakStartTs": 1767852000000,
+          "date": "2026-01-08",
+          "hours": 7.5,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767866400000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767837900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592722,
+            "_nanoseconds": 233000000
+          },
+          "breakEndTs": 1767853800000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 69.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 69.3,
+          "basePay": 69.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-09",
+          "breakStartTs": 1767934800000,
+          "date": "2026-01-09",
+          "hours": 7.5,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767949200000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767920700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592724,
+            "_nanoseconds": 942000000
+          },
+          "breakEndTs": 1767936600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 69.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 69.3,
+          "basePay": 69.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-10",
+          "breakStartTs": 1768024800000,
+          "date": "2026-01-10",
+          "hours": 7.5,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1768039200000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1768010700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592727,
+            "_nanoseconds": 698000000
+          },
+          "breakEndTs": 1768026600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 69.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 86.625,
+          "basePay": 69.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        },
+        {
+          "id": "2026-01-11",
+          "breakStartTs": 1768107600000,
+          "date": "2026-01-11",
+          "hours": 7.5,
+          "workerId": "XerpsurHIcY7XJchXF6Q",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1768122000000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1768093500000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592730,
+            "_nanoseconds": 300000000
+          },
+          "breakEndTs": 1768109400000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 69.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 86.625,
+          "basePay": 69.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603471,
+            "_nanoseconds": 95000000
+          }
+        }
+      ],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [
+        {
+          "id": "2025-12",
+          "absenceDeductions": 1,
+          "updatedAt": "2026-01-02T21:45:30.075Z",
+          "overtimeHours": 0,
+          "status": "pending",
+          "totalEarnings": 559.94,
+          "period": "2025-12",
+          "totalHours": 60.6,
+          "workerId": "XerpsurHIcY7XJchXF6Q"
+        },
+        {
+          "id": "2026-01",
+          "updatedAt": "2026-01-02T21:45:30.075Z",
+          "overtimeHours": 0,
+          "totalEarnings": 45.28,
+          "totalHours": 4.9,
+          "absenceDeductions": 0,
+          "status": "pending",
+          "period": "2026-01",
+          "workerId": "XerpsurHIcY7XJchXF6Q"
+        }
+      ],
+      "audit": []
+    },
+    {
+      "id": "c7gsgdH7W9Vw7yG7rj9jg254Ddo1",
+      "fullName": "Ammar",
+      "email": "ammar@gmail.com",
+      "createdAt": {
+        "_seconds": 1767316879,
+        "_nanoseconds": 679000000
+      },
+      "role": "admin",
+      "attendance": [],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [],
+      "audit": []
+    },
+    {
+      "id": "ex9U9gC4rKNukSLkMAs3UBf9s9i2",
+      "fullName": "Aiman",
+      "email": "aiman@gmail.com",
+      "createdAt": {
+        "_seconds": 1767316348,
+        "_nanoseconds": 296000000
+      },
+      "attendance": [],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [],
+      "audit": []
+    },
+    {
+      "id": "m131gGMEN4nKrSbMPmPj",
+      "fullName": "Nadia Azmi",
+      "position": "Kitchen",
+      "phone": "+60 12-345 7783",
+      "createdAt": "2026-01-02T18:54:23.319Z",
+      "joinDate": "2026-01-02",
+      "role": "worker",
+      "email": "nadia.azmi@spendly.local",
+      "status": "active",
+      "hourlyRate": 10.44,
+      "scheduleName": "morning shift",
+      "scheduleId": "syauqina-morning",
+      "updatedAt": "2026-01-05T09:51:00.200Z",
+      "attendance": [
+        {
+          "id": "2025-12-10",
+          "clockIn": "11:00",
+          "breakStartTs": null,
+          "clockOut": "15:45",
+          "date": "2025-12-10",
+          "status": "approved",
+          "breakStart": null,
+          "breakMinutes": 0,
+          "breakEnd": null,
+          "clockInTs": 1765335600000,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOutTs": 1765352700000,
+          "breakEndTs": null,
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 10000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "15:45",
+          "dailyPay": 49.589999999999996,
+          "rawMinutes": 285,
+          "netMinutes": 285,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "11:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 49.589999999999996,
+          "basePay": 49.589999999999996,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-11",
+          "breakMinutes": 0,
+          "clockOutTs": 1765439340000,
+          "breakStartTs": null,
+          "breakStart": null,
+          "clockInTs": 1765423800000,
+          "date": "2025-12-11",
+          "clockIn": "11:30",
+          "status": "approved",
+          "clockOut": "15:49",
+          "breakEndTs": null,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "breakEnd": null,
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 10000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.25,
+          "hours": 4.25,
+          "overtimeHours": 0,
+          "plannedEnd": "15:49",
+          "dailyPay": 44.37,
+          "rawMinutes": 259,
+          "netMinutes": 259,
+          "regularHours": 4.25,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 255,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 44.37,
+          "basePay": 44.37,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-12",
+          "hours": 0,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "date": "2025-12-12",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 11000000
+          },
+          "status": "approved",
+          "updatedAt": {
+            "_seconds": 1767515249,
+            "_nanoseconds": 764000000
+          }
+        },
+        {
+          "id": "2025-12-15",
+          "clockOut": "14:46",
+          "breakEnd": "12:08",
+          "breakStart": "11:53",
+          "clockInTs": 1765760400000,
+          "clockIn": "09:00",
+          "date": "2025-12-15",
+          "hours": 5.5,
+          "breakMinutes": 15,
+          "breakEndTs": 1765771680000,
+          "clockOutTs": 1765781160000,
+          "breakStartTs": 1765770780000,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "status": "approved",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 7000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:46",
+          "dailyPay": 57.419999999999995,
+          "rawMinutes": 346,
+          "netMinutes": 331,
+          "regularHours": 5.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 330,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 57.419999999999995,
+          "basePay": 57.419999999999995,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-16",
+          "clockInTs": 1765852200000,
+          "date": "2025-12-16",
+          "breakStartTs": null,
+          "breakMinutes": 0,
+          "breakEnd": null,
+          "clockOut": "15:20",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "breakStart": null,
+          "status": "approved",
+          "clockIn": "10:30",
+          "clockOutTs": 1765869600000,
+          "breakEndTs": null,
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 9000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "15:20",
+          "dailyPay": 49.589999999999996,
+          "rawMinutes": 290,
+          "netMinutes": 290,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "10:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 49.589999999999996,
+          "basePay": 49.589999999999996,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-17",
+          "clockOutTs": 1765947540000,
+          "status": "approved",
+          "date": "2025-12-17",
+          "breakEnd": null,
+          "clockInTs": 1765929600000,
+          "hours": 5,
+          "clockOut": "12:59",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "breakStartTs": null,
+          "clockIn": "08:00",
+          "breakMinutes": 0,
+          "breakEndTs": null,
+          "breakStart": null,
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 9000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5,
+          "overtimeHours": 0,
+          "plannedEnd": "12:59",
+          "dailyPay": 52.199999999999996,
+          "rawMinutes": 299,
+          "netMinutes": 299,
+          "regularHours": 5,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 300,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 52.199999999999996,
+          "basePay": 52.199999999999996,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-19",
+          "clockInTs": 1766104200000,
+          "breakStart": "11:27",
+          "date": "2025-12-19",
+          "breakStartTs": 1766114820000,
+          "breakEnd": "11:42",
+          "clockOut": "14:24",
+          "clockOutTs": 1766125440000,
+          "breakMinutes": 15,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "status": "approved",
+          "breakEndTs": 1766115720000,
+          "clockIn": "08:30",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 9000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.75,
+          "hours": 5.75,
+          "overtimeHours": 0,
+          "plannedEnd": "14:24",
+          "dailyPay": 60.029999999999994,
+          "rawMinutes": 354,
+          "netMinutes": 339,
+          "regularHours": 5.75,
+          "isEarlyLeave": false,
+          "plannedStart": "08:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 345,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 60.029999999999994,
+          "basePay": 60.029999999999994,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-22",
+          "breakEnd": "10:51",
+          "status": "approved",
+          "breakStartTs": 1766370960000,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockIn": "08:00",
+          "breakStart": "10:36",
+          "breakMinutes": 15,
+          "clockOutTs": 1766380260000,
+          "date": "2025-12-22",
+          "breakEndTs": 1766371860000,
+          "clockOut": "13:11",
+          "clockInTs": 1766361600000,
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 7000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5,
+          "hours": 5,
+          "overtimeHours": 0,
+          "plannedEnd": "13:11",
+          "dailyPay": 52.199999999999996,
+          "rawMinutes": 311,
+          "netMinutes": 296,
+          "regularHours": 5,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 300,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 52.199999999999996,
+          "basePay": 52.199999999999996,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-23",
+          "clockInTs": 1766458800000,
+          "clockOut": "17:27",
+          "breakEnd": "14:29",
+          "breakMinutes": 15,
+          "breakEndTs": 1766471340000,
+          "breakStart": "14:14",
+          "clockOutTs": 1766482020000,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockIn": "11:00",
+          "breakStartTs": 1766470440000,
+          "date": "2025-12-23",
+          "status": "approved",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 7000000
+          },
+          "lateMinutes": 0,
+          "netHours": 6.25,
+          "hours": 6.25,
+          "overtimeHours": 0,
+          "plannedEnd": "17:27",
+          "dailyPay": 65.25,
+          "rawMinutes": 387,
+          "netMinutes": 372,
+          "regularHours": 6.25,
+          "isEarlyLeave": false,
+          "plannedStart": "11:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 375,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 65.25,
+          "basePay": 65.25,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-25",
+          "breakStartTs": 1766643660000,
+          "breakEnd": "14:36",
+          "breakStart": "14:21",
+          "date": "2025-12-25",
+          "breakMinutes": 15,
+          "breakEndTs": 1766644560000,
+          "clockOutTs": 1766653920000,
+          "hours": 5.5,
+          "clockIn": "11:30",
+          "clockOut": "17:12",
+          "status": "approved",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockInTs": 1766633400000,
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 6000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:12",
+          "dailyPay": 57.419999999999995,
+          "rawMinutes": 342,
+          "netMinutes": 327,
+          "regularHours": 5.5,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 330,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 57.419999999999995,
+          "basePay": 57.419999999999995,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-26",
+          "breakStartTs": 1766727300000,
+          "clockOutTs": 1766738400000,
+          "date": "2025-12-26",
+          "status": "approved",
+          "clockOut": "16:40",
+          "clockInTs": 1766716200000,
+          "breakMinutes": 15,
+          "breakStart": "13:35",
+          "breakEnd": "13:50",
+          "breakEndTs": 1766728200000,
+          "clockIn": "10:30",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 8000000
+          },
+          "lateMinutes": 0,
+          "netHours": 6,
+          "hours": 6,
+          "overtimeHours": 0,
+          "plannedEnd": "16:40",
+          "dailyPay": 62.64,
+          "rawMinutes": 370,
+          "netMinutes": 355,
+          "regularHours": 6,
+          "isEarlyLeave": false,
+          "plannedStart": "10:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 360,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 62.64,
+          "basePay": 62.64,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-29",
+          "breakMinutes": 0,
+          "breakStart": null,
+          "clockOut": "15:16",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockInTs": 1766975400000,
+          "breakStartTs": null,
+          "breakEnd": null,
+          "clockOutTs": 1766992560000,
+          "date": "2025-12-29",
+          "breakEndTs": null,
+          "clockIn": "10:30",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 5000000
+          },
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "15:16",
+          "dailyPay": 49.589999999999996,
+          "rawMinutes": 286,
+          "netMinutes": 286,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "10:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 49.589999999999996,
+          "basePay": 49.589999999999996,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-30",
+          "date": "2025-12-30",
+          "breakEndTs": null,
+          "clockInTs": 1767056400000,
+          "breakMinutes": 0,
+          "breakEnd": null,
+          "clockIn": "09:00",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "13:07",
+          "breakStartTs": null,
+          "breakStart": null,
+          "clockOutTs": 1767071220000,
+          "status": "approved",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 6000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4,
+          "hours": 4,
+          "overtimeHours": 0,
+          "plannedEnd": "13:07",
+          "dailyPay": 41.76,
+          "rawMinutes": 247,
+          "netMinutes": 247,
+          "regularHours": 4,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 240,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 41.76,
+          "basePay": 41.76,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2025-12-31",
+          "clockInTs": 1767144600000,
+          "status": "approved",
+          "clockIn": "09:30",
+          "breakStart": "12:35",
+          "breakMinutes": 15,
+          "clockOut": "15:39",
+          "breakEndTs": 1767156600000,
+          "breakStartTs": 1767155700000,
+          "breakEnd": "12:50",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOutTs": 1767166740000,
+          "date": "2025-12-31",
+          "createdAt": {
+            "_seconds": 1767390334,
+            "_nanoseconds": 4000000
+          },
+          "lateMinutes": 0,
+          "netHours": 6,
+          "hours": 6,
+          "overtimeHours": 0,
+          "plannedEnd": "15:39",
+          "dailyPay": 62.64,
+          "rawMinutes": 369,
+          "netMinutes": 354,
+          "regularHours": 6,
+          "isEarlyLeave": false,
+          "plannedStart": "09:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 360,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 62.64,
+          "basePay": 62.64,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2026-01-05",
+          "breakStartTs": 1767589200000,
+          "date": "2026-01-05",
+          "hours": 7.5,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767603600000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767575100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592733,
+            "_nanoseconds": 107000000
+          },
+          "breakEndTs": 1767591000000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "15:43",
+          "dailyPay": 78.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "11:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 78.3,
+          "basePay": 78.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2026-01-06",
+          "breakStartTs": 1767679200000,
+          "date": "2026-01-06",
+          "hours": 7.5,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767693600000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767665100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592736,
+            "_nanoseconds": 77000000
+          },
+          "breakEndTs": 1767681000000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 78.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 78.3,
+          "basePay": 78.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2026-01-07",
+          "breakStartTs": 1767762000000,
+          "date": "2026-01-07",
+          "hours": 7.5,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767776400000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767747900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592738,
+            "_nanoseconds": 514000000
+          },
+          "breakEndTs": 1767763800000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:48",
+          "dailyPay": 78.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 78.3,
+          "basePay": 78.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2026-01-08",
+          "breakStartTs": 1767852000000,
+          "date": "2026-01-08",
+          "hours": 7.5,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767866400000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767837900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592740,
+            "_nanoseconds": 454000000
+          },
+          "breakEndTs": 1767853800000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 78.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 78.3,
+          "basePay": 78.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2026-01-09",
+          "breakStartTs": 1767934800000,
+          "date": "2026-01-09",
+          "hours": 7.5,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767949200000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767920700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592743,
+            "_nanoseconds": 223000000
+          },
+          "breakEndTs": 1767936600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 78.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 78.3,
+          "basePay": 78.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2026-01-10",
+          "breakStartTs": 1768024800000,
+          "date": "2026-01-10",
+          "hours": 7.5,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1768039200000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1768010700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592745,
+            "_nanoseconds": 888000000
+          },
+          "breakEndTs": 1768026600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 78.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 97.875,
+          "basePay": 78.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        },
+        {
+          "id": "2026-01-11",
+          "breakStartTs": 1768107600000,
+          "date": "2026-01-11",
+          "hours": 7.5,
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1768122000000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1768093500000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592748,
+            "_nanoseconds": 559000000
+          },
+          "breakEndTs": 1768109400000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 78.3,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 97.875,
+          "basePay": 78.3,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603473,
+            "_nanoseconds": 520000000
+          }
+        }
+      ],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [
+        {
+          "id": "2025-12",
+          "period": "2025-12",
+          "workerId": "m131gGMEN4nKrSbMPmPj",
+          "absenceDeductions": 1,
+          "totalEarnings": 703.66,
+          "updatedAt": "2026-01-02T21:45:35.259Z",
+          "status": "pending",
+          "overtimeHours": 0,
+          "totalHours": 67.4
+        }
+      ],
+      "audit": []
+    },
+    {
+      "id": "p67ZxFwWo0MOaV0g44SExKFf7MO2",
+      "fullName": "Izamuddin",
+      "email": "izamuddinasir@gmail.com",
+      "createdAt": {
+        "_seconds": 1767310291,
+        "_nanoseconds": 910000000
+      },
+      "attendance": [],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [],
+      "audit": []
+    },
+    {
+      "id": "ppNDAY7h73ohMMhzrqOH",
+      "createdAt": "2026-01-02T18:54:23.317Z",
+      "joinDate": "2026-01-02",
+      "email": "alya.rahman@spendly.local",
+      "status": "active",
+      "position": "Cashier",
+      "fullName": "Alya Rahman",
+      "phone": "+60 12-345 7781",
+      "role": "worker",
+      "hourlyRate": 11.64,
+      "scheduleName": "morning shift",
+      "scheduleId": "syauqina-morning",
+      "updatedAt": "2026-01-05T09:51:00.200Z",
+      "attendance": [
+        {
+          "id": "2025-12-08",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "date": "2025-12-08",
+          "clockIn": "08:30",
+          "clockInTs": 1765153800000,
+          "breakMinutes": 15,
+          "breakEndTs": 1765166220000,
+          "breakStart": "11:42",
+          "clockOut": "14:54",
+          "breakEnd": "11:57",
+          "status": "approved",
+          "breakStartTs": 1765165320000,
+          "clockOutTs": 1765176840000,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 73000000
+          },
+          "lateMinutes": 0,
+          "netHours": 6.25,
+          "hours": 6.25,
+          "overtimeHours": 0,
+          "plannedEnd": "14:54",
+          "dailyPay": 72.75,
+          "rawMinutes": 384,
+          "netMinutes": 369,
+          "regularHours": 6.25,
+          "isEarlyLeave": false,
+          "plannedStart": "08:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 375,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 72.75,
+          "basePay": 72.75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-09",
+          "clockIn": "08:00",
+          "clockOut": "13:02",
+          "date": "2025-12-09",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "breakEnd": "10:46",
+          "breakEndTs": 1765248360000,
+          "breakStart": "10:31",
+          "breakMinutes": 15,
+          "status": "approved",
+          "breakStartTs": 1765247460000,
+          "clockInTs": 1765238400000,
+          "clockOutTs": 1765256520000,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 72000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "13:02",
+          "dailyPay": 55.290000000000006,
+          "rawMinutes": 302,
+          "netMinutes": 287,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 55.290000000000006,
+          "basePay": 55.290000000000006,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-10",
+          "clockInTs": 1765324800000,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "breakStartTs": null,
+          "breakStart": null,
+          "breakEnd": null,
+          "date": "2025-12-10",
+          "breakMinutes": 0,
+          "breakEndTs": null,
+          "status": "approved",
+          "clockOutTs": 1765342500000,
+          "clockOut": "12:55",
+          "clockIn": "08:00",
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 75000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5,
+          "hours": 5,
+          "overtimeHours": 0,
+          "plannedEnd": "12:55",
+          "dailyPay": 58.2,
+          "rawMinutes": 295,
+          "netMinutes": 295,
+          "regularHours": 5,
+          "isEarlyLeave": false,
+          "plannedStart": "08:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 300,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 58.2,
+          "basePay": 58.2,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-11",
+          "hours": 0,
+          "date": "2025-12-11",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 75000000
+          },
+          "status": "approved",
+          "updatedAt": {
+            "_seconds": 1767515249,
+            "_nanoseconds": 764000000
+          }
+        },
+        {
+          "id": "2025-12-15",
+          "breakEndTs": 1765775880000,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockIn": "10:00",
+          "date": "2025-12-15",
+          "clockOut": "16:06",
+          "status": "approved",
+          "breakMinutes": 15,
+          "breakStartTs": 1765774980000,
+          "breakStart": "13:03",
+          "clockInTs": 1765764000000,
+          "breakEnd": "13:18",
+          "clockOutTs": 1765785960000,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 71000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.75,
+          "hours": 5.75,
+          "overtimeHours": 0,
+          "plannedEnd": "16:06",
+          "dailyPay": 66.93,
+          "rawMinutes": 366,
+          "netMinutes": 351,
+          "regularHours": 5.75,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 345,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 66.93,
+          "basePay": 66.93,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-17",
+          "status": "approved",
+          "clockOutTs": 1765955820000,
+          "hours": 5,
+          "clockIn": "10:00",
+          "breakStart": "12:39",
+          "date": "2025-12-17",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockInTs": 1765936800000,
+          "breakEndTs": 1765947240000,
+          "clockOut": "15:17",
+          "breakEnd": "12:54",
+          "breakStartTs": 1765946340000,
+          "breakMinutes": 15,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 70000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5,
+          "overtimeHours": 0,
+          "plannedEnd": "15:17",
+          "dailyPay": 58.2,
+          "rawMinutes": 317,
+          "netMinutes": 302,
+          "regularHours": 5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 300,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 58.2,
+          "basePay": 58.2,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-18",
+          "breakStartTs": 1766028780000,
+          "clockIn": "08:30",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockInTs": 1766017800000,
+          "clockOutTs": 1766039760000,
+          "breakMinutes": 15,
+          "breakEnd": "11:48",
+          "clockOut": "14:36",
+          "breakStart": "11:33",
+          "status": "approved",
+          "date": "2025-12-18",
+          "breakEndTs": 1766029680000,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 70000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.75,
+          "hours": 5.75,
+          "overtimeHours": 0,
+          "plannedEnd": "14:36",
+          "dailyPay": 66.93,
+          "rawMinutes": 366,
+          "netMinutes": 351,
+          "regularHours": 5.75,
+          "isEarlyLeave": false,
+          "plannedStart": "08:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 345,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 66.93,
+          "basePay": 66.93,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-22",
+          "breakEnd": null,
+          "date": "2025-12-22",
+          "clockOut": "15:01",
+          "clockIn": "11:00",
+          "clockOutTs": 1766386860000,
+          "breakEndTs": null,
+          "hours": 4,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "status": "approved",
+          "clockInTs": 1766372400000,
+          "breakStartTs": null,
+          "breakMinutes": 0,
+          "breakStart": null,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 71000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4,
+          "overtimeHours": 0,
+          "plannedEnd": "15:01",
+          "dailyPay": 46.56,
+          "rawMinutes": 241,
+          "netMinutes": 241,
+          "regularHours": 4,
+          "isEarlyLeave": false,
+          "plannedStart": "11:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 240,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 46.56,
+          "basePay": 46.56,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-23",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockIn": "11:30",
+          "status": "approved",
+          "hours": 4.5,
+          "date": "2025-12-23",
+          "breakStartTs": null,
+          "breakStart": null,
+          "clockOutTs": 1766476680000,
+          "clockOut": "15:58",
+          "breakEndTs": null,
+          "clockInTs": 1766460600000,
+          "breakEnd": null,
+          "breakMinutes": 0,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 71000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.5,
+          "overtimeHours": 0,
+          "plannedEnd": "15:58",
+          "dailyPay": 52.38,
+          "rawMinutes": 268,
+          "netMinutes": 268,
+          "regularHours": 4.5,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 270,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 52.38,
+          "basePay": 52.38,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-25",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "breakEnd": null,
+          "clockIn": "09:30",
+          "breakStartTs": null,
+          "clockInTs": 1766626200000,
+          "clockOut": "14:19",
+          "breakEndTs": null,
+          "clockOutTs": 1766643540000,
+          "breakMinutes": 0,
+          "status": "approved",
+          "date": "2025-12-25",
+          "breakStart": null,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 68000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.75,
+          "hours": 4.75,
+          "overtimeHours": 0,
+          "plannedEnd": "14:19",
+          "dailyPay": 55.290000000000006,
+          "rawMinutes": 289,
+          "netMinutes": 289,
+          "regularHours": 4.75,
+          "isEarlyLeave": false,
+          "plannedStart": "09:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 285,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 55.290000000000006,
+          "basePay": 55.290000000000006,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-29",
+          "breakStart": "14:21",
+          "breakEndTs": 1766990160000,
+          "breakEnd": "14:36",
+          "clockIn": "11:30",
+          "clockOutTs": 1766999520000,
+          "clockInTs": 1766979000000,
+          "status": "approved",
+          "date": "2025-12-29",
+          "clockOut": "17:12",
+          "breakMinutes": 15,
+          "breakStartTs": 1766989260000,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 68000000
+          },
+          "lateMinutes": 0,
+          "netHours": 5.5,
+          "hours": 5.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:12",
+          "dailyPay": 64.02000000000001,
+          "rawMinutes": 342,
+          "netMinutes": 327,
+          "regularHours": 5.5,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 330,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 64.02000000000001,
+          "basePay": 64.02000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2025-12-31",
+          "breakStart": "14:44",
+          "breakEndTs": 1767164340000,
+          "clockInTs": 1767151800000,
+          "clockIn": "11:30",
+          "date": "2025-12-31",
+          "breakMinutes": 15,
+          "breakStartTs": 1767163440000,
+          "clockOutTs": 1767175080000,
+          "breakEnd": "14:59",
+          "clockOut": "17:58",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "createdAt": {
+            "_seconds": 1767390338,
+            "_nanoseconds": 860000000
+          },
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 6.25,
+          "hours": 6.25,
+          "overtimeHours": 0,
+          "plannedEnd": "17:58",
+          "dailyPay": 72.75,
+          "rawMinutes": 388,
+          "netMinutes": 373,
+          "regularHours": 6.25,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 375,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 72.75,
+          "basePay": 72.75,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-01",
+          "clockInTs": 1767231000000,
+          "breakEndTs": null,
+          "clockIn": "09:30",
+          "breakStartTs": null,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOutTs": 1767246600000,
+          "clockOut": "13:50",
+          "date": "2026-01-01",
+          "breakMinutes": 0,
+          "breakStart": null,
+          "status": "approved",
+          "breakEnd": null,
+          "createdAt": {
+            "_seconds": 1767390339,
+            "_nanoseconds": 67000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4.25,
+          "hours": 4.25,
+          "overtimeHours": 0,
+          "plannedEnd": "13:50",
+          "dailyPay": 49.47,
+          "rawMinutes": 260,
+          "netMinutes": 260,
+          "regularHours": 4.25,
+          "isEarlyLeave": false,
+          "plannedStart": "09:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 255,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 49.47,
+          "basePay": 49.47,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-02",
+          "breakEnd": null,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "date": "2026-01-02",
+          "clockInTs": 1767324600000,
+          "status": "approved",
+          "clockOutTs": 1767339060000,
+          "breakMinutes": 0,
+          "breakStartTs": null,
+          "clockOut": "15:31",
+          "clockIn": "11:30",
+          "hours": 4,
+          "breakStart": null,
+          "breakEndTs": null,
+          "createdAt": {
+            "_seconds": 1767390338,
+            "_nanoseconds": 862000000
+          },
+          "lateMinutes": 0,
+          "netHours": 4,
+          "overtimeHours": 0,
+          "plannedEnd": "15:31",
+          "dailyPay": 46.56,
+          "rawMinutes": 241,
+          "netMinutes": 241,
+          "regularHours": 4,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 240,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 46.56,
+          "basePay": 46.56,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-05",
+          "breakStartTs": 1767589200000,
+          "date": "2026-01-05",
+          "hours": 7.5,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767603600000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767575100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592751,
+            "_nanoseconds": 340000000
+          },
+          "breakEndTs": 1767591000000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "14:11",
+          "dailyPay": 87.30000000000001,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 87.30000000000001,
+          "basePay": 87.30000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-06",
+          "breakStartTs": 1767679200000,
+          "date": "2026-01-06",
+          "hours": 7.5,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767693600000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767665100000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592753,
+            "_nanoseconds": 879000000
+          },
+          "breakEndTs": 1767681000000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 87.30000000000001,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 87.30000000000001,
+          "basePay": 87.30000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-07",
+          "breakStartTs": 1767762000000,
+          "date": "2026-01-07",
+          "hours": 7.5,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767776400000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767747900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592756,
+            "_nanoseconds": 235000000
+          },
+          "breakEndTs": 1767763800000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "15:49",
+          "dailyPay": 87.30000000000001,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "11:30",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 87.30000000000001,
+          "basePay": 87.30000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-08",
+          "breakStartTs": 1767852000000,
+          "date": "2026-01-08",
+          "hours": 7.5,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1767866400000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1767837900000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592758,
+            "_nanoseconds": 75000000
+          },
+          "breakEndTs": 1767853800000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 87.30000000000001,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 87.30000000000001,
+          "basePay": 87.30000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-09",
+          "breakStartTs": 1767934800000,
+          "date": "2026-01-09",
+          "hours": 7.5,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1767949200000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1767920700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592760,
+            "_nanoseconds": 99000000
+          },
+          "breakEndTs": 1767936600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 87.30000000000001,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 87.30000000000001,
+          "basePay": 87.30000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-10",
+          "breakStartTs": 1768024800000,
+          "date": "2026-01-10",
+          "hours": 7.5,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOut": "18:00",
+          "breakEnd": "14:30",
+          "clockOutTs": 1768039200000,
+          "breakStart": "14:00",
+          "clockIn": "10:05",
+          "clockInTs": 1768010700000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592761,
+            "_nanoseconds": 207000000
+          },
+          "breakEndTs": 1768026600000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "18:00",
+          "dailyPay": 87.30000000000001,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "10:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 109.12500000000001,
+          "basePay": 87.30000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        },
+        {
+          "id": "2026-01-11",
+          "breakStartTs": 1768107600000,
+          "date": "2026-01-11",
+          "hours": 7.5,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "clockOut": "17:00",
+          "breakEnd": "13:30",
+          "clockOutTs": 1768122000000,
+          "breakStart": "13:00",
+          "clockIn": "09:05",
+          "clockInTs": 1768093500000,
+          "breakMinutes": 30,
+          "createdAt": {
+            "_seconds": 1767592761,
+            "_nanoseconds": 994000000
+          },
+          "breakEndTs": 1768109400000,
+          "status": "approved",
+          "lateMinutes": 0,
+          "netHours": 7.5,
+          "overtimeHours": 0,
+          "plannedEnd": "17:00",
+          "dailyPay": 87.30000000000001,
+          "rawMinutes": 475,
+          "netMinutes": 445,
+          "regularHours": 7.5,
+          "isEarlyLeave": false,
+          "plannedStart": "09:00",
+          "dayMultiplier": 1.25,
+          "roundedMinutes": 450,
+          "isLate": false,
+          "earlyLeaveMinutes": 0,
+          "finalPay": 109.12500000000001,
+          "basePay": 87.30000000000001,
+          "overtimePay": 0,
+          "updatedAt": {
+            "_seconds": 1767603475,
+            "_nanoseconds": 508000000
+          }
+        }
+      ],
+      "breaks": [],
+      "overtime": [],
+      "notifications": [],
+      "payroll": [
+        {
+          "id": "2025-12",
+          "updatedAt": "2026-01-02T21:45:39.066Z",
+          "totalEarnings": 668.14,
+          "absenceDeductions": 1,
+          "overtimeHours": 0,
+          "status": "pending",
+          "period": "2025-12",
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "totalHours": 57.4
+        },
+        {
+          "id": "2026-01",
+          "totalHours": 8.3,
+          "period": "2026-01",
+          "updatedAt": "2026-01-02T21:45:39.066Z",
+          "totalEarnings": 96.61,
+          "workerId": "ppNDAY7h73ohMMhzrqOH",
+          "overtimeHours": 0,
+          "absenceDeductions": 0,
+          "status": "pending"
+        }
+      ],
+      "audit": []
+    }
+  ],
+  "exportedAt": "2026-01-05T10:26:41.550Z"
+}
