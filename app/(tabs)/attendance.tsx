@@ -98,13 +98,17 @@ async function resolveLocation(workplace: WorkplaceSettings) {
   if (!granted) return { granted: false, coords: null, withinRadius: false, distanceMeters: null };
   try {
     const coords = await getCurrentLocation();
+    console.log(`[Location] User coords: lat=${coords.latitude}, lng=${coords.longitude}, accuracy=${coords.accuracy}m`);
+    console.log(`[Location] Workplace coords: lat=${workplace.workplaceLatitude}, lng=${workplace.workplaceLongitude}`);
     const distance = calculateDistanceInMeters(
       coords.latitude, coords.longitude,
       workplace.workplaceLatitude, workplace.workplaceLongitude,
     );
+    console.log(`[Location] Distance: ${Math.round(distance)}m, within ${workplace.allowedRadiusMeters}m: ${distance <= workplace.allowedRadiusMeters}`);
     const within = distance <= workplace.allowedRadiusMeters;
     return { granted: true, coords, withinRadius: within, distanceMeters: Math.round(distance) };
-  } catch {
+  } catch (e) {
+    console.log(`[Location] Error getting location:`, e);
     return { granted: true, coords: null, withinRadius: false, distanceMeters: null };
   }
 }
@@ -420,6 +424,7 @@ export default function AttendanceScreen() {
   const [state, setState]             = useState<ScreenState>({ phase: "loading" });
   const [actionLoading, setActionLoading] = useState(false);
   const [showModal, setShowModal]     = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<"clock-in" | "clock-out" | "break-start" | "break-end" | null>(null);
   const [now, setNow]                 = useState(new Date());
   const [userCoords, setUserCoords]   = useState<{ latitude: number; longitude: number } | null>(null);
@@ -454,6 +459,7 @@ export default function AttendanceScreen() {
     if (!userInfo) { setState({ phase: "error", reason: "Not signed in." }); return; }
 
     const result = await loadAttendanceData(userInfo.uid);
+    console.log("[Attendance] loadAttendanceData result:", JSON.stringify(result));
 
     const workplace = result.ok ? result.workplace : {
       workplaceId: "dev",
@@ -478,6 +484,30 @@ export default function AttendanceScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // ── Location re-check every 10 seconds ───────────────────────────────────
+
+  const stateRef = useRef<ScreenState>({ phase: "loading" });
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      const cur = stateRef.current;
+      if (cur.phase !== "ready") return;
+      const { granted, withinRadius, coords, distanceMeters } = await resolveLocation(cur.workplace);
+      if (coords) setUserCoords(coords);
+      setState(prev => {
+        if (prev.phase !== "ready") return prev;
+        return {
+          ...prev,
+          withinRadius: granted ? withinRadius : prev.withinRadius,
+          locationDenied: !granted,
+          distanceMeters: granted ? distanceMeters : prev.distanceMeters,
+        };
+      });
+    }, 10000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   // ── Action ────────────────────────────────────────────────────────────────
 
@@ -623,25 +653,36 @@ export default function AttendanceScreen() {
             </View>
           </View>
 
-          {/* ── Outside zone warning ── */}
-          {workplace && workplace.workplaceId !== "dev" && !withinRadius && !locationDenied && !isLoading && (
-            <View style={{ backgroundColor: "#fff7ed", borderRadius: 10, padding: 12, marginBottom: 10, flexDirection: "row", alignItems: "flex-start", gap: 10, borderWidth: 1, borderColor: "#fed7aa" }}>
-              <MapPin size={15} color="#f97316" strokeWidth={2} style={{ marginTop: 1 }} />
+          {/* ── Location status banner ── */}
+          {workplace && workplace.workplaceId !== "dev" && !locationDenied && !isLoading && (
+            <View style={{
+              backgroundColor: withinRadius ? "#f0fdf4" : "#fef2f2",
+              borderRadius: 10, padding: 10, marginBottom: 10,
+              flexDirection: "row", alignItems: "center", gap: 8,
+              borderWidth: 1, borderColor: withinRadius ? "#bbf7d0" : "#fecaca",
+            }}>
+              <MapPin size={14} color={withinRadius ? "#16a34a" : "#dc2626"} strokeWidth={2} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#c2410c", marginBottom: 2 }}>You are outside the workplace zone</Text>
-                <Text style={{ fontSize: 11, color: "#9a3412", lineHeight: 16 }}>
-                  Please go to your designated workplace location to clock in. Attendance is only allowed within {workplace?.allowedRadiusMeters ?? 15}m of the workplace.
+                {!withinRadius && (
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#dc2626", marginBottom: 1 }}>
+                    You are outside the workplace area
+                  </Text>
+                )}
+                <Text style={{ fontSize: 11, color: withinRadius ? "#15803d" : "#b91c1c" }}>
+                  {distanceMeters != null
+                    ? `You are ${distanceMeters}m from workplace`
+                    : withinRadius ? "Within workplace zone" : "Location unavailable"}
                 </Text>
               </View>
             </View>
           )}
 
-          <View style={s.clockActions}>
+          <View style={[s.clockActions, (workplace && workplace.workplaceId !== "dev" && !withinRadius && !locationDenied) && { opacity: 0.4 }]}>
             {/* Clock In */}
             <TouchableOpacity
               style={[s.clockBtn, checkedIn || checkedOut ? { backgroundColor: c.border } : { backgroundColor: c.text }]}
               onPress={() => !checkedIn && !checkedOut && openConfirm("clock-in")}
-              disabled={checkedIn || checkedOut || actionLoading}
+              disabled={checkedIn || checkedOut || actionLoading || !!(workplace && workplace.workplaceId !== "dev" && !withinRadius && !locationDenied)}
             >
               {actionLoading && pendingAction === null && !checkedIn ? (
                 <ActivityIndicator size="small" color={c.backgroundStart} />
@@ -654,7 +695,7 @@ export default function AttendanceScreen() {
             <TouchableOpacity
               style={[s.clockBtn, (!checkedIn || checkedOut || onBreak) ? { backgroundColor: c.border } : { backgroundColor: c.text }]}
               onPress={() => checkedIn && !checkedOut && !onBreak && openConfirm("clock-out")}
-              disabled={!checkedIn || checkedOut || onBreak || actionLoading}
+              disabled={!checkedIn || checkedOut || onBreak || actionLoading || !!(workplace && workplace.workplaceId !== "dev" && !withinRadius && !locationDenied)}
             >
               <Text style={[s.clockBtnText, { color: !checkedIn || checkedOut ? c.textMuted : c.backgroundStart }]}>Clock out</Text>
             </TouchableOpacity>
@@ -663,7 +704,7 @@ export default function AttendanceScreen() {
             <TouchableOpacity
               style={[s.clockBtn, { backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border }]}
               onPress={() => checkedIn && (onBreak ? openConfirm("break-end") : openConfirm("break-start"))}
-              disabled={!checkedIn || checkedOut || actionLoading}
+              disabled={!checkedIn || checkedOut || actionLoading || !!(workplace && workplace.workplaceId !== "dev" && !withinRadius && !locationDenied)}
             >
               {actionLoading && (onBreak || today.onBreak) ? (
                 <ActivityIndicator size="small" color={c.text} />
@@ -704,12 +745,13 @@ export default function AttendanceScreen() {
           </Text>
         </View>
 
-        <View style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+        <TouchableOpacity
+          style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border }]}
+          onPress={() => workplace && workplace.workplaceId !== "dev" && setShowMapModal(true)}
+          activeOpacity={workplace && workplace.workplaceId !== "dev" ? 0.7 : 1}
+        >
           <View style={[s.detailIconBg, { backgroundColor: c.text }]}>
-            <MapPin size={18}
-              color={c.backgroundStart}
-              strokeWidth={1.8}
-            />
+            <MapPin size={18} color={c.backgroundStart} strokeWidth={1.8} />
           </View>
           <View style={s.detailBody}>
             <Text style={[s.detailTitle, { color: c.text }]}>Location Zone</Text>
@@ -726,48 +768,8 @@ export default function AttendanceScreen() {
           {workplace && workplace.workplaceId !== "dev" && withinRadius && !locationDenied && (
             <CheckCircle2 size={18} color="#16a34a" strokeWidth={1.8} />
           )}
-        </View>
+        </TouchableOpacity>
 
-        {/* ── Map View ── */}
-        {workplace && workplace.workplaceId !== "dev" && (
-          <View style={[s.mapCard, { borderColor: c.border, ...cardShadow }]}>
-            {Platform.OS === "web" ? (
-              <Map
-                center={[workplace.workplaceLongitude, workplace.workplaceLatitude]}
-                zoom={16}
-                marker={userCoords
-                  ? { lat: userCoords.latitude, lng: userCoords.longitude }
-                  : { lat: workplace.workplaceLatitude, lng: workplace.workplaceLongitude }
-                }
-                radiusMeters={workplace.allowedRadiusMeters}
-                inside={withinRadius}
-              >
-                <MapControls position="top-right" showZoom showLocate showFullscreen />
-              </Map>
-            ) : (
-              <WebView
-                source={{ html: buildAttendanceMapHtml(
-                  workplace.workplaceLatitude,
-                  workplace.workplaceLongitude,
-                  workplace.allowedRadiusMeters,
-                  userCoords?.latitude,
-                  userCoords?.longitude,
-                  withinRadius,
-                )}}
-                style={{ flex: 1, borderRadius: 14 }}
-                javaScriptEnabled
-                geolocationEnabled
-                scrollEnabled={false}
-              />
-            )}
-            <View style={{ padding: 10, flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: withinRadius ? "#16a34a" : "#dc2626" }} />
-              <Text style={{ fontSize: 11, color: c.textMuted }}>
-                {withinRadius ? "You are inside the workplace zone" : "You are outside the workplace zone"}
-              </Text>
-            </View>
-          </View>
-        )}
 
         <View style={[s.detailCard, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 32 }]}>
           <View style={[s.detailIconBg, { backgroundColor: c.text }]}>
@@ -877,6 +879,97 @@ export default function AttendanceScreen() {
           <Text style={[s.modalSecondary, { color: c.textMuted }]}>Location is verified before saving</Text>
         </Animated.View>
       </Modal>
+
+      {/* ── Location Zone Map Modal ── */}
+      <Modal visible={showMapModal} transparent animationType="slide" onRequestClose={() => setShowMapModal(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: c.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, maxHeight: "85%" }}>
+
+            {/* Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: c.text }}>Workplace Zone</Text>
+                <Text style={{ fontSize: 12, color: c.textMuted, marginTop: 2 }}>Admin-configured location</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowMapModal(false)}
+                style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#000000", alignItems: "center", justifyContent: "center" }}
+              >
+                <X size={16} color="#ffffff" strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Coordinate info */}
+            {workplace && workplace.workplaceId !== "dev" && (
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+                <View style={{ flex: 1, backgroundColor: c.surfaceAlt, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: c.border }}>
+                  <Text style={{ fontSize: 10, color: c.textMuted, marginBottom: 2 }}>LATITUDE</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: c.text }}>{workplace.workplaceLatitude.toFixed(6)}</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: c.surfaceAlt, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: c.border }}>
+                  <Text style={{ fontSize: 10, color: c.textMuted, marginBottom: 2 }}>LONGITUDE</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: c.text }}>{workplace.workplaceLongitude.toFixed(6)}</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: c.surfaceAlt, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: c.border }}>
+                  <Text style={{ fontSize: 10, color: c.textMuted, marginBottom: 2 }}>RADIUS</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: c.text }}>{workplace.allowedRadiusMeters}m</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Status badge */}
+            {workplace && workplace.workplaceId !== "dev" && !locationDenied && (
+              <View style={{
+                flexDirection: "row", alignItems: "center", gap: 6,
+                backgroundColor: withinRadius ? "#f0fdf4" : "#fef2f2",
+                borderRadius: 8, padding: 8, marginBottom: 14,
+                borderWidth: 1, borderColor: withinRadius ? "#bbf7d0" : "#fecaca",
+              }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: withinRadius ? "#16a34a" : "#dc2626" }} />
+                <Text style={{ fontSize: 12, fontWeight: "600", color: withinRadius ? "#15803d" : "#dc2626" }}>
+                  {withinRadius
+                    ? `Inside zone${distanceMeters != null ? ` · ${distanceMeters}m from workplace` : ""}`
+                    : `Outside zone${distanceMeters != null ? ` · ${distanceMeters}m from workplace` : ""}`}
+                </Text>
+              </View>
+            )}
+
+            {/* Map */}
+            {workplace && workplace.workplaceId !== "dev" && (
+              <View style={{ height: 300, borderRadius: 14, overflow: "hidden", borderWidth: 1, borderColor: c.border }}>
+                {Platform.OS === "web" ? (
+                  <Map
+                    center={[workplace.workplaceLongitude, workplace.workplaceLatitude]}
+                    zoom={16}
+                    marker={userCoords
+                      ? { lat: userCoords.latitude, lng: userCoords.longitude }
+                      : { lat: workplace.workplaceLatitude, lng: workplace.workplaceLongitude }
+                    }
+                    radiusMeters={workplace.allowedRadiusMeters}
+                    inside={withinRadius}
+                  />
+                ) : (
+                  <WebView
+                    source={{ html: buildAttendanceMapHtml(
+                      workplace.workplaceLatitude,
+                      workplace.workplaceLongitude,
+                      workplace.allowedRadiusMeters,
+                      undefined,
+                      undefined,
+                      withinRadius,
+                    )}}
+                    style={{ flex: 1 }}
+                    javaScriptEnabled
+                    geolocationEnabled
+                    scrollEnabled={false}
+                  />
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
     </ScreenTransition>
   );
