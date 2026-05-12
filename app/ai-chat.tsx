@@ -130,7 +130,9 @@ OT after: ${config.otAfterHours || 8} hrs
 function formatDate(ts: any): string {
   if (!ts) return "";
   const date = ts.toDate ? ts.toDate() : new Date(ts);
-  return date.toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" });
+  const datePart = date.toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" });
+  const timePart = date.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return `${datePart}, ${timePart}`;
 }
 
 export default function AIChatScreen() {
@@ -266,11 +268,11 @@ export default function AIChatScreen() {
           <Text style={{ fontSize: 14, fontWeight: "700", color: c.text }}>Spendly AI</Text>
           <Text style={{ fontSize: 11, color: c.textMuted }}>Financial assistant</Text>
         </View>
-        <TouchableOpacity onPress={newChat} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center", marginRight: 8 }}>
-          <Pencil size={16} color={c.text} strokeWidth={2} />
+        <TouchableOpacity onPress={newChat} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#000000", alignItems: "center", justifyContent: "center", marginRight: 8 }}>
+          <Pencil size={16} color="#ffffff" strokeWidth={2} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={openHistory} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
-          <Clock size={16} color={c.text} strokeWidth={2} />
+        <TouchableOpacity onPress={openHistory} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#000000", alignItems: "center", justifyContent: "center" }}>
+          <Clock size={16} color="#ffffff" strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
@@ -418,15 +420,15 @@ export default function AIChatScreen() {
             <Text style={{ flex: 1, fontSize: 16, fontWeight: "700", color: c.text }}>Chat History</Text>
             <TouchableOpacity
               onPress={() => setHistorySortOrder(o => o === "latest" ? "oldest" : "latest")}
-              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, marginRight: 8 }}
+              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#000000", borderWidth: 1, borderColor: "#000000", marginRight: 8 }}
             >
-              <Text style={{ fontSize: 11, fontWeight: "600", color: c.text }}>{historySortOrder === "latest" ? "Latest ↓" : "Oldest ↑"}</Text>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: "#ffffff" }}>{historySortOrder === "latest" ? "Latest ↓" : "Oldest ↑"}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setHistoryFullScreen(f => !f)} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center", marginRight: 8 }}>
-              {historyFullScreen ? <Minimize2 size={15} color={c.text} strokeWidth={2} /> : <Maximize2 size={15} color={c.text} strokeWidth={2} />}
+            <TouchableOpacity onPress={() => setHistoryFullScreen(f => !f)} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#000000", alignItems: "center", justifyContent: "center", marginRight: 8 }}>
+              {historyFullScreen ? <Minimize2 size={15} color="#ffffff" strokeWidth={2} /> : <Maximize2 size={15} color="#ffffff" strokeWidth={2} />}
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setShowHistory(false); setHistoryFullScreen(false); }} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
-              <X size={16} color={c.text} strokeWidth={2} />
+            <TouchableOpacity onPress={() => { setShowHistory(false); setHistoryFullScreen(false); }} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#000000", alignItems: "center", justifyContent: "center" }}>
+              <X size={16} color="#ffffff" strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
