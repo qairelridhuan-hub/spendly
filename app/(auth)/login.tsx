@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "@/lib/firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -89,7 +90,11 @@ export default function Login() {
           <View style={styles.inner}>
             {/* Logo bubble */}
             <View style={styles.logoBubble}>
-              <Text style={styles.logoEmoji}>💰</Text>
+              <Image
+                source={require("@/assets/images/spendly-logo.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
 
             <Text style={styles.appName}>Spendly</Text>
@@ -199,7 +204,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   },
-  logoEmoji: { fontSize: 32 },
+  logoImage: { width: 52, height: 52 },
   appName: {
     fontSize: 26,
     fontWeight: "800",
