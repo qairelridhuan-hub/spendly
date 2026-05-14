@@ -769,7 +769,7 @@ export default function WorkerHomeScreen() {
   }, [tickAnim]);
 
   useEffect(() => {
-    if (!scheduleId) {
+    if (!scheduleId || !userId) {
       setSchedule(null);
       return;
     }
