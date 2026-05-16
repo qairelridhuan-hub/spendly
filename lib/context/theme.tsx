@@ -25,6 +25,7 @@ type ThemeContextValue = {
   setMode: (mode: ThemeMode) => void;
   pillExpanded: boolean;
   togglePill: () => void;
+  collapsePill: () => void;
 };
 
 const STORAGE_KEY = "spendly:theme";
@@ -64,8 +65,9 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>("light");
-  const [pillExpanded, setPillExpanded] = useState(true);
+  const [pillExpanded, setPillExpanded] = useState(false);
   const togglePill = () => setPillExpanded(v => !v);
+  const collapsePill = () => setPillExpanded(false);
 
   useEffect(() => {
     const loadTheme = async () => {
@@ -103,6 +105,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setMode,
       pillExpanded,
       togglePill,
+      collapsePill,
     }),
     [mode, pillExpanded]
   );

@@ -29,6 +29,7 @@ import {
   CalendarClock,
   BarChart2,
   Sparkles,
+  Plus,
 } from "lucide-react-native";
 import Svg, { Circle, Line } from "react-native-svg";
 import { router } from "expo-router";
@@ -185,6 +186,8 @@ export default function WorkerHomeScreen() {
   const [showGameSplash, setShowGameSplash] = useState(false);
   const [showAISplash, setShowAISplash] = useState(false);
   const pillAnim = useRef(new Animated.Value(1)).current;
+  const [fabOpen, setFabOpen] = useState(false);
+  const fabAnim = useRef(new Animated.Value(0)).current;
   const aiSplashFade = useRef(new Animated.Value(0)).current;
   const aiSplashScale = useRef(new Animated.Value(0.85)).current;
   const aiSplashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -286,7 +289,11 @@ export default function WorkerHomeScreen() {
   useFocusEffect(
     useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [])
+      return () => {
+        setFabOpen(false);
+        fabAnim.setValue(0);
+      };
+    }, [fabAnim])
   );
 
   const handleLogoPress = () => {
@@ -808,6 +815,10 @@ export default function WorkerHomeScreen() {
     Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: 220, useNativeDriver: false }).start();
   }, [pillExpanded]);
 
+  useEffect(() => {
+    Animated.spring(fabAnim, { toValue: fabOpen ? 1 : 0, useNativeDriver: false, tension: 80, friction: 12 }).start();
+  }, [fabOpen]);
+
   const handleOpenAI = useCallback(() => {
     setShowAISplash(true);
     aiSplashFade.setValue(0);
@@ -1231,7 +1242,7 @@ export default function WorkerHomeScreen() {
     }
     const attendanceRef = collection(db, "users", userId, "attendance");
     const unsub = safeSnapshot(attendanceRef, snapshot => {
-      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const logs = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
       setAttendanceLogs(logs);
     });
     return unsub;
@@ -1244,7 +1255,7 @@ export default function WorkerHomeScreen() {
     }
     const breaksRef = collection(db, "users", userId, "breaks");
     const unsub = safeSnapshot(breaksRef, snapshot => {
-      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const logs = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
       setBreakLogs(logs);
     });
     return unsub;
@@ -1257,7 +1268,7 @@ export default function WorkerHomeScreen() {
     }
     const overtimeRef = collection(db, "users", userId, "overtime");
     const unsub = safeSnapshot(overtimeRef, snapshot => {
-      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const logs = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
       setOvertimeLogs(logs);
     });
     return unsub;
@@ -1272,7 +1283,7 @@ export default function WorkerHomeScreen() {
     }
     const payrollRef = collection(db, "users", userId, "payroll");
     const unsub = safeSnapshot(payrollRef, snapshot => {
-      const list = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const list = snapshot.docs.map((docSnap: any) => docSnap.data() as any);
       setPayrollRecords(list);
     });
     return unsub;
@@ -1357,13 +1368,9 @@ export default function WorkerHomeScreen() {
               </Animated.View>
 
               {/* Icons — visible when expanded */}
-              <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 188] }), opacity: pillAnim }}>
+              <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 150] }), opacity: pillAnim }}>
                 <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
                   {mode === "dark" ? <Moon size={20} color={colors.text} /> : <Sun size={20} color={colors.text} />}
-                </TouchableOpacity>
-                <View style={styles.iconPillDivider} />
-                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/game")}>
-                  <Gamepad2 size={20} color={colors.text} />
                 </TouchableOpacity>
                 <View style={styles.iconPillDivider} />
                 <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
@@ -1393,6 +1400,53 @@ export default function WorkerHomeScreen() {
               transform: [{ translateY: slideAnim }],
             }}
           >
+            {/* ── FAB: Analytics + Ask AI ── */}
+            <View style={{ flexDirection: "row", justifyContent: "flex-start", alignItems: "center", marginBottom: 12 }}>
+              {/* FAB trigger button */}
+              <TouchableOpacity
+                onPress={() => setFabOpen(v => !v)}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.text, alignItems: "center", justifyContent: "center" }}
+                activeOpacity={0.8}
+              >
+                <Animated.View style={{ transform: [{ rotate: fabAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "45deg"] }) }] }}>
+                  <Plus size={20} color={colors.backgroundStart} strokeWidth={2.5} />
+                </Animated.View>
+              </TouchableOpacity>
+
+              {/* Expanding options area */}
+              <Animated.View style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                overflow: "hidden",
+                width: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 162] }),
+                opacity: fabAnim.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0, 1] }),
+                marginLeft: 10,
+              }}>
+                <TouchableOpacity
+                  onPress={() => { setFabOpen(false); router.push("/charts"); }}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                  activeOpacity={0.8}
+                >
+                  <BarChart2 size={20} color={colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { setFabOpen(false); router.push("/game"); }}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                  activeOpacity={0.8}
+                >
+                  <Gamepad2 size={20} color={colors.text} strokeWidth={2} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { setFabOpen(false); handleOpenAI(); }}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.text, alignItems: "center", justifyContent: "center" }}
+                  activeOpacity={0.8}
+                >
+                  <Sparkles size={20} color={colors.backgroundStart} strokeWidth={2} />
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+
             {/* 💰 Earnings Summary */}
             {(() => {
               const now = new Date();
@@ -1492,29 +1546,6 @@ export default function WorkerHomeScreen() {
               );
             })()}
 
-            {/* ── CTA row: Analytics + AI Chat ── */}
-            <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-              <TouchableOpacity
-                onPress={() => router.push("/charts")}
-                style={[styles.card, { flex: 1, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 0 }]}
-              >
-                <BarChart2 size={16} color={colors.text} strokeWidth={2} />
-                <View>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>Analytics</Text>
-                  <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 1 }}>Charts & trends</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleOpenAI}
-                style={[styles.card, { flex: 1, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 0, backgroundColor: colors.text, borderColor: colors.text }]}
-              >
-                <Sparkles size={16} color={colors.backgroundStart} strokeWidth={2} />
-                <View>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.backgroundStart }}>Ask AI</Text>
-                  <Text style={{ fontSize: 10, color: colors.backgroundStart, marginTop: 1, opacity: 0.6 }}>Financial advice</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
 
             {/* ── Card 1: Today's Shift ── */}
             {/* ── Today's Shift + This Week (merged) ── */}
@@ -2675,7 +2706,7 @@ const diffHours = (start: string, end: string) => {
 };
 
 const getNextShift = (
-  shifts: { date: string; start: string; end: string; status?: string }[],
+  shifts: { date: string; start: string; end: string; status?: string; location?: string }[],
   attendanceMap: Record<string, string>
 ) => {
   const now = new Date();

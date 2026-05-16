@@ -415,7 +415,7 @@ function buildAttendanceMapHtml(
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function AttendanceScreen() {
-  const { colors: c, mode, toggleTheme, pillExpanded, togglePill } = useTheme();
+  const { colors: c, mode, toggleTheme, pillExpanded, togglePill, collapsePill } = useTheme();
   useEffect(() => {
     Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: 220, useNativeDriver: false }).start();
   }, [pillExpanded]);
@@ -429,6 +429,7 @@ export default function AttendanceScreen() {
   const [now, setNow]                 = useState(new Date());
   const [userCoords, setUserCoords]   = useState<{ latitude: number; longitude: number } | null>(null);
   const slideAnim                     = useRef(new Animated.Value(SCREEN_H)).current;
+  const scrollRef                     = useRef<ScrollView>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -483,7 +484,11 @@ export default function AttendanceScreen() {
     });
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => {
+    collapsePill();
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+    load();
+  }, [load, collapsePill]));
 
   // ── Location re-check every 10 seconds ───────────────────────────────────
 
@@ -580,7 +585,7 @@ export default function AttendanceScreen() {
   return (
     <ScreenTransition>
     <SafeAreaView style={[s.safe, { backgroundColor: c.backgroundStart }]} edges={["top"]}>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
         <View style={s.header}>

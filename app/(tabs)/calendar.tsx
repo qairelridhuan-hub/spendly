@@ -9,6 +9,7 @@ import {
   Sun,
   X,
   Menu,
+  CalendarX2,
 } from "lucide-react-native";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, doc } from "firebase/firestore";
@@ -492,92 +493,78 @@ export default function CalendarScreen() {
             UPCOMING SHIFTS CARD
         ===================== */}
         <View style={styles.card}>
+          {/* Header row */}
           <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>{selectedDateLabel}</Text>
-            <TouchableOpacity
-              style={styles.detailButton}
-              onPress={() => {
-                if (primaryDetailTarget) {
-                  setActiveShift(primaryDetailTarget);
-                  setShowShiftDetails(true);
-                }
-              }}
-              disabled={!primaryDetailTarget}
-            >
-              <Text style={styles.detailButtonText}>View details</Text>
-            </TouchableOpacity>
+            <View>
+              <Text style={styles.cardTitle}>{selectedDateLabel}</Text>
+              <Text style={styles.selectedDateText}>
+                {formatDateLabel(selectedDate)} · {shiftsForSelectedDate.length} shift{shiftsForSelectedDate.length === 1 ? "" : "s"}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.selectedDateText}>
-            {formatDateLabel(selectedDate)} • {shiftsForSelectedDate.length} shift
-            {shiftsForSelectedDate.length === 1 ? "" : "s"}
-          </Text>
 
-
+          {/* Shift rows or empty state */}
           {shiftsForSelectedDate.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>No shifts on this day</Text>
+              <CalendarX2 size={28} color={c.textMuted} strokeWidth={1.5} />
+              <Text style={[styles.emptyText, { marginTop: 8 }]}>No shifts on this day</Text>
             </View>
           ) : (
-            shiftsForSelectedDate.map(shift => (
-              <View key={shift.id} style={styles.shiftRow}>
-                <View style={styles.shiftLeft}>
-                  <Text style={styles.shiftTitle}>{shift.role}</Text>
-                  <View style={styles.shiftMetaRow}>
-                    <Text style={styles.shiftMeta}>
-                      {shift.start} - {shift.end}
-                    </Text>
-                    <View
-                      style={[
-                        styles.statusPill,
-                        getShiftStatusLabel(shift, attendanceMap[shift.date]) ===
-                          "In progress" && styles.statusPillActive,
-                        getShiftStatusLabel(shift, attendanceMap[shift.date]) ===
-                          "Scheduled" && styles.statusPillScheduled,
-                        getShiftStatusLabel(shift, attendanceMap[shift.date]) ===
-                          "Completed" && styles.statusPillCompleted,
-                        getShiftStatusLabel(shift, attendanceMap[shift.date]) ===
-                          "Absent" && styles.statusPillAbsent,
-                      ]}
-                    >
-                      <Text style={styles.statusPillText}>
-                        {getShiftStatusLabel(shift, attendanceMap[shift.date])}
-                      </Text>
+            shiftsForSelectedDate.map((shift, index) => {
+              const label = getShiftStatusLabel(shift, attendanceMap[shift.date]);
+              const pillBg =
+                label === "Completed"   ? "#dcfce7" :
+                label === "Absent"      ? "#fee2e2" :
+                label === "In progress" ? "#dbeafe" : c.surfaceAlt;
+              const pillText =
+                label === "Completed"   ? "#16a34a" :
+                label === "Absent"      ? "#dc2626" :
+                label === "In progress" ? "#2563eb" : c.textMuted;
+              return (
+                <View
+                  key={shift.id}
+                  style={[
+                    styles.shiftRow,
+                    index === shiftsForSelectedDate.length - 1 && { borderBottomWidth: 0 },
+                  ]}
+                >
+                  <View style={styles.shiftLeft}>
+                    <Text style={styles.shiftTitle}>{shift.role}</Text>
+                    <Text style={styles.shiftMeta}>{shift.start} – {shift.end}</Text>
+                  </View>
+                  <View style={styles.shiftRight}>
+                    <View style={[styles.statusPill, { backgroundColor: pillBg }]}>
+                      <Text style={[styles.statusPillText, { color: pillText }]}>{label}</Text>
                     </View>
                   </View>
                 </View>
-                <View style={styles.shiftRight}>
-                  <Text style={styles.shiftLocation}>{shift.location}</Text>
-                  <TouchableOpacity
-                    style={styles.detailButton}
-                    onPress={() => {
-                      setActiveShift({
-                        ...shift,
-                        status: resolveStatus(
-                          shift.status,
-                          attendanceMap[shift.date]
-                        ),
-                      });
-                      setShowShiftDetails(true);
-                    }}
-                  >
-                    <Text style={styles.detailButtonText}>View details</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
-        </View>
 
-        {/* =====================
-            STATUS CARD
-        ===================== */}
-        <View style={[styles.card, styles.calendarCard]}>
-          <Text style={[styles.cardTitle, styles.calendarCardTitle]}>Status</Text>
+          {/* View shift details — full-width button */}
+          {primaryDetailTarget && (
+            <TouchableOpacity
+              onPress={() => { setActiveShift(primaryDetailTarget); setShowShiftDetails(true); }}
+              style={{ marginTop: 12, paddingVertical: 12, borderRadius: 12, backgroundColor: c.text, alignItems: "center" }}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 13, fontWeight: "700", color: c.backgroundStart }}>View shift details</Text>
+            </TouchableOpacity>
+          )}
 
-          <View style={styles.legendRow}>
-            <Legend color={c.text} label="Scheduled" legendText={styles.legendText} dot={styles.dot} legendItem={styles.legendItem} />
-            <Legend color="#34d399" label="Completed" legendText={styles.legendText} dot={styles.dot} legendItem={styles.legendItem} />
-            <Legend color="#f87171" label="Absent" legendText={styles.legendText} dot={styles.dot} legendItem={styles.legendItem} />
+          {/* Legend — merged from Status card */}
+          <View style={{ flexDirection: "row", gap: 16, marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: c.border }}>
+            {[
+              { color: c.text,      label: "Scheduled" },
+              { color: "#16a34a",   label: "Completed" },
+              { color: "#dc2626",   label: "Absent"    },
+            ].map(({ color, label }) => (
+              <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: color }} />
+                <Text style={{ fontSize: 11, color: c.textMuted }}>{label}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
@@ -1004,46 +991,44 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     tooltipText: { color: c.border, fontSize: 8, marginTop: 1 },
 
     emptyBox: {
-      backgroundColor: c.surface,
-      borderRadius: 14,
-      padding: 16,
+      paddingVertical: 24,
       alignItems: "center",
+      gap: 0,
     },
 
-    emptyText: { color: c.textMuted },
+    emptyText: { color: c.textMuted, fontSize: 13 },
 
     shiftRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      paddingVertical: 10,
+      paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: c.border,
     },
-    shiftLeft: { flex: 1 },
+    shiftLeft: { flex: 1, gap: 3 },
     shiftRight: { alignItems: "flex-end", gap: 6 },
-    shiftTitle: { fontWeight: "700", fontSize: 15, color: c.text },
+    shiftTitle: { fontWeight: "700", fontSize: 14, color: c.text },
     shiftMetaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-    shiftMeta: { color: c.textMuted, marginTop: 2 },
+    shiftMeta: { color: c.textMuted, fontSize: 12 },
     shiftLocation: { color: c.text, fontWeight: "600" },
     detailButton: {
       paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 10,
+      paddingVertical: 5,
+      borderRadius: 8,
       backgroundColor: c.surfaceAlt,
     },
     detailButtonText: { color: c.text, fontWeight: "600", fontSize: 11 },
     statusPill: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
+      paddingHorizontal: 9,
+      paddingVertical: 3,
       borderRadius: 999,
-      backgroundColor: c.surfaceAlt,
     },
-    statusPillText: { fontSize: 10, fontWeight: "700", color: c.text },
-    statusPillActive: { backgroundColor: c.surfaceAlt },
-    statusPillScheduled: { backgroundColor: c.surfaceAlt },
-    statusPillCompleted: { backgroundColor: c.surfaceAlt },
-    statusPillAbsent: { backgroundColor: c.surfaceAlt },
+    statusPillText: { fontSize: 10, fontWeight: "700" },
+    statusPillActive: {},
+    statusPillScheduled: {},
+    statusPillCompleted: {},
+    statusPillAbsent: {},
 
     legendRow: {
       flexDirection: "row",
@@ -1057,7 +1042,9 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     },
     selectedDateText: {
       color: c.textMuted,
-      marginBottom: 8,
+      fontSize: 12,
+      marginTop: 2,
+      marginBottom: 12,
     },
 
     legendItem: {
