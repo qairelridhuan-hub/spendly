@@ -543,9 +543,13 @@ export default function CalendarScreen() {
           )}
 
           {/* View shift details — full-width button */}
-          {primaryDetailTarget && (
+          {shiftsForSelectedDate.length > 0 && (
             <TouchableOpacity
-              onPress={() => { setActiveShift(primaryDetailTarget); setShowShiftDetails(true); }}
+              onPress={() => {
+                const shift = shiftsForSelectedDate[0];
+                setActiveShift({ ...shift, status: resolveStatus(shift.status, attendanceMap[shift.date]) });
+                setShowShiftDetails(true);
+              }}
               style={{ marginTop: 12, paddingVertical: 12, borderRadius: 12, backgroundColor: c.text, alignItems: "center" }}
               activeOpacity={0.8}
             >
