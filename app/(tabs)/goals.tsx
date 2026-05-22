@@ -203,7 +203,7 @@ export default function GoalsScreen() {
 
     const goalsRef = collection(db, "users", userId, "goals");
     const unsubscribe = safeSnapshot(goalsRef, snapshot => {
-      const nextGoals = snapshot.docs.map(docSnap => {
+      const nextGoals = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => {
         const data = docSnap.data() as any;
         const createdAtValue =
           typeof data.createdAt?.toDate === "function"
@@ -244,7 +244,7 @@ export default function GoalsScreen() {
     }
     const attendanceRef = collection(db, "users", userId, "attendance");
     const unsubscribe = safeSnapshot(attendanceRef, snapshot => {
-      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const logs = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => docSnap.data() as any);
       setAttendanceLogs(logs);
     });
     return unsubscribe;

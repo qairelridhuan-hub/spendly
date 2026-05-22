@@ -210,7 +210,7 @@ export default function CalendarScreen() {
     const attendanceRef = collection(db, "users", userId, "attendance");
     const unsub = safeSnapshot(attendanceRef, snapshot => {
       const map: Record<string, string> = {};
-      snapshot.forEach(docSnap => {
+      snapshot.forEach((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => {
         const data = docSnap.data() as any;
         const date = String(data.date ?? "");
         if (!date) return;
