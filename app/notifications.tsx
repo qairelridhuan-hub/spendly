@@ -43,7 +43,7 @@ export default function NotificationsScreen() {
       where("targetRole", "in", ["worker", "all"])
     );
     const unsub = safeSnapshot(notificationsQuery, snapshot => {
-      const list = snapshot.docs.map(docSnap => ({
+      const list = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => ({
         id: docSnap.id,
         ...docSnap.data(),
       }));

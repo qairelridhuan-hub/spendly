@@ -299,7 +299,7 @@ export default function EarningsScreen() {
     }
     const attendanceRef = collection(db, "users", userId, "attendance");
     const unsub = safeSnapshot(attendanceRef, snapshot => {
-      const logs = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const logs = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => docSnap.data() as any);
       setAttendanceLogs(logs);
     });
     return unsub;
@@ -312,7 +312,7 @@ export default function EarningsScreen() {
     }
     const breaksRef = collection(db, "users", userId, "breaks");
     const unsub = safeSnapshot(breaksRef, snapshot => {
-      const list = snapshot.docs.map(docSnap => docSnap.data() as BreakEntry);
+      const list = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => docSnap.data() as BreakEntry);
       setBreakLogs(list);
     });
     return unsub;
@@ -325,7 +325,7 @@ export default function EarningsScreen() {
     }
     const overtimeRef = collection(db, "users", userId, "overtime");
     const unsub = safeSnapshot(overtimeRef, snapshot => {
-      const list = snapshot.docs.map(docSnap => docSnap.data() as OvertimeEntry);
+      const list = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => docSnap.data() as OvertimeEntry);
       setOvertimeLogs(list);
     });
     return unsub;
@@ -363,7 +363,7 @@ export default function EarningsScreen() {
     }
     const goalsRef = collection(db, "users", userId, "goals");
     const unsub = safeSnapshot(goalsRef, snapshot => {
-      const list = snapshot.docs.map(docSnap => docSnap.data() as any);
+      const list = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => docSnap.data() as any);
       setGoals(list);
     });
     return unsub;
