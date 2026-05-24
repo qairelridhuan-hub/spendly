@@ -2752,6 +2752,7 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
   safe: { flex: 1 },
   scrollContent: {
     padding: 16,
+    paddingTop: 4,
     paddingBottom: 120,
   },
 
