@@ -65,7 +65,7 @@ export default function Login() {
         setRecentEmails(nextList);
         await AsyncStorage.setItem("spendly:recentEmails", JSON.stringify(nextList));
       } catch { /* ignore */ }
-      router.replace("/(tabs)");
+      router.replace("/(auth)/onboarding");
     } catch (err: any) {
       const code = err?.code || "";
       if (code === "auth/invalid-credential" || code === "auth/user-not-found") {

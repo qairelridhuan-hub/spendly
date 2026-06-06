@@ -1,5 +1,12 @@
 import React from "react";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const ONBOARDING_KEY = "spendly:onboardingDone";
+
+const markOnboardingDone = async () => {
+  try { await AsyncStorage.setItem(ONBOARDING_KEY, "true"); } catch { /* ignore */ }
+};
 import {
   Animated,
   Dimensions,
@@ -617,9 +624,13 @@ export default function OnboardingScreen() {
 
   useEffect(() => { enterSlide(); }, []);
 
-  const handleNext = () => {
-    if (current < slides.length - 1) goTo(current + 1);
-    else router.replace("/(auth)/splash");
+  const handleNext = async () => {
+    if (current < slides.length - 1) {
+      goTo(current + 1);
+    } else {
+      await markOnboardingDone();
+      router.replace("/(tabs)");
+    }
   };
 
   const handlePrev = () => { if (current > 0) goTo(current - 1); };
@@ -677,7 +688,7 @@ export default function OnboardingScreen() {
         <View style={styles.bottomArea}>
           {current < slides.length - 1 ? (
             <View style={styles.navRow}>
-              <TouchableOpacity onPress={() => router.replace("/(auth)/splash")}>
+              <TouchableOpacity onPress={async () => { await markOnboardingDone(); router.replace("/(tabs)"); }}>
                 <Text style={styles.skipText}>Skip</Text>
               </TouchableOpacity>
               <Animated.View style={{ transform: [{ scale: buttonScale }] }}>

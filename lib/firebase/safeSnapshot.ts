@@ -15,6 +15,11 @@ export function safeSnapshot<T extends DocumentData>(
   onNext: SuccessCallback<any>,
 ): Unsubscribe {
   return onSnapshot(ref as any, onNext, (err) => {
-    console.error("[Firestore]", err.code, err.message);
+    if (err.code === "permission-denied") {
+      // Suppress red overlay in dev — deploy firestore.rules to fix root cause
+      console.warn("[Firestore] permission-denied — ensure firestore.rules are deployed.");
+    } else {
+      console.error("[Firestore]", err.code, err.message);
+    }
   });
 }

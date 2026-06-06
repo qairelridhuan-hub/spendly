@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Animated, Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "@/lib/firebase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function SplashScreen() {
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -34,9 +35,10 @@ export default function SplashScreen() {
     ]).start();
 
     const timer = setTimeout(() => {
-      onAuthStateChanged(auth, (user) => {
+      onAuthStateChanged(auth, async (user) => {
         if (user) {
-          router.replace("/(tabs)");
+          const onboardingDone = await AsyncStorage.getItem("spendly:onboardingDone");
+          router.replace(onboardingDone === "true" ? "/(tabs)" : "/(auth)/onboarding");
         } else {
           router.replace("/(auth)/login");
         }
