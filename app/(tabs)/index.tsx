@@ -10,6 +10,7 @@ import {
   Alert,
   PanResponder,
   Dimensions,
+  Easing,
 } from "react-native";
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -816,7 +817,12 @@ export default function WorkerHomeScreen() {
   }, [pillExpanded]);
 
   useEffect(() => {
-    Animated.spring(fabAnim, { toValue: fabOpen ? 1 : 0, useNativeDriver: false, tension: 80, friction: 12 }).start();
+    Animated.timing(fabAnim, {
+      toValue: fabOpen ? 1 : 0,
+      duration: 900,
+      easing: Easing.bezier(0.22, 1, 0.36, 1),
+      useNativeDriver: false,
+    }).start();
   }, [fabOpen]);
 
   const handleOpenAI = useCallback(() => {
@@ -1419,31 +1425,45 @@ export default function WorkerHomeScreen() {
                 alignItems: "center",
                 gap: 10,
                 overflow: "hidden",
-                width: fabAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 162] }),
-                opacity: fabAnim.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0, 0, 1] }),
+                width: fabAnim.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 152, 152], extrapolate: "clamp" }),
                 marginLeft: 10,
               }}>
-                <TouchableOpacity
-                  onPress={() => { setFabOpen(false); router.push("/charts"); }}
-                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
-                  activeOpacity={0.8}
-                >
-                  <BarChart2 size={20} color={colors.text} strokeWidth={2} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setFabOpen(false); router.push("/game"); }}
-                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
-                  activeOpacity={0.8}
-                >
-                  <Gamepad2 size={20} color={colors.text} strokeWidth={2} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setFabOpen(false); handleOpenAI(); }}
-                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.text, alignItems: "center", justifyContent: "center" }}
-                  activeOpacity={0.8}
-                >
-                  <Sparkles size={20} color={colors.backgroundStart} strokeWidth={2} />
-                </TouchableOpacity>
+                <Animated.View style={{
+                  opacity: fabAnim.interpolate({ inputRange: [0, 0.25, 0.45], outputRange: [0, 0, 1], extrapolate: "clamp" }),
+                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.25, 0.45], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
+                }}>
+                  <TouchableOpacity
+                    onPress={() => { setFabOpen(false); router.push("/charts"); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                    activeOpacity={0.8}
+                  >
+                    <BarChart2 size={20} color={colors.text} strokeWidth={2} />
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={{
+                  opacity: fabAnim.interpolate({ inputRange: [0, 0.45, 0.65], outputRange: [0, 0, 1], extrapolate: "clamp" }),
+                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.45, 0.65], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
+                }}>
+                  <TouchableOpacity
+                    onPress={() => { setFabOpen(false); router.push("/game"); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                    activeOpacity={0.8}
+                  >
+                    <Gamepad2 size={20} color={colors.text} strokeWidth={2} />
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={{
+                  opacity: fabAnim.interpolate({ inputRange: [0, 0.65, 0.85], outputRange: [0, 0, 1], extrapolate: "clamp" }),
+                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.65, 0.85], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
+                }}>
+                  <TouchableOpacity
+                    onPress={() => { setFabOpen(false); handleOpenAI(); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.text, alignItems: "center", justifyContent: "center" }}
+                    activeOpacity={0.8}
+                  >
+                    <Sparkles size={20} color={colors.backgroundStart} strokeWidth={2} />
+                  </TouchableOpacity>
+                </Animated.View>
               </Animated.View>
             </View>
 
