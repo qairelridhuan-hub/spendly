@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Award, BarChart2, Bell, ChevronDown, ChevronRight, FileText, Gamepad2, LogOut, Mail, Menu, Moon, Sparkles, Sun, Target, User } from "lucide-react-native";
+import { Award, BarChart2, Bell, ChevronDown, ChevronRight, FileText, LogOut, Mail, Menu, Moon, Sparkles, Sun, Target, User } from "lucide-react-native";
 import { onAuthStateChanged, signOut, updateEmail, updateProfile } from "firebase/auth";
 import {
   collection,
@@ -10,6 +10,8 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
+import * as ImagePicker from "expo-image-picker";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ScrollView,
@@ -27,8 +29,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, storage } from "@/lib/firebase";
 import { useTheme } from "@/lib/context";
+import { useNotifications } from "@/lib/notifications/useNotifications";
 import { buildWorkerReportHtml, getPeriodKey } from "@/lib/reports/report";
 import { printReport } from "@/lib/reports/print";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
@@ -81,9 +84,10 @@ function getLogHours(log: any) {
 
 export default function ProfileScreen() {
   const { colors: c, mode, toggleTheme, pillExpanded, togglePill } = useTheme();
+  const { unreadCount: unreadNotifications } = useNotifications();
   const pillAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: 220, useNativeDriver: false }).start();
+    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: pillExpanded ? 150 : 0, useNativeDriver: false }).start();
   }, [pillExpanded]);
   const styles = makeStyles(c);
   const [displayName, setDisplayName] = useState("User");
@@ -98,6 +102,7 @@ export default function ProfileScreen() {
   const [emailInput, setEmailInput] = useState("");
   const [photoInput, setPhotoInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [editError, setEditError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [userHourlyRate, setUserHourlyRate] = useState(0);
@@ -278,6 +283,41 @@ export default function ProfileScreen() {
       duration: 220,
       useNativeDriver: true,
     }).start(() => setEditOpen(false));
+  };
+
+  const pickAndUploadPhoto = async () => {
+    if (!userId) return;
+    setEditError("");
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== ImagePicker.PermissionStatus.GRANTED) {
+      setEditError("Permission to access photos is required");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+    setUploadingPhoto(true);
+    try {
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const storageRef = ref(storage, `avatars/${userId}/${Date.now()}.jpg`);
+      await uploadBytes(storageRef, blob, { contentType: "image/jpeg" });
+      const url = await getDownloadURL(storageRef);
+      setPhotoInput(url);
+    } catch {
+      setEditError("Failed to upload photo. Try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const isValidEmail = (value: string) =>
@@ -495,17 +535,20 @@ export default function ProfileScreen() {
                 <Menu size={18} color="#ffffff" strokeWidth={2.5} />
               </TouchableOpacity>
             </Animated.View>
-            <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 188] }), opacity: pillAnim }}>
+            <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 150] }), opacity: pillAnim }}>
               <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={toggleTheme}>
                 {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
               </TouchableOpacity>
               <View style={{ width: 1, height: 16, backgroundColor: c.border }} />
-              <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={() => router.push("/")}>
-                <Gamepad2 size={20} color={c.text} />
-              </TouchableOpacity>
-              <View style={{ width: 1, height: 16, backgroundColor: c.border }} />
               <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={() => router.push("/notifications")}>
                 <Bell size={20} color={c.text} />
+                {unreadNotifications > 0 ? (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </Text>
+                  </View>
+                ) : null}
               </TouchableOpacity>
               <View style={{ width: 1, height: 16, backgroundColor: c.border }} />
               <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 6 }} onPress={confirmLogout}>
@@ -679,15 +722,34 @@ export default function ProfileScreen() {
                     <TextInput value={emailInput} onChangeText={setEmailInput} placeholder="Email address" placeholderTextColor={c.textMuted} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
                   </View>
                   <View>
-                    <Text style={styles.fieldLabel}>Profile Picture URL</Text>
-                    <TextInput value={photoInput} onChangeText={setPhotoInput} placeholder="https://..." placeholderTextColor={c.textMuted} autoCapitalize="none" style={styles.input} />
+                    <Text style={styles.fieldLabel}>Profile Picture</Text>
+                    <View style={styles.avatarPickerRow}>
+                      <View style={styles.avatarPreviewWrap}>
+                        {photoInput ? (
+                          <Image source={{ uri: photoInput }} style={styles.avatarPreview} />
+                        ) : (
+                          <View style={[styles.avatarPreview, styles.avatarPreviewPlaceholder]}>
+                            <User size={24} color={c.textMuted} />
+                          </View>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        style={styles.avatarPickerBtn}
+                        onPress={pickAndUploadPhoto}
+                        disabled={uploadingPhoto}
+                      >
+                        <Text style={styles.avatarPickerBtnText}>
+                          {uploadingPhoto ? "Uploading..." : "Choose from gallery"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   {editError ? <Text style={styles.errorText}>{editError}</Text> : null}
                   <View style={{ flexDirection: "row", gap: 12 }}>
                     <TouchableOpacity style={styles.cancelBtn} onPress={closeEdit} disabled={saving}>
                       <Text style={styles.cancelBtnText}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.saveBtn, { opacity: saving ? 0.7 : 1 }]} onPress={handleSaveProfile} disabled={saving}>
+                    <TouchableOpacity style={[styles.saveBtn, { opacity: saving || uploadingPhoto ? 0.7 : 1 }]} onPress={handleSaveProfile} disabled={saving || uploadingPhoto}>
                       <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save"}</Text>
                     </TouchableOpacity>
                   </View>
@@ -830,6 +892,12 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     settingText: { fontSize: 14, color: c.text, fontWeight: "500" },
     settingArrow: { fontSize: 20, color: c.textMuted, lineHeight: 22 },
 
+    notificationBadge: {
+      position: "absolute", top: 2, right: 2, minWidth: 14, height: 14, borderRadius: 7,
+      paddingHorizontal: 3, backgroundColor: "#dc2626", alignItems: "center", justifyContent: "center",
+    },
+    notificationBadgeText: { color: "#ffffff", fontSize: 9, fontWeight: "700" },
+
     /* Edit Form */
     formStack: { gap: 12 },
     fieldLabel: { fontSize: 12, color: c.textMuted, marginBottom: 6, fontWeight: "600" },
@@ -839,6 +907,18 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       color: c.text, backgroundColor: c.surfaceAlt, fontSize: 14,
     },
     errorText: { color: c.danger, fontSize: 12 },
+    avatarPickerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+    avatarPreviewWrap: { borderRadius: 32, overflow: "hidden" },
+    avatarPreview: { width: 64, height: 64, borderRadius: 32 },
+    avatarPreviewPlaceholder: {
+      backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border,
+      alignItems: "center", justifyContent: "center",
+    },
+    avatarPickerBtn: {
+      flex: 1, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12,
+      backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, alignItems: "center",
+    },
+    avatarPickerBtnText: { color: c.text, fontWeight: "600", fontSize: 13 },
     cancelBtn: {
       flex: 1, padding: 13, borderRadius: 12,
       backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, alignItems: "center",

@@ -17,7 +17,6 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
-  Gamepad2,
   LogOut,
   Moon,
   Plus,
@@ -47,6 +46,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
 import { useCalendar, useTheme } from "@/lib/context";
+import { useNotifications } from "@/lib/notifications/useNotifications";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import { cardShadow } from "@/lib/shadows";
@@ -128,8 +128,9 @@ export default function GoalsScreen() {
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const { shifts } = useCalendar();
   const { colors: c, mode, toggleTheme, pillExpanded, togglePill } = useTheme();
+  const { unreadCount: unreadNotifications } = useNotifications();
   useEffect(() => {
-    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: 220, useNativeDriver: false }).start();
+    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: pillExpanded ? 150 : 0, useNativeDriver: false }).start();
   }, [pillExpanded]);
   const styles = makeStyles(c);
   const approvedLogs = useMemo(
@@ -562,17 +563,20 @@ export default function GoalsScreen() {
                   <Menu size={18} color="#ffffff" strokeWidth={2.5} />
                 </TouchableOpacity>
               </Animated.View>
-              <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 188] }), opacity: pillAnim }}>
+              <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 150] }), opacity: pillAnim }}>
                 <TouchableOpacity style={styles.iconPillBtn} onPress={toggleTheme}>
                   {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
                 </TouchableOpacity>
                 <View style={styles.iconPillDivider} />
-                <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/")}>
-                  <Gamepad2 size={20} color={c.text} />
-                </TouchableOpacity>
-                <View style={styles.iconPillDivider} />
                 <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
                   <Bell size={20} color={c.text} />
+                  {unreadNotifications > 0 ? (
+                    <View style={styles.notificationBadge}>
+                      <Text style={styles.notificationBadgeText}>
+                        {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                      </Text>
+                    </View>
+                  ) : null}
                 </TouchableOpacity>
                 <View style={styles.iconPillDivider} />
                 <TouchableOpacity style={styles.iconPillBtn} onPress={confirmLogout}>
@@ -1233,6 +1237,11 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
   },
   iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
   iconPillDivider: { width: 1, height: 16, backgroundColor: c.border },
+  notificationBadge: {
+    position: "absolute", top: 2, right: 2, minWidth: 14, height: 14, borderRadius: 7,
+    paddingHorizontal: 3, backgroundColor: "#dc2626", alignItems: "center", justifyContent: "center",
+  },
+  notificationBadgeText: { color: "#ffffff", fontSize: 9, fontWeight: "700" },
   notifDot: {
     position: "absolute",
     top: -2,

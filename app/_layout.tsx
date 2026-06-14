@@ -3,11 +3,17 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LogBox } from "react-native";
-import { CalendarProvider, ThemeProvider, useTheme } from "@/lib/context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { CalendarProvider, NotificationsProvider, ThemeProvider, useTheme } from "@/lib/context";
 
 function AppShell() {
-  const { mode } = useTheme();
+  const { mode, collapsePill } = useTheme();
   const pathname = usePathname();
+
+  useEffect(() => {
+    collapsePill();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     const persistRoute = async () => {
@@ -39,10 +45,14 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <CalendarProvider>
-        <AppShell />
-      </CalendarProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <CalendarProvider>
+          <NotificationsProvider>
+            <AppShell />
+          </NotificationsProvider>
+        </CalendarProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

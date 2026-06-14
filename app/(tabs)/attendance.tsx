@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cardShadow } from "@/lib/shadows";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme, useCalendar } from "@/lib/context";
+import { useNotifications } from "@/lib/notifications/useNotifications";
 import { router } from "expo-router";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import {
@@ -42,7 +43,6 @@ import {
   CheckCircle2,
   Clock,
   ChevronRight,
-  Gamepad2,
   LogOut,
   MapPin,
   Menu,
@@ -416,8 +416,9 @@ function buildAttendanceMapHtml(
 
 export default function AttendanceScreen() {
   const { colors: c, mode, toggleTheme, pillExpanded, togglePill, collapsePill } = useTheme();
+  const { unreadCount: unreadNotifications } = useNotifications();
   useEffect(() => {
-    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: 220, useNativeDriver: false }).start();
+    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: pillExpanded ? 150 : 0, useNativeDriver: false }).start();
   }, [pillExpanded]);
   const { shifts } = useCalendar();
 
@@ -488,7 +489,8 @@ export default function AttendanceScreen() {
     collapsePill();
     scrollRef.current?.scrollTo({ y: 0, animated: false });
     load();
-  }, [load, collapsePill]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load]));
 
   // ── Location re-check every 10 seconds ───────────────────────────────────
 
@@ -604,17 +606,20 @@ export default function AttendanceScreen() {
                 <Menu size={18} color="#ffffff" strokeWidth={2.5} />
               </TouchableOpacity>
             </Animated.View>
-            <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 188] }), opacity: pillAnim }}>
+            <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 150] }), opacity: pillAnim }}>
               <TouchableOpacity style={s.iconPillBtn} onPress={toggleTheme}>
                 {mode === "dark" ? <Moon size={20} color={c.text} /> : <Sun size={20} color={c.text} />}
               </TouchableOpacity>
               <View style={[s.iconPillDivider, { backgroundColor: c.border }]} />
-              <TouchableOpacity style={s.iconPillBtn} onPress={() => router.push("/game")}>
-                <Gamepad2 size={20} color={c.text} />
-              </TouchableOpacity>
-              <View style={[s.iconPillDivider, { backgroundColor: c.border }]} />
               <TouchableOpacity style={s.iconPillBtn} onPress={() => router.push("/notifications")}>
                 <Bell size={20} color={c.text} />
+                {unreadNotifications > 0 ? (
+                  <View style={s.notificationBadge}>
+                    <Text style={s.notificationBadgeText}>
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </Text>
+                  </View>
+                ) : null}
               </TouchableOpacity>
               <View style={[s.iconPillDivider, { backgroundColor: c.border }]} />
               <TouchableOpacity style={s.iconPillBtn} onPress={handleLogout}>
@@ -1001,6 +1006,11 @@ const s = StyleSheet.create({
   iconPill:         { flexDirection: "row", alignItems: "center", borderRadius: 999, borderWidth: 1, paddingHorizontal: 4, paddingVertical: 4, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   iconPillBtn:      { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
   iconPillDivider:  { width: 1, height: 16 },
+  notificationBadge: {
+    position: "absolute", top: 2, right: 2, minWidth: 14, height: 14, borderRadius: 7,
+    paddingHorizontal: 3, backgroundColor: "#dc2626", alignItems: "center", justifyContent: "center",
+  },
+  notificationBadgeText: { color: "#ffffff", fontSize: 9, fontWeight: "700" },
 
   // Time card
   timeCard:         { borderRadius: 20, paddingVertical: 24, paddingHorizontal: 12, marginBottom: 16, borderWidth: 1, ...cardShadow },

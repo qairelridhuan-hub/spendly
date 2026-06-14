@@ -255,7 +255,7 @@ export default function AIChatScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.backgroundStart }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.backgroundStart }} edges={["top", "bottom"]}>
       {/* Header */}
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
@@ -378,7 +378,7 @@ export default function AIChatScreen() {
         </ScrollView>
 
         {/* Input bar */}
-        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.backgroundStart }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.backgroundStart }}>
           <TextInput
             value={input}
             onChangeText={setInput}
@@ -389,12 +389,13 @@ export default function AIChatScreen() {
             style={{
               flex: 1,
               backgroundColor: c.surface,
-              borderRadius: 20,
+              borderRadius: 22,
               borderWidth: 1,
               borderColor: c.border,
               paddingHorizontal: 16,
-              paddingVertical: 10,
+              paddingVertical: 12,
               fontSize: 13,
+              lineHeight: 18,
               color: c.text,
               maxHeight: 100,
             } as any}

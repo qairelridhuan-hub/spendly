@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Bell, ChevronRight, Gamepad2, LogOut, Menu, Minus, Moon, Sun, Target, TrendingDown, TrendingUp } from "lucide-react-native";
+import { ArrowLeft, Bell, ChevronRight, LogOut, Menu, Minus, Moon, Sun, Target, TrendingDown, TrendingUp } from "lucide-react-native";
 import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Path, Stop, Text as SvgText, Circle as SvgCircle } from "react-native-svg";
 import { router } from "expo-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -9,6 +9,7 @@ import { collection } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { useTheme } from "@/lib/context";
+import { useNotifications } from "@/lib/notifications/useNotifications";
 import { ScreenTransition } from "@/components/ScreenTransition";
 import { cardShadow } from "@/lib/shadows";
 
@@ -297,6 +298,7 @@ function Shimmer({ width, height, borderRadius, colors }: { width: number; heigh
 
 export default function ChartsScreen() {
   const { colors, mode, toggleTheme, pillExpanded, togglePill } = useTheme();
+  const { unreadCount: unreadNotifications } = useNotifications();
   const s = makeStyles(colors);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("there");
@@ -309,7 +311,7 @@ export default function ChartsScreen() {
   const [showXAxis, setShowXAxis] = useState(true);
   const pillAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: 220, useNativeDriver: false }).start();
+    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: pillExpanded ? 150 : 0, useNativeDriver: false }).start();
   }, [pillExpanded]);
 
   /* Fade-in for the whole screen */
@@ -406,17 +408,20 @@ export default function ChartsScreen() {
                   <Menu size={18} color="#ffffff" strokeWidth={2.5} />
                 </TouchableOpacity>
               </Animated.View>
-              <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 188] }), opacity: pillAnim }}>
+              <Animated.View style={{ flexDirection: "row", alignItems: "center", overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 150] }), opacity: pillAnim }}>
                 <TouchableOpacity style={s.iconPillBtn} onPress={toggleTheme}>
                   {mode === "dark" ? <Moon size={20} color={colors.text} /> : <Sun size={20} color={colors.text} />}
                 </TouchableOpacity>
                 <View style={s.iconPillDivider} />
-                <TouchableOpacity style={s.iconPillBtn} onPress={() => router.push("/game")}>
-                  <Gamepad2 size={20} color={colors.text} />
-                </TouchableOpacity>
-                <View style={s.iconPillDivider} />
                 <TouchableOpacity style={s.iconPillBtn} onPress={() => router.push("/notifications")}>
                   <Bell size={20} color={colors.text} />
+                  {unreadNotifications > 0 ? (
+                    <View style={s.notificationBadge}>
+                      <Text style={s.notificationBadgeText}>
+                        {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                      </Text>
+                    </View>
+                  ) : null}
                 </TouchableOpacity>
                 <View style={s.iconPillDivider} />
                 <TouchableOpacity style={s.iconPillBtn} onPress={handleLogout}>
@@ -625,6 +630,11 @@ const makeStyles = (c: any) => StyleSheet.create({
   iconPill: { flexDirection: "row", alignItems: "center", backgroundColor: c.surface, borderRadius: 999, borderWidth: 1, borderColor: c.border, paddingHorizontal: 4, paddingVertical: 4, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   iconPillBtn: { paddingHorizontal: 10, paddingVertical: 6, alignItems: "center", justifyContent: "center" },
   iconPillDivider: { width: 1, height: 16, backgroundColor: c.border },
+  notificationBadge: {
+    position: "absolute", top: 2, right: 2, minWidth: 14, height: 14, borderRadius: 7,
+    paddingHorizontal: 3, backgroundColor: "#dc2626", alignItems: "center", justifyContent: "center",
+  },
+  notificationBadgeText: { color: "#ffffff", fontSize: 9, fontWeight: "700" },
   backBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 16, fontWeight: "700", color: c.text },
   scroll: { padding: 16, paddingBottom: 48 },

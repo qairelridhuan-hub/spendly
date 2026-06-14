@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   ScrollView,
   Text,
@@ -7,80 +7,49 @@ import {
   StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import { Bell, Check, ChevronLeft } from "lucide-react-native";
-import { onAuthStateChanged } from "firebase/auth";
-import {
-  collection,
-  doc,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
-import { auth, db } from "@/lib/firebase";
-import { AnimatedBlobs } from "@/components/AnimatedBlobs";
+import { ArrowDownUp, Bell, BellOff, Check, ChevronLeft, Trash2 } from "lucide-react-native";
 import { useTheme } from "@/lib/context";
 import { router } from "expo-router";
-import { cardShadow } from "@/lib/shadows";
+import { NotificationItem } from "@/components/NotificationItem";
+import { getTimeValue, useNotifications } from "@/lib/notifications/useNotifications";
 
 export default function NotificationsScreen() {
   const { colors } = useTheme();
-  const [userId, setUserId] = useState<string | null>(null);
-  const [items, setItems] = useState<any[]>([]);
+  const {
+    items,
+    unreadCount,
+    sortOrder,
+    toggleSortOrder,
+    markRead,
+    markAllRead,
+    clearAll,
+    dismiss,
+  } = useNotifications();
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, user => {
-      setUserId(user?.uid ?? null);
+  const groups = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
+
+    const today: any[] = [];
+    const yesterday: any[] = [];
+    const earlier: any[] = [];
+
+    items.forEach((item) => {
+      const ms = getTimeValue(item.createdAt);
+      if (ms >= startOfToday) today.push(item);
+      else if (ms >= startOfYesterday) yesterday.push(item);
+      else earlier.push(item);
     });
-    return unsub;
-  }, []);
 
-  useEffect(() => {
-    const notificationsQuery = query(
-      collection(db, "notifications"),
-      where("targetRole", "in", ["worker", "all"])
-    );
-    const unsub = safeSnapshot(notificationsQuery, snapshot => {
-      const list = snapshot.docs.map((docSnap: import("firebase/firestore").QueryDocumentSnapshot) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
-      setItems(list);
-    });
-    return unsub;
-  }, []);
+    const sections = [
+      { label: "Today", data: today },
+      { label: "Yesterday", data: yesterday },
+      { label: "Earlier", data: earlier },
+    ].filter((section) => section.data.length > 0);
 
-  const filtered = useMemo(() => {
-    const list = items.filter(item => {
-      if (item.targetRole === "all") return true;
-      if (!userId) return false;
-      if (item.workerId && item.workerId !== userId) return false;
-      return true;
-    });
-    return list.sort((a, b) => getTimeValue(b.createdAt) - getTimeValue(a.createdAt));
-  }, [items, userId]);
-
-  const unreadCount = useMemo(
-    () => filtered.filter(item => !item.readAt).length,
-    [filtered]
-  );
-
-  const markRead = async (id: string) => {
-    await updateDoc(doc(db, "notifications", id), {
-      readAt: serverTimestamp(),
-    });
-  };
-
-  const markAllRead = async () => {
-    const unread = filtered.filter(item => !item.readAt);
-    await Promise.all(unread.map(item =>
-      updateDoc(doc(db, "notifications", item.id), {
-        readAt: serverTimestamp(),
-      })
-    ));
-  };
+    return sections;
+  }, [items]);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -92,84 +61,91 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <LinearGradient colors={[colors.backgroundStart, colors.backgroundEnd]} style={styles.screen}>
-        <AnimatedBlobs blobStyle={styles.bgBlob} blobAltStyle={styles.bgBlobAlt} />
+      <View style={[styles.screen, { backgroundColor: "#ffffff" }]}>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={handleBack}
+              style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
               <ChevronLeft size={20} color={colors.text} />
             </TouchableOpacity>
-            <View style={styles.headerRow}>
-              <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
-              {unreadCount > 0 ? (
-                <TouchableOpacity style={styles.markAllButton} onPress={markAllRead}>
-                  <Check size={14} color={colors.text} />
-                  <Text style={[styles.markAllText, { color: colors.text }]}>
-                    Mark all read
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
+            <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
           </View>
 
-          <View
-            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <View style={styles.cardHeader}>
-              <Bell size={18} color={colors.text} />
-              <Text style={[styles.cardTitle, { color: colors.text }]}>Alerts</Text>
-            </View>
-
-            {filtered.length === 0 ? (
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                No notifications yet.
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={toggleSortOrder}
+              activeOpacity={0.8}
+            >
+              <ArrowDownUp size={14} color={colors.text} />
+              <Text style={[styles.actionText, { color: colors.text }]}>
+                {sortOrder === "newest" ? "Newest first" : "Oldest first"}
               </Text>
-            ) : (
-              <View style={styles.list}>
-                {filtered.map(item => (
-                  <View
-                    key={item.id}
-                    style={[
-                      styles.item,
-                      { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-                      !item.readAt && styles.itemUnread,
-                    ]}
-                  >
-                    <Text style={[styles.itemTitle, { color: colors.text }]}>
-                      {item.title || "Notification"}
-                    </Text>
-                    <Text style={[styles.itemMessage, { color: colors.textMuted }]}>
-                      {item.message || "-"}
-                    </Text>
-                    <View style={styles.itemFooter}>
-                      <Text style={[styles.itemTime, { color: colors.textMuted }]}>
-                        {formatTimestamp(item.createdAt)}
-                      </Text>
-                      {!item.readAt ? (
-                        <TouchableOpacity onPress={() => markRead(item.id)}>
-                          <Text style={[styles.markReadText, { color: colors.text }]}>
-                            Mark read
-                          </Text>
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
+            </TouchableOpacity>
+
+            {unreadCount > 0 ? (
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={markAllRead}
+                activeOpacity={0.8}
+              >
+                <Check size={14} color={colors.text} />
+                <Text style={[styles.actionText, { color: colors.text }]}>Mark all read</Text>
+              </TouchableOpacity>
+            ) : null}
+
+            {items.length > 0 ? (
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: "#000000", borderColor: "#000000" }]}
+                onPress={clearAll}
+                activeOpacity={0.8}
+              >
+                <Trash2 size={14} color="#ffffff" />
+                <Text style={[styles.actionText, { color: "#ffffff" }]}>Clear</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
+
+          {items.length === 0 ? (
+            <View style={styles.emptyState}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: colors.surfaceAlt }]}>
+                <BellOff size={28} color={colors.textMuted} strokeWidth={1.6} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>You're all caught up</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                No new notifications right now.
+              </Text>
+            </View>
+          ) : (
+            groups.map((section) => (
+              <View key={section.label} style={styles.section}>
+                <View style={styles.cardHeader}>
+                  <Bell size={16} color={colors.textMuted} strokeWidth={1.8} />
+                  <Text style={[styles.cardTitle, { color: colors.textMuted }]}>{section.label}</Text>
+                </View>
+                <View style={styles.list}>
+                  {section.data.map((item, index) => (
+                    <NotificationItem
+                      key={item.id}
+                      item={item}
+                      colors={colors}
+                      showDivider={index < section.data.length - 1}
+                      onMarkRead={markRead}
+                      onDismiss={dismiss}
+                      formatTimestamp={formatTimestamp}
+                    />
+                  ))}
+                </View>
+              </View>
+            ))
+          )}
         </ScrollView>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 }
-
-const getTimeValue = (value: any) => {
-  if (!value) return 0;
-  if (typeof value.toMillis === "function") return value.toMillis();
-  if (typeof value.seconds === "number") return value.seconds * 1000;
-  return 0;
-};
 
 const formatTimestamp = (value: any) => {
   const ms = getTimeValue(value);
@@ -186,82 +162,53 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   screen: { flex: 1 },
   container: { padding: 16, paddingBottom: 120 },
-  bgBlob: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 999,
-    backgroundColor: "rgba(14,165,233,0.12)",
-    top: -80,
-    right: -60,
-  },
-  bgBlobAlt: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 999,
-    backgroundColor: "rgba(249,115,22,0.12)",
-    bottom: -120,
-    left: -80,
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 12,
-    justifyContent: "space-between",
-    flex: 1,
+    marginBottom: 14,
   },
-  markAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.6)",
-  },
-  markAllText: { fontSize: 11, fontWeight: "600" },
-  backButton: {
+  iconButton: {
     width: 36,
     height: 36,
     borderRadius: 12,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.6)",
   },
   title: { fontSize: 20, fontWeight: "700" },
-  card: {
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    ...cardShadow,
-  },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  cardTitle: { fontWeight: "700" },
-  emptyText: { marginTop: 10 },
-  list: { marginTop: 12, gap: 10 },
-  item: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  itemUnread: {
-    borderWidth: 2,
-  },
-  itemTitle: { fontWeight: "600" },
-  itemMessage: { marginTop: 4 },
-  itemFooter: {
-    marginTop: 6,
+  actionsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+    flexWrap: "wrap",
   },
-  itemTime: { fontSize: 11 },
-  markReadText: { fontSize: 11, fontWeight: "600" },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  actionText: { fontSize: 12, fontWeight: "600" },
+  section: { marginBottom: 18 },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  cardTitle: { fontSize: 12, fontWeight: "600", letterSpacing: 0.4, textTransform: "uppercase" },
+  list: { marginTop: 8 },
+  emptyState: {
+    alignItems: "center",
+    paddingTop: 80,
+  },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  emptyText: { fontSize: 13 },
 });

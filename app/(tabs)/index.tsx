@@ -31,6 +31,7 @@ import {
   BarChart2,
   Sparkles,
   Plus,
+  Smile,
 } from "lucide-react-native";
 import Svg, { Circle, Line } from "react-native-svg";
 import { router } from "expo-router";
@@ -45,7 +46,12 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, saveMood, subscribeMoods } from "@/lib/firebase";
+import MoodSheet, { MOODS, type Mood } from "@/components/MoodSheet";
+import MoodCalendarSheet from "@/components/MoodCalendarSheet";
+import { AwfulFace, SadFace, NeutralFace, GoodFace, GreatFace } from "@/components/MoodFaces";
+import { getMoodQuote } from "@/lib/ai/moodQuote";
+import { useNotifications } from "@/lib/notifications/useNotifications";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFonts } from "expo-font";
 import { AnimatedBlobs } from "@/components/AnimatedBlobs";
@@ -178,6 +184,7 @@ function AnalogClock({ size = 88 }: { size?: number }) {
 
 export default function WorkerHomeScreen() {
   const { colors, mode, toggleTheme, pillExpanded, togglePill } = useTheme();
+  const { unreadCount: unreadNotifications } = useNotifications();
   const styles = makeStyles(colors);
   const [pixelFontLoaded] = useFonts({
     PressStart2P: require("../../assets/fonts/PressStart2P-Regular.ttf"),
@@ -189,6 +196,14 @@ export default function WorkerHomeScreen() {
   const pillAnim = useRef(new Animated.Value(1)).current;
   const [fabOpen, setFabOpen] = useState(false);
   const fabAnim = useRef(new Animated.Value(0)).current;
+  const [mood, setMoodState] = useState<Mood | null>(null);
+  const [moodHistory, setMoodHistory] = useState<Record<string, string>>({});
+  const [showMoodSheet, setShowMoodSheet] = useState(false);
+  const [showMoodCalendar, setShowMoodCalendar] = useState(false);
+  const [moodQuote, setMoodQuote] = useState("");
+  const [moodQuoteLoading, setMoodQuoteLoading] = useState(false);
+  const moodSheetAnim = useRef(new Animated.Value(0)).current;
+  const moodCalendarAnim = useRef(new Animated.Value(0)).current;
   const aiSplashFade = useRef(new Animated.Value(0)).current;
   const aiSplashScale = useRef(new Animated.Value(0.85)).current;
   const aiSplashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -620,6 +635,58 @@ export default function WorkerHomeScreen() {
   }, []);
 
   useEffect(() => {
+    if (!userId) { setMoodHistory({}); setMoodState(null); return; }
+    return subscribeMoods(userId, (history) => {
+      setMoodHistory(history);
+      const todayKey = formatDateKey(new Date());
+      const todayMoodKey = history[todayKey];
+      const found = todayMoodKey ? MOODS.find(m => m.key === todayMoodKey) ?? null : null;
+      setMoodState(found);
+    });
+  }, [userId]);
+
+  const setMood = useCallback((m: Mood) => {
+    setMoodState(m);
+    if (userId) saveMood(userId, formatDateKey(new Date()), m.key);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!mood) { setMoodQuote(""); return; }
+    let cancelled = false;
+    setMoodQuoteLoading(true);
+    setMoodQuote("");
+    getMoodQuote(mood.label)
+      .then((quote) => {
+        if (!cancelled) setMoodQuote(quote);
+      })
+      .catch(() => {
+        if (!cancelled) setMoodQuote("");
+      })
+      .finally(() => {
+        if (!cancelled) setMoodQuoteLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [mood?.key]);
+
+  useEffect(() => {
+    Animated.timing(moodSheetAnim, {
+      toValue: showMoodSheet ? 1 : 0,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [showMoodSheet]);
+
+  useEffect(() => {
+    Animated.timing(moodCalendarAnim, {
+      toValue: showMoodCalendar ? 1 : 0,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [showMoodCalendar]);
+
+  useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(gameGlow, {
@@ -813,7 +880,7 @@ export default function WorkerHomeScreen() {
   }, [router]);
 
   useEffect(() => {
-    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: 220, useNativeDriver: false }).start();
+    Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: pillExpanded ? 150 : 0, useNativeDriver: false }).start();
   }, [pillExpanded]);
 
   useEffect(() => {
@@ -1381,6 +1448,13 @@ export default function WorkerHomeScreen() {
                 <View style={styles.iconPillDivider} />
                 <TouchableOpacity style={styles.iconPillBtn} onPress={() => router.push("/notifications")}>
                   <Bell size={20} color={colors.text} />
+                  {unreadNotifications > 0 ? (
+                    <View style={styles.notificationBadge}>
+                      <Text style={styles.notificationBadgeText}>
+                        {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                      </Text>
+                    </View>
+                  ) : null}
                 </TouchableOpacity>
                 <View style={styles.iconPillDivider} />
                 <TouchableOpacity style={styles.iconPillBtn} onPress={handleLogout}>
@@ -1425,12 +1499,24 @@ export default function WorkerHomeScreen() {
                 alignItems: "center",
                 gap: 10,
                 overflow: "hidden",
-                width: fabAnim.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 152, 152], extrapolate: "clamp" }),
+                width: fabAnim.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 206, 206], extrapolate: "clamp" }),
                 marginLeft: 10,
               }}>
                 <Animated.View style={{
-                  opacity: fabAnim.interpolate({ inputRange: [0, 0.25, 0.45], outputRange: [0, 0, 1], extrapolate: "clamp" }),
-                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.25, 0.45], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
+                  opacity: fabAnim.interpolate({ inputRange: [0, 0.2, 0.35], outputRange: [0, 0, 1], extrapolate: "clamp" }),
+                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.2, 0.35], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
+                }}>
+                  <TouchableOpacity
+                    onPress={() => { setFabOpen(false); setShowMoodSheet(true); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                    activeOpacity={0.8}
+                  >
+                    <Smile size={20} color={colors.text} strokeWidth={2} />
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={{
+                  opacity: fabAnim.interpolate({ inputRange: [0, 0.35, 0.5], outputRange: [0, 0, 1], extrapolate: "clamp" }),
+                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.35, 0.5], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
                 }}>
                   <TouchableOpacity
                     onPress={() => { setFabOpen(false); router.push("/charts"); }}
@@ -1441,8 +1527,8 @@ export default function WorkerHomeScreen() {
                   </TouchableOpacity>
                 </Animated.View>
                 <Animated.View style={{
-                  opacity: fabAnim.interpolate({ inputRange: [0, 0.45, 0.65], outputRange: [0, 0, 1], extrapolate: "clamp" }),
-                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.45, 0.65], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
+                  opacity: fabAnim.interpolate({ inputRange: [0, 0.5, 0.65], outputRange: [0, 0, 1], extrapolate: "clamp" }),
+                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.5, 0.65], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
                 }}>
                   <TouchableOpacity
                     onPress={() => { setFabOpen(false); router.push("/game"); }}
@@ -1453,8 +1539,8 @@ export default function WorkerHomeScreen() {
                   </TouchableOpacity>
                 </Animated.View>
                 <Animated.View style={{
-                  opacity: fabAnim.interpolate({ inputRange: [0, 0.65, 0.85], outputRange: [0, 0, 1], extrapolate: "clamp" }),
-                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.65, 0.85], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
+                  opacity: fabAnim.interpolate({ inputRange: [0, 0.65, 0.8], outputRange: [0, 0, 1], extrapolate: "clamp" }),
+                  transform: [{ scale: fabAnim.interpolate({ inputRange: [0, 0.65, 0.8], outputRange: [0.5, 0.5, 1], extrapolate: "clamp" }) }],
                 }}>
                   <TouchableOpacity
                     onPress={() => { setFabOpen(false); handleOpenAI(); }}
@@ -1466,6 +1552,40 @@ export default function WorkerHomeScreen() {
                 </Animated.View>
               </Animated.View>
             </View>
+
+            {/* 🙂 Mood Quote Pill */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setShowMoodSheet(true)}
+              style={[styles.moodPill, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
+              <View style={[styles.moodPillIcon, { backgroundColor: colors.surfaceAlt }]}>
+                {(() => {
+                  const idx = mood ? MOODS.findIndex((m) => m.key === mood.key) : -1;
+                  const Face = [AwfulFace, SadFace, NeutralFace, GoodFace, GreatFace][idx >= 0 ? idx : 2];
+                  return <Face size={22} color={colors.text} />;
+                })()}
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.moodPillLabel, { color: colors.textMuted }]}>
+                  {mood ? mood.label : "How are you feeling?"}
+                </Text>
+                <Text style={[styles.moodPillQuote, { color: colors.text }]} numberOfLines={2}>
+                  {!mood
+                    ? "Tap to set your mood for today"
+                    : moodQuoteLoading
+                      ? "Finding something for you…"
+                      : moodQuote || "—"}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleOpenAI}
+                style={[styles.moodPillAiBtn, { backgroundColor: colors.text }]}
+                activeOpacity={0.8}
+              >
+                <Sparkles size={18} color={colors.backgroundStart} strokeWidth={2} />
+              </TouchableOpacity>
+            </TouchableOpacity>
 
             {/* 💰 Earnings Summary */}
             {(() => {
@@ -1941,6 +2061,52 @@ export default function WorkerHomeScreen() {
         ) : null}
 
       </SafeAreaView>
+
+      {showMoodSheet ? (
+        <View style={[styles.overlay, styles.overlayBottom]}>
+          <Animated.View
+            style={[
+              styles.bottomSheet,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              {
+                transform: [{
+                  translateY: moodSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [400, 0] }),
+                }],
+              },
+            ]}
+          >
+            <MoodSheet
+              mood={mood}
+              onSelect={setMood}
+              onClose={() => setShowMoodSheet(false)}
+              onOpenCalendar={() => { setShowMoodSheet(false); setShowMoodCalendar(true); }}
+              colors={colors}
+            />
+          </Animated.View>
+        </View>
+      ) : null}
+
+      {showMoodCalendar ? (
+        <View style={[styles.overlay, styles.overlayBottom]}>
+          <Animated.View
+            style={[
+              styles.bottomSheet,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              {
+                transform: [{
+                  translateY: moodCalendarAnim.interpolate({ inputRange: [0, 1], outputRange: [400, 0] }),
+                }],
+              },
+            ]}
+          >
+            <MoodCalendarSheet
+              moodHistory={moodHistory}
+              onClose={() => setShowMoodCalendar(false)}
+              colors={colors}
+            />
+          </Animated.View>
+        </View>
+      ) : null}
 
       {showShiftDetails && activeShift ? (
         <View style={styles.overlay}>
@@ -2864,6 +3030,23 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     alignItems: "center",
     justifyContent: "center",
   },
+  notificationBadge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    paddingHorizontal: 3,
+    backgroundColor: "#dc2626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationBadgeText: {
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "700",
+  },
   iconPillDivider: {
     width: 1,
     height: 16,
@@ -3117,6 +3300,39 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
   },
+  moodPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 32,
+    borderWidth: 1,
+    padding: 8,
+    marginBottom: 12,
+  },
+  moodPillIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moodPillLabel: {
+    fontSize: 11,
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  moodPillQuote: {
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 16,
+  },
+  moodPillAiBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 10,
+  },
   salaryAccent: {
     display: "none",
   },
@@ -3352,6 +3568,20 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
+  },
+  overlayBottom: {
+    justifyContent: "flex-end",
+    padding: 0,
+    paddingBottom: 100,
+  },
+  bottomSheet: {
+    width: "92%",
+    alignSelf: "center",
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    paddingBottom: 28,
+    overflow: "hidden",
   },
   detailModal: {
     width: "100%",
