@@ -26,6 +26,7 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 import { auth, db } from "@/lib/firebase";
 import { useCalendar, useTheme } from "@/lib/context";
@@ -254,6 +255,32 @@ export default function CalendarScreen() {
     setShowYearPicker(false);
   };
 
+  const swipeGesture = Gesture.Pan()
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-15, 15])
+    .onEnd(e => {
+      if (e.translationX < -40) nextMonth();
+      else if (e.translationX > 40) prevMonth();
+    });
+
+  /* =====================
+     MONTH SUMMARY STATS
+  ===================== */
+
+  const monthStats = (() => {
+    let worked = 0;
+    let absent = 0;
+    let upcoming = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = `${year}-${pad(month + 1)}-${pad(d)}`;
+      const status = getDateStatus(dateKey, attendanceMap, getShiftsForDate);
+      if (status === "completed") worked++;
+      else if (status === "absent") absent++;
+      else if (status === "scheduled" && dateKey >= todayKey) upcoming++;
+    }
+    return { worked, absent, upcoming };
+  })();
+
   /* =====================
      UI
   ===================== */
@@ -321,6 +348,7 @@ export default function CalendarScreen() {
         {/* =====================
            CALENDAR CARD
         ===================== */}
+        <GestureDetector gesture={swipeGesture}>
         <View style={[styles.card, styles.calendarCard]}>
           <View style={styles.monthHeader}>
             <View style={styles.captionGroup}>
@@ -426,11 +454,15 @@ export default function CalendarScreen() {
                 const dateKey = `${year}-${pad(month + 1)}-${pad(day)}`;
                 const status  = getDateStatus(dateKey, attendanceMap, getShiftsForDate);
                 const isToday = dateKey === todayKey;
+                const isWeekend = colIdx === 0 || colIdx === 6;
                 return (
                   <TouchableOpacity
                     key={day}
                     style={[
                       styles.dayCell,
+                      isWeekend && styles.weekendCell,
+                      status === "completed" && styles.cellCompleted,
+                      status === "absent" && styles.cellAbsent,
                       isToday && styles.todayCell,
                       selectedDay === day && styles.selectedDay,
                     ]}
@@ -491,7 +523,26 @@ export default function CalendarScreen() {
               })}
             </View>
           ))}
+
+          {/* MONTH SUMMARY STATS */}
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: "#16a34a" }]}>{monthStats.worked}</Text>
+              <Text style={styles.statLabel}>Worked</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: "#dc2626" }]}>{monthStats.absent}</Text>
+              <Text style={styles.statLabel}>Absences</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: c.text }]}>{monthStats.upcoming}</Text>
+              <Text style={styles.statLabel}>Upcoming</Text>
+            </View>
+          </View>
         </View>
+        </GestureDetector>
 
         {/* =====================
             UPCOMING SHIFTS CARD
@@ -558,6 +609,20 @@ export default function CalendarScreen() {
               activeOpacity={0.8}
             >
               <Text style={{ fontSize: 13, fontWeight: "700", color: c.backgroundStart }}>View shift details</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Clock in/out shortcut — only for today's shifts that aren't completed/absent */}
+          {selectedDate === todayKey && shiftsForSelectedDate.some(shift => {
+            const status = resolveStatus(shift.status, attendanceMap[shift.date]);
+            return status !== "completed" && status !== "absent";
+          }) && (
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/attendance")}
+              style={{ marginTop: 8, paddingVertical: 12, borderRadius: 12, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border, alignItems: "center" }}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 13, fontWeight: "700", color: c.text }}>Go to Attendance — Clock in/out</Text>
             </TouchableOpacity>
           )}
 
@@ -971,6 +1036,15 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
       borderColor: c.text,
       borderWidth: 1.5,
     },
+    weekendCell: {
+      backgroundColor: c.border,
+    },
+    cellCompleted: {
+      backgroundColor: "rgba(52, 211, 153, 0.18)",
+    },
+    cellAbsent: {
+      backgroundColor: "rgba(248, 113, 113, 0.18)",
+    },
 
     dayText: { color: c.text, fontWeight: "600", fontSize: 11 },
     calendarDayText: { color: c.text },
@@ -1002,6 +1076,33 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     },
     tooltipTitle: { color: c.backgroundStart, fontSize: 9, fontWeight: "700" },
     tooltipText: { color: c.border, fontSize: 8, marginTop: 1 },
+
+    statsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    statBox: {
+      flex: 1,
+      alignItems: "center",
+      gap: 2,
+    },
+    statValue: {
+      fontSize: 16,
+      fontWeight: "800",
+    },
+    statLabel: {
+      fontSize: 11,
+      color: c.textMuted,
+    },
+    statDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: c.border,
+    },
 
     emptyBox: {
       paddingVertical: 24,

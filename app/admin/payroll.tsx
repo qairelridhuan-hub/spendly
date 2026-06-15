@@ -2,7 +2,7 @@ import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { CheckCircle, Wallet } from "lucide-react-native";
 import {
   addDoc, collection, collectionGroup, doc,
-  onSnapshot, serverTimestamp, setDoc, updateDoc,
+  onSnapshot, query, serverTimestamp, setDoc, updateDoc, where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useEffect, useMemo, useState } from "react";
@@ -11,6 +11,7 @@ import { useAdminTheme } from "@/lib/admin/theme";
 export default function AdminPayroll() {
   const { colors: p } = useAdminTheme();
   const [records, setRecords] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<Record<string, any>>({});
 
   useEffect(() => {
     const unsub = onSnapshot(collectionGroup(db, "payroll"), snapshot => {
@@ -19,7 +20,12 @@ export default function AdminPayroll() {
       }));
       setRecords(list);
     });
-    return unsub;
+    const unsubWorkers = onSnapshot(query(collection(db, "users"), where("role", "==", "worker")), snapshot => {
+      const map: Record<string, any> = {};
+      snapshot.forEach(d => { map[d.id] = d.data(); });
+      setWorkers(map);
+    });
+    return () => { unsub(); unsubWorkers(); };
   }, []);
 
   const updateStatus = async (record: any, status: string) => {
@@ -125,7 +131,7 @@ export default function AdminPayroll() {
                 {/* Info */}
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: p.text, fontSize: 13, fontWeight: "600" }}>
-                    {record.workerId || "Worker"}
+                    {workers[record.workerId]?.fullName || workers[record.workerId]?.email || "Worker"}
                   </Text>
                   <Text style={{ color: p.textMuted, fontSize: 12, marginTop: 1 }}>
                     {record.period || "—"} · {record.totalHours || 0}h · RM {Number(record.totalEarnings ?? 0).toFixed(2)}

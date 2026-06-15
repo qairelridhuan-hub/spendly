@@ -1,4 +1,3 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -16,7 +15,7 @@ import { auth, db } from "@/lib/firebase";
 
 export default function AdminLogin() {
   const adminUi = {
-    background: ["#000000", "#111111", "#000000"] as const,
+    background: "#ffffff",
     card: "#ffffff",
     cardBorder: "#e5e5e5",
     text: "#000000",
@@ -24,7 +23,7 @@ export default function AdminLogin() {
     accent: "#000000",
     accentStrong: "#000000",
     inputBg: "#f9f9f9",
-    inputBorder: "#d1d1d1",
+    inputBorder: "#e5e5e5",
     danger: "#ef4444",
   };
   const [email, setEmail] = useState("");
@@ -76,7 +75,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <LinearGradient colors={adminUi.background} style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: adminUi.background }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1, justifyContent: "center", padding: 24 }}
@@ -84,84 +83,41 @@ export default function AdminLogin() {
         <View
           style={{
             backgroundColor: adminUi.card,
-            borderRadius: 26,
+            borderRadius: 20,
             padding: 28,
             borderWidth: 1,
             borderColor: adminUi.cardBorder,
-            maxWidth: 420,
+            maxWidth: 380,
             alignSelf: "center",
             width: "100%",
-            shadowColor: "#000",
-            shadowOpacity: 0.35,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 12 },
-            elevation: 8,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: adminUi.accent,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 20 }}>🛡️</Text>
-            </View>
-            <View>
-              <Text
-                style={{
-                  color: adminUi.text,
-                  fontSize: 16,
-                  fontWeight: "700",
-                  letterSpacing: 0.4,
-                }}
-              >
-                Spendly
-              </Text>
-              <Text style={{ color: adminUi.textMuted, fontSize: 12 }}>
-                Admin Console
-              </Text>
-            </View>
-          </View>
-
           <View
             style={{
-              alignSelf: "flex-start",
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 999,
-              backgroundColor: "#f0f0f0",
-              borderWidth: 1,
-              borderColor: "#d1d1d1",
-              marginBottom: 12,
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              backgroundColor: adminUi.accent,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 20,
             }}
           >
-            <Text style={{ color: adminUi.accent, fontSize: 12, fontWeight: "600" }}>
-              ADMIN ACCESS
-            </Text>
+            <Lock size={18} color="#ffffff" />
           </View>
 
           <Text
             style={{
-              fontSize: 26,
-              fontWeight: "800",
+              fontSize: 22,
+              fontWeight: "700",
               color: adminUi.text,
-              marginTop: 8,
-              letterSpacing: 0.3,
+              letterSpacing: 0.2,
             }}
           >
-            Spendly Admin Portal
+            Admin sign in
           </Text>
-          <Text style={{ color: adminUi.textMuted, marginTop: 6, marginBottom: 20 }}>
-            Secure access for payroll, schedules, and system controls.
-          </Text>
-          <Text style={{ color: adminUi.textMuted, marginBottom: 20 }}>
-            Welcome back, administrator. Please verify your credentials to
-            continue managing worker operations.
+          <Text style={{ color: adminUi.textMuted, fontSize: 13, marginTop: 4, marginBottom: 24 }}>
+            Enter your credentials to access the Spendly admin console.
           </Text>
 
           <View style={{ position: "relative", marginBottom: 12 }}>
@@ -244,8 +200,6 @@ export default function AdminLogin() {
               backgroundColor: adminUi.accentStrong,
               padding: 14,
               borderRadius: 12,
-              borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.08)",
               opacity: loading ? 0.7 : 1,
             }}
           >
@@ -260,14 +214,12 @@ export default function AdminLogin() {
               fontSize: 11,
               marginTop: 16,
               textAlign: "center",
-              lineHeight: 16,
             }}
           >
-            Authorized personnel only. By signing in, you agree to {"Spendly's"}
-            admin usage and data handling policies.
+            Authorized personnel only
           </Text>
         </View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }

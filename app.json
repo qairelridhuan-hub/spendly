@@ -47,6 +47,12 @@
           "icon": "./assets/images/icon.png",
           "color": "#ffffff"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Spendly uses your location to verify you are at your workplace when clocking in or out."
+        }
       ]
     ],
     "experiments": {

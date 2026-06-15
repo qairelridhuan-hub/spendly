@@ -29,6 +29,7 @@ import {
   Sun,
   ChevronsLeft,
   ChevronsRight,
+  Wallet,
 } from "lucide-react-native";
 import { auth, db } from "@/lib/firebase";
 import { AdminThemeProvider, useAdminTheme } from "@/lib/admin/theme";
@@ -56,6 +57,7 @@ const navSections = [
     items: [
       { label: "Reports", href: "/admin/reports", icon: FileBarChart2 },
       { label: "Payslip", href: "/admin/payslip", icon: FileText      },
+      { label: "Payroll", href: "/admin/payroll", icon: Wallet        },
     ],
   },
 ];
@@ -97,9 +99,11 @@ function AdminLayoutInner() {
     border:     isDark ? "rgba(255,255,255,0.07)": "rgba(0,0,0,0.08)",
     text:       isDark ? "#d4d4d8"               : "#18181b",
     muted:      isDark ? "#52525b"               : "#71717a",
-    activeBg:   isDark ? "rgba(255,255,255,0.08)": "rgba(0,0,0,0.06)",
-    activeText: isDark ? "#ffffff"               : "#000000",
+    activeBg:   isDark ? "#ffffff"               : "#000000",
+    activeText: isDark ? "#000000"               : "#ffffff",
     hoverBg:    isDark ? "rgba(255,255,255,0.04)": "rgba(0,0,0,0.03)",
+    sectionBg:  isDark ? "rgba(255,255,255,0.05)": "#ffffff",
+    sectionBorder: isDark ? "rgba(255,255,255,0.06)": "rgba(0,0,0,0.05)",
     toggleBg:   isDark ? "rgba(255,255,255,0.06)": "rgba(0,0,0,0.06)",
     toggleBorder: isDark ? "rgba(255,255,255,0.1)": "rgba(0,0,0,0.1)",
     toggleIcon: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)",
@@ -231,7 +235,7 @@ function AdminLayoutInner() {
   }
 
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: S.pageBg }}>
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: S.pageBg, padding: 12, gap: 12 }}>
 
       {/* ══════════════════ SIDEBAR ══════════════════ */}
       <Animated.View style={[
@@ -240,8 +244,13 @@ function AdminLayoutInner() {
           flexDirection: "column",
           overflow: "hidden",
           backgroundColor: S.bg,
-          borderRightWidth: 1,
-          borderRightColor: S.border,
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: S.border,
+          shadowColor: "#000",
+          shadowOpacity: isDark ? 0 : 0.06,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 6 },
         },
         glassStyle,
       ]}>
@@ -250,18 +259,18 @@ function AdminLayoutInner() {
         <View style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingLeft: 16,
-          paddingRight: 10,
+          paddingLeft: collapsed ? 0 : 16,
+          paddingRight: collapsed ? 0 : 10,
           paddingVertical: 16,
           borderBottomWidth: 1,
           borderBottomColor: S.divider,
-          justifyContent: "space-between",
+          justifyContent: collapsed ? "center" : "space-between",
           minHeight: 60,
         }}>
           {/* Logo: hidden when collapsed */}
           <TouchableOpacity
             onPress={() => router.push("/admin" as any)}
-            style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, overflow: "hidden" }}
+            style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: collapsed ? 0 : 1, overflow: "hidden", display: collapsed ? "none" : "flex" }}
           >
             <Animated.View style={{
               opacity: logoOpacity,
@@ -298,18 +307,19 @@ function AdminLayoutInner() {
             onPress={toggleCollapse}
             style={{
               width: 26, height: 26,
-              borderRadius: 7,
+              borderRadius: 999,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: S.toggleBg,
+              backgroundColor: S.activeBg,
               borderWidth: 1,
-              borderColor: S.toggleBorder,
+              borderColor: S.activeBg,
               flexShrink: 0,
+              alignSelf: "center",
             }}
           >
             {collapsed
-              ? <ChevronsRight size={12} color={S.toggleIcon} strokeWidth={2} />
-              : <ChevronsLeft  size={12} color={S.toggleIcon} strokeWidth={2} />
+              ? <ChevronsRight size={12} color={S.activeText} strokeWidth={2} />
+              : <ChevronsLeft  size={12} color={S.activeText} strokeWidth={2} />
             }
           </TouchableOpacity>
         </View>
@@ -320,7 +330,7 @@ function AdminLayoutInner() {
           contentContainerStyle={{ paddingHorizontal: 10, paddingTop: 14, paddingBottom: 12 }}
         >
           {navSections.map(section => (
-            <View key={section.label} style={{ marginBottom: 20 }}>
+            <View key={section.label} style={{ marginBottom: 14 }}>
               <Animated.Text style={{
                 opacity: sectionLabelOpacity,
                 color: S.muted,
@@ -334,24 +344,33 @@ function AdminLayoutInner() {
                 {section.label}
               </Animated.Text>
 
-              {section.items.map(item => {
-                const isActive  = pathname === item.href;
-                const isHovered = hoveredNav === item.href;
-                return (
-                  <NavItem
-                    key={item.href}
-                    item={item}
-                    isActive={isActive}
-                    isHovered={isHovered}
-                    collapsed={collapsed}
-                    labelOpacity={labelOpacity}
-                    S={S}
-                    onPress={() => router.push(item.href as any)}
-                    onHoverIn={() => setHoveredNav(item.href)}
-                    onHoverOut={() => setHoveredNav(null)}
-                  />
-                );
-              })}
+              <View style={{
+                backgroundColor: S.sectionBg,
+                borderWidth: 1,
+                borderColor: S.sectionBorder,
+                borderRadius: collapsed ? 28 : 18,
+                padding: 6,
+                gap: 2,
+              }}>
+                {section.items.map(item => {
+                  const isActive  = pathname === item.href;
+                  const isHovered = hoveredNav === item.href;
+                  return (
+                    <NavItem
+                      key={item.href}
+                      item={item}
+                      isActive={isActive}
+                      isHovered={isHovered}
+                      collapsed={collapsed}
+                      labelOpacity={labelOpacity}
+                      S={S}
+                      onPress={() => router.push(item.href as any)}
+                      onHoverIn={() => setHoveredNav(item.href)}
+                      onHoverOut={() => setHoveredNav(null)}
+                    />
+                  );
+                })}
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -363,11 +382,13 @@ function AdminLayoutInner() {
             flexDirection: "row",
             alignItems: "center",
             gap: 10,
-            padding: 10,
-            borderRadius: 10,
-            backgroundColor: S.userCard,
-            borderWidth: 1,
+            padding: collapsed ? 0 : 10,
+            borderRadius: collapsed ? 999 : 12,
+            backgroundColor: collapsed ? "transparent" : S.userCard,
+            borderWidth: collapsed ? 0 : 1,
             borderColor: S.userBorder,
+            justifyContent: collapsed ? "center" : "flex-start",
+            alignSelf: collapsed ? "center" : "stretch",
           }}>
             {/* Avatar */}
             <View style={{ position: "relative", flexShrink: 0 }}>
@@ -397,12 +418,14 @@ function AdminLayoutInner() {
             </View>
 
             {/* Name */}
-            <Animated.View style={{ opacity: labelOpacity, flex: 1, overflow: "hidden" }}>
-              <Text style={{ color: S.text, fontSize: 12, fontWeight: "600" }} numberOfLines={1}>
-                {adminName}
-              </Text>
-              <Text style={{ color: S.muted, fontSize: 10 }}>Administrator</Text>
-            </Animated.View>
+            {!collapsed && (
+              <Animated.View style={{ opacity: labelOpacity, flex: 1, overflow: "hidden" }}>
+                <Text style={{ color: S.text, fontSize: 12, fontWeight: "600" }} numberOfLines={1}>
+                  {adminName}
+                </Text>
+                <Text style={{ color: S.muted, fontSize: 10 }}>Administrator</Text>
+              </Animated.View>
+            )}
           </View>
 
           {/* Logout */}
@@ -428,13 +451,15 @@ function AdminLayoutInner() {
               color={hoveredNav === "__logout__" ? "#ef4444" : S.logoutText}
               strokeWidth={1.8}
             />
-            <Animated.Text style={{
-              opacity: labelOpacity,
-              color: hoveredNav === "__logout__" ? "#ef4444" : S.logoutText,
-              fontSize: 13,
-            }}>
-              Log out
-            </Animated.Text>
+            {!collapsed && (
+              <Animated.Text style={{
+                opacity: labelOpacity,
+                color: hoveredNav === "__logout__" ? "#ef4444" : S.logoutText,
+                fontSize: 13,
+              }}>
+                Log out
+              </Animated.Text>
+            )}
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -442,7 +467,15 @@ function AdminLayoutInner() {
       {/* ══════════════════ MAIN ══════════════════ */}
       <View style={{
         flex: 1,
-        backgroundColor: S.pageBg,
+        backgroundColor: S.bg,
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: S.border,
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOpacity: isDark ? 0 : 0.06,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
         ...(Platform.OS === "web" ? { overflowY: "auto" } as any : {}),
       }}>
         {/* Top bar */}
@@ -469,15 +502,15 @@ function AdminLayoutInner() {
               onPress={() => router.push("/admin/notifications" as any)}
               style={{
                 width: 32, height: 32,
-                borderRadius: 9,
+                borderRadius: 16,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: S.iconBtn,
+                backgroundColor: S.activeBg,
                 borderWidth: 1,
-                borderColor: S.iconBtnBorder,
+                borderColor: S.activeBg,
               }}
             >
-              <Bell size={14} color={S.iconColor} strokeWidth={1.8} />
+              <Bell size={14} color={S.activeText} strokeWidth={1.8} />
               <View style={{
                 position: "absolute",
                 top: 7, right: 7,
@@ -492,17 +525,17 @@ function AdminLayoutInner() {
               onPress={() => setMode(isDark ? "light" : "dark")}
               style={{
                 width: 32, height: 32,
-                borderRadius: 9,
+                borderRadius: 16,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: S.iconBtn,
+                backgroundColor: S.activeBg,
                 borderWidth: 1,
-                borderColor: S.iconBtnBorder,
+                borderColor: S.activeBg,
               }}
             >
               {isDark
-                ? <Moon size={14} color={S.iconColor} strokeWidth={1.8} />
-                : <Sun  size={14} color={S.iconColor} strokeWidth={1.8} />
+                ? <Moon size={14} color={S.activeText} strokeWidth={1.8} />
+                : <Sun  size={14} color={S.activeText} strokeWidth={1.8} />
               }
             </TouchableOpacity>
           </View>
@@ -545,28 +578,37 @@ function NavItem({
   };
 
   return (
-    <View style={{ position: "relative", marginBottom: 1 }}>
+    <View style={{ position: "relative", marginBottom: 3, alignItems: collapsed ? "center" : "stretch" }}>
       <TouchableOpacity
         onPress={onPress}
         {...(Platform.OS === "web" ? ({
           onMouseEnter: handleHoverIn,
           onMouseLeave: handleHoverOut,
         } as any) : {})}
-        style={{
-          flexDirection: "row",
+        style={collapsed ? {
+          width: 40,
+          height: 40,
           alignItems: "center",
-          gap: 10,
-          paddingVertical: 8,
-          paddingHorizontal: 10,
-          borderRadius: 9,
-          justifyContent: collapsed ? "center" : "flex-start",
+          justifyContent: "center",
+          borderRadius: 999,
           backgroundColor: isActive
             ? S.activeBg
             : isHovered
             ? S.hoverBg
             : "transparent",
-          borderWidth: 1,
-          borderColor: isActive ? S.border : "transparent",
+        } : {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+          paddingVertical: 9,
+          paddingHorizontal: 12,
+          borderRadius: 999,
+          justifyContent: "flex-start",
+          backgroundColor: isActive
+            ? S.activeBg
+            : isHovered
+            ? S.hoverBg
+            : "transparent",
         }}
       >
         <Icon
@@ -589,15 +631,6 @@ function NavItem({
           }}>
             {item.label}
           </Animated.Text>
-        )}
-
-        {/* Active indicator dot — no glow */}
-        {isActive && !collapsed && (
-          <View style={{
-            width: 4, height: 4,
-            borderRadius: 2,
-            backgroundColor: S.muted,
-          }} />
         )}
       </TouchableOpacity>
 
