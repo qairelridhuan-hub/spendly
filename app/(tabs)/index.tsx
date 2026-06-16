@@ -192,7 +192,6 @@ export default function WorkerHomeScreen() {
   const [displayName, setDisplayName] = useState("User");
   const [userId, setUserId] = useState<string | null>(null);
   const [showGameSplash, setShowGameSplash] = useState(false);
-  const [showAISplash, setShowAISplash] = useState(false);
   const pillAnim = useRef(new Animated.Value(1)).current;
   const [fabOpen, setFabOpen] = useState(false);
   const fabAnim = useRef(new Animated.Value(0)).current;
@@ -204,9 +203,6 @@ export default function WorkerHomeScreen() {
   const [moodQuoteLoading, setMoodQuoteLoading] = useState(false);
   const moodSheetAnim = useRef(new Animated.Value(0)).current;
   const moodCalendarAnim = useRef(new Animated.Value(0)).current;
-  const aiSplashFade = useRef(new Animated.Value(0)).current;
-  const aiSplashScale = useRef(new Animated.Value(0.85)).current;
-  const aiSplashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showGameGate, setShowGameGate] = useState(false);
   const [sliderTrackWidth, setSliderTrackWidth] = useState(0);
   const gameGlow = useRef(new Animated.Value(0)).current;
@@ -226,11 +222,9 @@ export default function WorkerHomeScreen() {
   // Per-card animated values (independent X + Y for multi-direction gestures)
   const card0X  = useRef(new Animated.Value(0)).current;
   const card0Y  = useRef(new Animated.Value(0)).current;
-  const card0Sc = useRef(new Animated.Value(1)).current;
   const card0Op = useRef(new Animated.Value(1)).current;
   const card1X  = useRef(new Animated.Value(0)).current;
-  const card1Y  = useRef(new Animated.Value(307)).current; // starts in back position (320 * 0.96)
-  const card1Sc = useRef(new Animated.Value(0.92)).current;
+  const card1Y  = useRef(new Animated.Value(307)).current;
   const card1Op = useRef(new Animated.Value(0.78)).current;
   const lastLogoTap = useRef(0);
   const logoTapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -903,21 +897,8 @@ export default function WorkerHomeScreen() {
   }, [fabOpen]);
 
   const handleOpenAI = useCallback(() => {
-    setShowAISplash(true);
-    aiSplashFade.setValue(0);
-    aiSplashScale.setValue(0.85);
-    Animated.parallel([
-      Animated.timing(aiSplashFade, { toValue: 1, duration: 350, useNativeDriver: true }),
-      Animated.spring(aiSplashScale, { toValue: 1, friction: 7, useNativeDriver: true }),
-    ]).start();
-    if (aiSplashTimer.current) clearTimeout(aiSplashTimer.current);
-    aiSplashTimer.current = setTimeout(() => {
-      Animated.timing(aiSplashFade, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
-        setShowAISplash(false);
-        router.push("/ai-chat");
-      });
-    }, 1800);
-  }, [aiSplashFade, aiSplashScale, router]);
+    router.push("/ai-chat");
+  }, [router]);
 
   const sliderPanResponder = useMemo(
     () =>
@@ -1414,37 +1395,57 @@ export default function WorkerHomeScreen() {
   }, [userId]);
 
   // ── Card stack constants ────────────────────────────────────────────────────
-  const PEEK_AMOUNT  = 52;
-  const BACK_SCALE   = 0.92;
-  const BACK_OPACITY = 0.78;
-  const SP           = { damping: 22, stiffness: 190, useNativeDriver: true } as const;
+  const PEEK_AMOUNT  = 130;
+  const BACK_INSET   = 10;   // left/right inset on back card for depth effect
+  const BACK_OPACITY = 0.88;
+  const SP           = { damping: 26, stiffness: 180, useNativeDriver: true } as const;
 
-  // frontH: natural height of whichever card is currently in front
-  const cardHeights = [card0Height, card1Height];
-  const frontH = cardHeights[activeCardIdx];
+  // Container uses max of both heights — never changes during swipes, no layout jank
+  const containerH = Math.max(card0Height, card1Height);
 
-  // backY: translateY so back card's visual top = frontH (center-origin scale compensation)
-  const backY = frontH - frontH * (1 - BACK_SCALE) / 2;
+  // Per-card height refs for computing backY inside animation callbacks (no stale closure)
+  const card0HeightRef = useRef(card0Height);
+  const card1HeightRef = useRef(card1Height);
+  useEffect(() => { card0HeightRef.current = card0Height; }, [card0Height]);
+  useEffect(() => { card1HeightRef.current = card1Height; }, [card1Height]);
+
+  // backY: position back card so its BOTTOM EDGE is PEEK_AMOUNT below the front card's bottom
+  // formula: backY = frontH + PEEK_AMOUNT - backH  (so backCard.bottom = frontH + PEEK_AMOUNT)
+  const calcBackY = (frontIdx: number) => {
+    const frontH = frontIdx === 0 ? card0HeightRef.current : card1HeightRef.current;
+    const backH  = frontIdx === 0 ? card1HeightRef.current : card0HeightRef.current;
+    return frontH + PEEK_AMOUNT - backH;
+  };
 
   // Per-card arrays for indexed access inside the (single-instance) PanResponder
   const cardX  = [card0X,  card1X];
   const cardY  = [card0Y,  card1Y];
-  const cardSc = [card0Sc, card1Sc];
   const cardOp = [card0Op, card1Op];
 
   // Stale-closure-safe refs
   const activeCardIdxRef = useRef(activeCardIdx);
-  const stackHeightRef   = useRef(frontH);
-  const backYRef         = useRef(backY);
   useEffect(() => { activeCardIdxRef.current = activeCardIdx; }, [activeCardIdx]);
-  useEffect(() => { stackHeightRef.current   = frontH;        }, [frontH]);
-  useEffect(() => { backYRef.current         = backY;         }, [backY]);
 
-  // Sync initial card1Y to measured backY after first layout
+  // Sync back-card Y to correct position whenever card heights change
   useEffect(() => {
-    if (activeCardIdx === 0) card1Y.setValue(backY);
-    else                     card0Y.setValue(backY);
-  }, [backY]);
+    const bY = calcBackY(0); // card0 height → position card1 when card0 is front
+    if (activeCardIdx === 0) card1Y.setValue(bY);
+    else                     card0Y.setValue(calcBackY(1));
+  }, [card0Height, card1Height]);
+
+  // Reset to card 0 whenever this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      setActiveCardIdx(0);
+      activeCardIdxRef.current = 0;
+      card0X.setValue(0);
+      card0Y.setValue(0);
+      card0Op.setValue(1);
+      card1X.setValue(0);
+      card1Y.setValue(calcBackY(0));
+      card1Op.setValue(BACK_OPACITY);
+    }, [])
+  );
 
   // ── Animation helpers ───────────────────────────────────────────────────────
   const spring = (val: Animated.Value, toValue: number) =>
@@ -1452,54 +1453,46 @@ export default function WorkerHomeScreen() {
 
   const snapToBack = (idx: number, bY: number) =>
     Animated.parallel([
-      spring(cardX[idx],  0),
-      spring(cardY[idx],  bY),
-      spring(cardSc[idx], BACK_SCALE),
+      spring(cardX[idx], 0),
+      spring(cardY[idx], bY),
       Animated.timing(cardOp[idx], { toValue: BACK_OPACITY, duration: 200, useNativeDriver: true }),
     ]);
 
   const snapToFront = (idx: number) =>
     Animated.parallel([
-      spring(cardX[idx],  0),
-      spring(cardY[idx],  0),
-      spring(cardSc[idx], 1),
+      spring(cardX[idx], 0),
+      spring(cardY[idx], 0),
       Animated.timing(cardOp[idx], { toValue: 1, duration: 200, useNativeDriver: true }),
     ]);
 
   const doVerticalToggle = useCallback((curr: number) => {
     const next = 1 - curr;
-    const bY   = backYRef.current;
+    const bY   = calcBackY(next);
     Animated.parallel([snapToBack(curr, bY), snapToFront(next)]).start();
     setActiveCardIdx(next);
   }, []);
 
   const doHorizontalToggle = useCallback((curr: number, dir: number) => {
-    // dir: -1 = swipe left (front exits left, back enters right), 1 = swipe right
     const next = 1 - curr;
     const W    = SCREEN_W * 1.2;
-    const bY   = backYRef.current;
+    const bY   = calcBackY(next);
     Animated.parallel([
-      // Front card: slide out in swipe direction + fade
       spring(cardX[curr], dir * -W),
       Animated.timing(cardOp[curr], { toValue: 0, duration: 220, useNativeDriver: true }),
-      // Back card: slide in from opposite side, rise to front
       spring(cardX[next], 0),
       spring(cardY[next], 0),
-      spring(cardSc[next], 1),
       Animated.timing(cardOp[next], { toValue: 1, duration: 250, useNativeDriver: true }),
     ]).start(() => {
-      // Reset old front card silently to back position (from opposite entry side)
       cardX[curr].setValue(dir * W);
       cardY[curr].setValue(bY);
-      cardSc[curr].setValue(BACK_SCALE);
       cardOp[curr].setValue(BACK_OPACITY);
-      spring(cardX[curr], 0).start(); // slide it to resting back position
+      spring(cardX[curr], 0).start();
     });
     setActiveCardIdx(next);
   }, []);
 
   const snapBack = useCallback((curr: number) => {
-    const bY = backYRef.current;
+    const bY = calcBackY(curr);
     Animated.parallel([snapToFront(curr), snapToBack(1 - curr, bY)]).start();
   }, []);
 
@@ -1540,33 +1533,31 @@ export default function WorkerHomeScreen() {
 
         const curr = activeCardIdxRef.current;
         const next = 1 - curr;
-        const h    = Math.max(1, stackHeightRef.current);
+        const fH   = curr === 0 ? card0HeightRef.current : card1HeightRef.current;
+        const h    = Math.max(1, fH);
         const W    = SCREEN_W;
-        const bY   = backYRef.current;
+        // backY for back card: frontH + PEEK_AMOUNT - backH
+        const backH = next === 0 ? card0HeightRef.current : card1HeightRef.current;
+        const bY    = fH + PEEK_AMOUNT - backH;
 
         if (dragDir.current === "vertical") {
           const p = Math.max(0, Math.min(1, absY / h));
-          // Front sinks, back rises
           cardY[curr].setValue(bY * p);
-          cardSc[curr].setValue(1 - (1 - BACK_SCALE) * p);
           cardOp[curr].setValue(1 - (1 - BACK_OPACITY) * p);
           cardY[next].setValue(bY * (1 - p));
-          cardSc[next].setValue(BACK_SCALE + (1 - BACK_SCALE) * p);
           cardOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
 
         } else {
-          // Horizontal: front follows finger, back slides in from opposite side
           cardX[curr].setValue(g.dx);
           const p = Math.max(0, Math.min(1, absX / W));
           cardX[next].setValue(-dragSign.current * W * (1 - p));
           cardY[next].setValue(bY * (1 - p));
-          cardSc[next].setValue(BACK_SCALE + (1 - BACK_SCALE) * p);
           cardOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
         }
       },
       onPanResponderRelease: (_, g) => {
         const curr = activeCardIdxRef.current;
-        const h    = Math.max(1, stackHeightRef.current);
+        const h    = Math.max(1, curr === 0 ? card0HeightRef.current : card1HeightRef.current);
 
         if (dragDir.current === "vertical") {
           if (Math.abs(g.dy) / h > 0.22 || Math.abs(g.vy) > 0.35)
@@ -1768,12 +1759,14 @@ export default function WorkerHomeScreen() {
 
             {/* ── Card Stack: Earnings + Today's Shift ── */}
             {/* Container height = card height + peek strip, overflow hidden so only PEEK_AMOUNT shows */}
-            <View style={{ height: frontH + PEEK_AMOUNT, overflow: "hidden", marginBottom: 0 }} {...cardStackPan.panHandlers}>
+            <View style={{ height: containerH + PEEK_AMOUNT, overflow: "hidden", marginBottom: 0, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 }} {...cardStackPan.panHandlers}>
 
               {/* Card 0 — Earnings */}
               <Animated.View style={{
-                position: "absolute", top: 0, left: 0, right: 0,
-                transform: [{ translateX: card0X }, { translateY: card0Y }, { scale: card0Sc }],
+                position: "absolute", top: 0,
+                left:  activeCardIdx === 0 ? 0 : BACK_INSET,
+                right: activeCardIdx === 0 ? 0 : BACK_INSET,
+                transform: [{ translateX: card0X }, { translateY: card0Y }],
                 opacity: card0Op,
                 zIndex: activeCardIdx === 0 ? 2 : 1,
               }}>
@@ -1784,22 +1777,44 @@ export default function WorkerHomeScreen() {
               const earnPct = projectedEarnings > 0
                 ? Math.min(100, Math.round((approvedDisplayValue / projectedEarnings) * 100))
                 : 0;
+              const isDark = mode === "dark";
+              const nc = isDark ? {
+                bg:      "#ffffff",
+                text:    "#0f1729",
+                muted:   "rgba(15,23,41,0.50)",
+                divider: "rgba(15,23,41,0.10)",
+                chip:    "rgba(15,23,41,0.07)",
+                btn:     "#0f1729",
+                btnText: "#ffffff",
+                bar:     "rgba(15,23,41,0.12)",
+                barFill: "#0f1729",
+              } : {
+                bg:      "#0f1729",
+                text:    "#ffffff",
+                muted:   "rgba(255,255,255,0.50)",
+                divider: "rgba(255,255,255,0.10)",
+                chip:    "rgba(255,255,255,0.10)",
+                btn:     "#ffffff",
+                btnText: "#0f1729",
+                bar:     "rgba(255,255,255,0.18)",
+                barFill: "#ffffff",
+              };
               return (
                 <View
                   onLayout={(e) => { const h = e.nativeEvent.layout.height; setCard0Height(h); }}
-                  style={[styles.salarySummary, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginBottom: 0 }]}>
+                  style={[styles.salarySummary, { backgroundColor: nc.bg, borderWidth: 0, marginBottom: 0 }]}>
 
                   {/* Title + ··· */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <View>
-                      <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: "500" }}>{formatPeriodLabel(selectedPeriod).toUpperCase()}</Text>
-                      <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text, marginTop: 1 }}>{titleText}</Text>
+                      <Text style={{ fontSize: 11, color: nc.muted, fontWeight: "500" }}>{formatPeriodLabel(selectedPeriod).toUpperCase()}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: nc.text, marginTop: 1 }}>{titleText}</Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => setShowSalaryMenu(prev => !prev)}
                       style={{ paddingHorizontal: 10, paddingVertical: 6 }}
                     >
-                      <Text style={{ fontSize: 18, color: colors.textMuted, letterSpacing: 2 }}>···</Text>
+                      <Text style={{ fontSize: 18, color: nc.muted, letterSpacing: 2 }}>···</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -1808,40 +1823,40 @@ export default function WorkerHomeScreen() {
                     <View style={{ flexDirection: "row", gap: 8, marginBottom: 10, marginTop: -4 }}>
                       <TouchableOpacity
                         onPress={() => { setSalaryView("past"); setPastSalaryPeriod(null); setShowSalaryMenu(false); setShowPastSalary(true); }}
-                        style={{ backgroundColor: colors.surfaceAlt, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                        style={{ backgroundColor: nc.chip, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>Past Salary</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: nc.text }}>Past Salary</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => { setShowSalaryMenu(false); setShowMonthPicker(true); }}
-                        style={{ backgroundColor: colors.surfaceAlt, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                        style={{ backgroundColor: nc.chip, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>{formatPeriodLabel(selectedPeriod)}</Text>
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: nc.text }}>{formatPeriodLabel(selectedPeriod)}</Text>
                       </TouchableOpacity>
                     </View>
                   ) : null}
 
                   {/* Amount */}
-                  <Text style={{ fontSize: 30, fontWeight: "800", color: colors.text, marginBottom: 12 }}>
+                  <Text style={{ fontSize: 30, fontWeight: "800", color: nc.text, marginBottom: 12 }}>
                     RM {displayCollectedEarnings.toFixed(2)}
                   </Text>
 
                   {/* Progress bar — approved vs projected */}
                   <View style={{ marginBottom: 4 }}>
-                    <View style={{ height: 5, backgroundColor: colors.border, borderRadius: 999, overflow: "hidden" }}>
-                      <View style={{ height: 5, borderRadius: 999, backgroundColor: colors.text, width: `${earnPct}%` }} />
+                    <View style={{ height: 5, backgroundColor: nc.bar, borderRadius: 999, overflow: "hidden" }}>
+                      <View style={{ height: 5, borderRadius: 999, backgroundColor: nc.barFill, width: `${earnPct}%` }} />
                     </View>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 5 }}>
-                      <Text style={{ fontSize: 10, color: colors.textMuted }}>{earnPct}% of projected earned</Text>
-                      <Text style={{ fontSize: 10, color: colors.textMuted }}>{dayPct}% of month passed</Text>
+                      <Text style={{ fontSize: 10, color: nc.muted }}>{earnPct}% of projected earned</Text>
+                      <Text style={{ fontSize: 10, color: nc.muted }}>{dayPct}% of month passed</Text>
                     </View>
                   </View>
 
                   {/* Divider */}
-                  <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
+                  <View style={{ height: 1, backgroundColor: nc.divider, marginVertical: 10 }} />
 
                   {/* Status */}
-                  <Text style={{ fontSize: 11, color: colors.textMuted, marginBottom: 10 }}>
+                  <Text style={{ fontSize: 11, color: nc.muted, marginBottom: 10 }}>
                     {hasPending
                       ? `⏳ Awaiting approval for ${pendingCount} shift${pendingCount === 1 ? "" : "s"}`
                       : "✓ All shifts approved so far"}
@@ -1849,27 +1864,27 @@ export default function WorkerHomeScreen() {
 
                   {/* Stats rows */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-                    <Text style={{ fontSize: 11, color: colors.textMuted }}>Approved</Text>
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.text }}>RM {approvedDisplayValue.toFixed(2)}</Text>
+                    <Text style={{ fontSize: 11, color: nc.muted }}>Approved</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: nc.text }}>RM {approvedDisplayValue.toFixed(2)}</Text>
                   </View>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
-                    <Text style={{ fontSize: 11, color: colors.textMuted }}>{displayRightLabel}</Text>
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.text }}>RM {displayRightValue.toFixed(2)}</Text>
+                    <Text style={{ fontSize: 11, color: nc.muted }}>{displayRightLabel}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: nc.text }}>RM {displayRightValue.toFixed(2)}</Text>
                   </View>
 
                   {/* Divider + button */}
-                  <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 10 }} />
+                  <View style={{ height: 1, backgroundColor: nc.divider, marginBottom: 10 }} />
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                     <TouchableOpacity
                       onPress={() => setShowEarningsBreakdown(true)}
                     >
-                      <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>View details →</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "600", color: nc.text }}>View details →</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => router.push("/earnings")}
-                      style={{ backgroundColor: colors.text, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 }}
+                      style={{ backgroundColor: nc.btn, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 }}
                     >
-                      <Text style={{ color: colors.backgroundStart, fontSize: 12, fontWeight: "700" }}>Earnings</Text>
+                      <Text style={{ color: nc.btnText, fontSize: 12, fontWeight: "700" }}>Earnings</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -1880,8 +1895,10 @@ export default function WorkerHomeScreen() {
 
               {/* Card 1 — Today's Shift + This Week */}
               <Animated.View style={{
-                position: "absolute", top: 0, left: 0, right: 0,
-                transform: [{ translateX: card1X }, { translateY: card1Y }, { scale: card1Sc }],
+                position: "absolute", top: 0,
+                left:  activeCardIdx === 1 ? 0 : BACK_INSET,
+                right: activeCardIdx === 1 ? 0 : BACK_INSET,
+                transform: [{ translateX: card1X }, { translateY: card1Y }],
                 opacity: card1Op,
                 zIndex: activeCardIdx === 1 ? 2 : 1,
               }}>
@@ -1979,6 +1996,20 @@ export default function WorkerHomeScreen() {
               />
             </View>
 
+            {/* ── Card stack dots ── */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, marginBottom: 4 }}>
+              {[0, 1].map((i) => (
+                <View
+                  key={i}
+                  style={{
+                    width:  activeCardIdx === i ? 24 : 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: activeCardIdx === i ? colors.text : colors.border,
+                  }}
+                />
+              ))}
+            </View>
 
             {/* ── Next Shift ── */}
             {nextShift && (
@@ -2634,41 +2665,6 @@ export default function WorkerHomeScreen() {
     </View>
 
     {/* AI Splash Screen */}
-    {showAISplash && (
-      <Animated.View style={{
-        position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.55)",
-        alignItems: "center", justifyContent: "center",
-        opacity: aiSplashFade,
-      }}>
-        <Animated.View style={{
-          backgroundColor: colors.surface,
-          borderRadius: 28,
-          padding: 36,
-          alignItems: "center",
-          width: 260,
-          transform: [{ scale: aiSplashScale }],
-          borderWidth: 1,
-          borderColor: colors.border,
-        }}>
-          <View style={{
-            width: 72, height: 72, borderRadius: 22,
-            backgroundColor: colors.text,
-            alignItems: "center", justifyContent: "center",
-            marginBottom: 18,
-          }}>
-            <Sparkles size={34} color={colors.backgroundStart} strokeWidth={1.8} />
-          </View>
-          <Text style={{ fontSize: 20, fontWeight: "800", color: colors.text, letterSpacing: -0.5, marginBottom: 6 }}>Spendly AI</Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center", lineHeight: 19 }}>Your personal financial assistant</Text>
-          <View style={{ flexDirection: "row", gap: 6, marginTop: 24 }}>
-            {[0, 1, 2].map(i => (
-              <View key={i} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.textMuted, opacity: 0.4 + i * 0.2 }} />
-            ))}
-          </View>
-        </Animated.View>
-      </Animated.View>
-    )}
     </ScreenTransition>
   );
 }
@@ -3508,6 +3504,11 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     borderWidth: 1,
     padding: 8,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
   },
   moodPillIcon: {
     width: 32,

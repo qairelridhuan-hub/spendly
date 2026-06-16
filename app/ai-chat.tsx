@@ -39,7 +39,7 @@ type ChatSession = { id: string; title: string; createdAt: any; messages: Messag
 const WELCOME: Message = {
   id: "welcome",
   role: "ai",
-  text: "Hi! I'm your Spendly AI assistant. Ask me anything about your earnings, goals, attendance, or financial progress.",
+  text: "Hi! I'm your Spendly AI assistant. Ask me anything about your earnings, goals, attendance, mood history, or financial progress.",
 };
 
 const ALL_SUGGESTIONS = [
@@ -55,6 +55,10 @@ const ALL_SUGGESTIONS = [
   "How much more do I need to save for my goals?",
   "Am I working enough hours this week?",
   "What was my last payroll amount?",
+  "What's my mood today?",
+  "How has my mood been this week?",
+  "What's my most common mood lately?",
+  "Does my mood affect my work attendance?",
 ];
 
 function getRandomSuggestions() {
@@ -63,7 +67,7 @@ function getRandomSuggestions() {
 }
 
 async function buildContext(uid: string): Promise<string> {
-  const [userSnap, attendanceSnap, goalsSnap, payrollSnap, overtimeSnap, configSnap] =
+  const [userSnap, attendanceSnap, goalsSnap, payrollSnap, overtimeSnap, configSnap, moodsSnap] =
     await Promise.all([
       getDoc(doc(db, "users", uid)),
       getDocs(query(collection(db, "users", uid, "attendance"), orderBy("date", "desc"), limit(30))),
@@ -71,6 +75,7 @@ async function buildContext(uid: string): Promise<string> {
       getDocs(query(collection(db, "users", uid, "payroll"), orderBy("period", "desc"), limit(6))),
       getDocs(query(collection(db, "users", uid, "overtime"), orderBy("date", "desc"), limit(30))),
       getDoc(doc(db, "config", "system")),
+      getDocs(query(collection(db, "users", uid, "moods"), orderBy("timestamp", "desc"), limit(30))),
     ]);
 
   const user = userSnap.data() || {} as any;
@@ -79,6 +84,7 @@ async function buildContext(uid: string): Promise<string> {
   const goals = goalsSnap.docs.map(d => d.data() as any);
   const payroll = payrollSnap.docs.map(d => d.data() as any);
   const overtime = overtimeSnap.docs.map(d => d.data() as any);
+  const moods = moodsSnap.docs.map(d => ({ date: d.id, mood: d.data().mood as string }));
 
   const hourlyRate = Number(user.hourlyRate || config.hourlyRate || 0);
   const overtimeRate = Number(config.overtimeRate || hourlyRate * (config.otMultiplier || 1.5));
@@ -92,9 +98,18 @@ async function buildContext(uid: string): Promise<string> {
         `- ${g.name || g.title}: saved RM ${Number(g.savedAmount || g.saved || 0).toFixed(2)} of RM ${Number(g.targetAmount || g.target || 0).toFixed(2)}${g.deadline ? `, deadline: ${g.deadline}` : ""}`
       ).join("\n");
 
+  const moodLabels: Record<string, string> = {
+    awful: "Awful", sad: "Sad", okay: "Okay", good: "Good", great: "Great",
+  };
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayMood = moods.find(m => m.date === todayKey);
+  const moodsText = moods.length === 0
+    ? "No mood logs yet."
+    : moods.map(m => `- ${m.date}: ${moodLabels[m.mood] ?? m.mood}`).join("\n");
+
   return `
 You are Spendly AI, a personal financial assistant for ${user.displayName || user.fullName || "the user"}.
-You have access to their real financial data from the Spendly app. Answer helpfully and concisely based on this data. Format numbers as RM where applicable.
+You have access to their real financial and mood data from the Spendly app. Answer helpfully and concisely based on this data. Format numbers as RM where applicable.
 
 === USER PROFILE ===
 Name: ${user.displayName || user.fullName || "Unknown"}
@@ -119,6 +134,10 @@ ${latestPayroll
 
 === SAVINGS GOALS ===
 ${goalsText}
+
+=== MOOD TRACKER (last 30 days) ===
+Today's mood: ${todayMood ? (moodLabels[todayMood.mood] ?? todayMood.mood) : "Not set yet"}
+${moodsText}
 
 === WORK POLICY ===
 Working days/week: ${config.workingDaysPerWeek || "Not set"}
