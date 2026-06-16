@@ -220,7 +220,18 @@ export default function WorkerHomeScreen() {
   const sliderValue = useRef(0);
   const gameSplashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameTitleGlow = useRef(new Animated.Value(0.4)).current;
-  const scrollRef = useRef<ScrollView>(null);
+  const [activeCardIdx, setActiveCardIdx] = useState(0);
+  const [card0Height, setCard0Height] = useState(200);
+  const [card1Height, setCard1Height] = useState(200);
+  // Per-card animated values (independent X + Y for multi-direction gestures)
+  const card0X  = useRef(new Animated.Value(0)).current;
+  const card0Y  = useRef(new Animated.Value(0)).current;
+  const card0Sc = useRef(new Animated.Value(1)).current;
+  const card0Op = useRef(new Animated.Value(1)).current;
+  const card1X  = useRef(new Animated.Value(0)).current;
+  const card1Y  = useRef(new Animated.Value(307)).current; // starts in back position (320 * 0.96)
+  const card1Sc = useRef(new Animated.Value(0.92)).current;
+  const card1Op = useRef(new Animated.Value(0.78)).current;
   const lastLogoTap = useRef(0);
   const logoTapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [goalsCount, setGoalsCount] = useState(0);
@@ -304,7 +315,6 @@ export default function WorkerHomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
       return () => {
         setFabOpen(false);
         fabAnim.setValue(0);
@@ -1403,6 +1413,179 @@ export default function WorkerHomeScreen() {
     return unsub;
   }, [userId]);
 
+  // ── Card stack constants ────────────────────────────────────────────────────
+  const PEEK_AMOUNT  = 52;
+  const BACK_SCALE   = 0.92;
+  const BACK_OPACITY = 0.78;
+  const SP           = { damping: 22, stiffness: 190, useNativeDriver: true } as const;
+
+  // frontH: natural height of whichever card is currently in front
+  const cardHeights = [card0Height, card1Height];
+  const frontH = cardHeights[activeCardIdx];
+
+  // backY: translateY so back card's visual top = frontH (center-origin scale compensation)
+  const backY = frontH - frontH * (1 - BACK_SCALE) / 2;
+
+  // Per-card arrays for indexed access inside the (single-instance) PanResponder
+  const cardX  = [card0X,  card1X];
+  const cardY  = [card0Y,  card1Y];
+  const cardSc = [card0Sc, card1Sc];
+  const cardOp = [card0Op, card1Op];
+
+  // Stale-closure-safe refs
+  const activeCardIdxRef = useRef(activeCardIdx);
+  const stackHeightRef   = useRef(frontH);
+  const backYRef         = useRef(backY);
+  useEffect(() => { activeCardIdxRef.current = activeCardIdx; }, [activeCardIdx]);
+  useEffect(() => { stackHeightRef.current   = frontH;        }, [frontH]);
+  useEffect(() => { backYRef.current         = backY;         }, [backY]);
+
+  // Sync initial card1Y to measured backY after first layout
+  useEffect(() => {
+    if (activeCardIdx === 0) card1Y.setValue(backY);
+    else                     card0Y.setValue(backY);
+  }, [backY]);
+
+  // ── Animation helpers ───────────────────────────────────────────────────────
+  const spring = (val: Animated.Value, toValue: number) =>
+    Animated.spring(val, { toValue, ...SP });
+
+  const snapToBack = (idx: number, bY: number) =>
+    Animated.parallel([
+      spring(cardX[idx],  0),
+      spring(cardY[idx],  bY),
+      spring(cardSc[idx], BACK_SCALE),
+      Animated.timing(cardOp[idx], { toValue: BACK_OPACITY, duration: 200, useNativeDriver: true }),
+    ]);
+
+  const snapToFront = (idx: number) =>
+    Animated.parallel([
+      spring(cardX[idx],  0),
+      spring(cardY[idx],  0),
+      spring(cardSc[idx], 1),
+      Animated.timing(cardOp[idx], { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]);
+
+  const doVerticalToggle = useCallback((curr: number) => {
+    const next = 1 - curr;
+    const bY   = backYRef.current;
+    Animated.parallel([snapToBack(curr, bY), snapToFront(next)]).start();
+    setActiveCardIdx(next);
+  }, []);
+
+  const doHorizontalToggle = useCallback((curr: number, dir: number) => {
+    // dir: -1 = swipe left (front exits left, back enters right), 1 = swipe right
+    const next = 1 - curr;
+    const W    = SCREEN_W * 1.2;
+    const bY   = backYRef.current;
+    Animated.parallel([
+      // Front card: slide out in swipe direction + fade
+      spring(cardX[curr], dir * -W),
+      Animated.timing(cardOp[curr], { toValue: 0, duration: 220, useNativeDriver: true }),
+      // Back card: slide in from opposite side, rise to front
+      spring(cardX[next], 0),
+      spring(cardY[next], 0),
+      spring(cardSc[next], 1),
+      Animated.timing(cardOp[next], { toValue: 1, duration: 250, useNativeDriver: true }),
+    ]).start(() => {
+      // Reset old front card silently to back position (from opposite entry side)
+      cardX[curr].setValue(dir * W);
+      cardY[curr].setValue(bY);
+      cardSc[curr].setValue(BACK_SCALE);
+      cardOp[curr].setValue(BACK_OPACITY);
+      spring(cardX[curr], 0).start(); // slide it to resting back position
+    });
+    setActiveCardIdx(next);
+  }, []);
+
+  const snapBack = useCallback((curr: number) => {
+    const bY = backYRef.current;
+    Animated.parallel([snapToFront(curr), snapToBack(1 - curr, bY)]).start();
+  }, []);
+
+  // Wrap in refs so PanResponder (created once) always calls latest
+  const doVertRef = useRef(doVerticalToggle);
+  const doHorzRef = useRef(doHorizontalToggle);
+  const snapBackRef = useRef(snapBack);
+  useEffect(() => { doVertRef.current    = doVerticalToggle;   }, [doVerticalToggle]);
+  useEffect(() => { doHorzRef.current    = doHorizontalToggle; }, [doHorizontalToggle]);
+  useEffect(() => { snapBackRef.current  = snapBack;           }, [snapBack]);
+
+  // ── PanResponder ────────────────────────────────────────────────────────────
+  const dragDir  = useRef<"none" | "vertical" | "horizontal">("none");
+  const dragSign = useRef(0); // horizontal: -1=left, 1=right
+
+  const cardStackPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder:        () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (_, g) => {
+        const absX = Math.abs(g.dx), absY = Math.abs(g.dy);
+        return (absX > 8 || absY > 8);
+      },
+      onMoveShouldSetPanResponderCapture: (_, g) => {
+        const absX = Math.abs(g.dx), absY = Math.abs(g.dy);
+        return (absX > 8 || absY > 8);
+      },
+      onPanResponderGrant: () => { dragDir.current = "none"; dragSign.current = 0; },
+      onPanResponderMove: (_, g) => {
+        const absX = Math.abs(g.dx), absY = Math.abs(g.dy);
+
+        // Lock direction on first significant move
+        if (dragDir.current === "none") {
+          if (absX < 8 && absY < 8) return;
+          dragDir.current = absX > absY ? "horizontal" : "vertical";
+          if (dragDir.current === "horizontal") dragSign.current = g.dx > 0 ? 1 : -1;
+        }
+
+        const curr = activeCardIdxRef.current;
+        const next = 1 - curr;
+        const h    = Math.max(1, stackHeightRef.current);
+        const W    = SCREEN_W;
+        const bY   = backYRef.current;
+
+        if (dragDir.current === "vertical") {
+          const p = Math.max(0, Math.min(1, absY / h));
+          // Front sinks, back rises
+          cardY[curr].setValue(bY * p);
+          cardSc[curr].setValue(1 - (1 - BACK_SCALE) * p);
+          cardOp[curr].setValue(1 - (1 - BACK_OPACITY) * p);
+          cardY[next].setValue(bY * (1 - p));
+          cardSc[next].setValue(BACK_SCALE + (1 - BACK_SCALE) * p);
+          cardOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
+
+        } else {
+          // Horizontal: front follows finger, back slides in from opposite side
+          cardX[curr].setValue(g.dx);
+          const p = Math.max(0, Math.min(1, absX / W));
+          cardX[next].setValue(-dragSign.current * W * (1 - p));
+          cardY[next].setValue(bY * (1 - p));
+          cardSc[next].setValue(BACK_SCALE + (1 - BACK_SCALE) * p);
+          cardOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
+        }
+      },
+      onPanResponderRelease: (_, g) => {
+        const curr = activeCardIdxRef.current;
+        const h    = Math.max(1, stackHeightRef.current);
+
+        if (dragDir.current === "vertical") {
+          if (Math.abs(g.dy) / h > 0.22 || Math.abs(g.vy) > 0.35)
+            doVertRef.current(curr);
+          else
+            snapBackRef.current(curr);
+
+        } else if (dragDir.current === "horizontal") {
+          if (Math.abs(g.dx) / SCREEN_W > 0.22 || Math.abs(g.vx) > 0.35)
+            doHorzRef.current(curr, dragSign.current);
+          else
+            snapBackRef.current(curr);
+        }
+        dragDir.current = "none";
+      },
+      onPanResponderTerminationRequest: () => false,
+    })
+  ).current;
+
   /* =====================
      UI
   ===================== */
@@ -1469,11 +1652,7 @@ export default function WorkerHomeScreen() {
           </View>
         </View>
 
-        <ScrollView
-          ref={scrollRef}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
+        <View style={styles.scrollContent}>
           <Animated.View
             style={{
               opacity: fadeAnim,
@@ -1559,11 +1738,11 @@ export default function WorkerHomeScreen() {
               onPress={() => setShowMoodSheet(true)}
               style={[styles.moodPill, { backgroundColor: colors.surface, borderColor: colors.border }]}
             >
-              <View style={[styles.moodPillIcon, { backgroundColor: colors.surfaceAlt }]}>
+              <View style={[styles.moodPillIcon, { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e5e5e5" }]}>
                 {(() => {
                   const idx = mood ? MOODS.findIndex((m) => m.key === mood.key) : -1;
                   const Face = [AwfulFace, SadFace, NeutralFace, GoodFace, GreatFace][idx >= 0 ? idx : 2];
-                  return <Face size={22} color={colors.text} />;
+                  return <Face size={30} color="#1a1a1a" />;
                 })()}
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
@@ -1587,7 +1766,17 @@ export default function WorkerHomeScreen() {
               </TouchableOpacity>
             </TouchableOpacity>
 
-            {/* 💰 Earnings Summary */}
+            {/* ── Card Stack: Earnings + Today's Shift ── */}
+            {/* Container height = card height + peek strip, overflow hidden so only PEEK_AMOUNT shows */}
+            <View style={{ height: frontH + PEEK_AMOUNT, overflow: "hidden", marginBottom: 0 }} {...cardStackPan.panHandlers}>
+
+              {/* Card 0 — Earnings */}
+              <Animated.View style={{
+                position: "absolute", top: 0, left: 0, right: 0,
+                transform: [{ translateX: card0X }, { translateY: card0Y }, { scale: card0Sc }],
+                opacity: card0Op,
+                zIndex: activeCardIdx === 0 ? 2 : 1,
+              }}>
             {(() => {
               const now = new Date();
               const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -1596,7 +1785,9 @@ export default function WorkerHomeScreen() {
                 ? Math.min(100, Math.round((approvedDisplayValue / projectedEarnings) * 100))
                 : 0;
               return (
-                <View style={[styles.salarySummary, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
+                <View
+                  onLayout={(e) => { const h = e.nativeEvent.layout.height; setCard0Height(h); }}
+                  style={[styles.salarySummary, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginBottom: 0 }]}>
 
                   {/* Title + ··· */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -1685,10 +1876,15 @@ export default function WorkerHomeScreen() {
                 </View>
               );
             })()}
+              </Animated.View>
 
-
-            {/* ── Card 1: Today's Shift ── */}
-            {/* ── Today's Shift + This Week (merged) ── */}
+              {/* Card 1 — Today's Shift + This Week */}
+              <Animated.View style={{
+                position: "absolute", top: 0, left: 0, right: 0,
+                transform: [{ translateX: card1X }, { translateY: card1Y }, { scale: card1Sc }],
+                opacity: card1Op,
+                zIndex: activeCardIdx === 1 ? 2 : 1,
+              }}>
             {(() => {
               const progressPct = todayShift ? Math.min(100, Math.round(todayProgress * 100)) : 0;
               const statusColor =
@@ -1710,7 +1906,7 @@ export default function WorkerHomeScreen() {
               const maxHours = 40;
               const barPct = Math.min(100, (weekHours / maxHours) * 100);
               return (
-                <View style={[styles.card, { marginBottom: 10, paddingVertical: 18 }]}>
+                <View onLayout={(e) => { const h = e.nativeEvent.layout.height; setCard1Height(h); }} style={[styles.card, { marginBottom: 0, paddingVertical: 18, borderRadius: 20, shadowOpacity: 0, elevation: 0 }]}>
                   {/* — Today's Shift section — */}
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
@@ -1773,6 +1969,16 @@ export default function WorkerHomeScreen() {
                 </View>
               );
             })()}
+              </Animated.View>
+
+              {/* Tap the peeking back card to trigger lift */}
+              <TouchableOpacity
+                onPress={() => doVerticalToggle(activeCardIdx)}
+                activeOpacity={0.8}
+                style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: PEEK_AMOUNT }}
+              />
+            </View>
+
 
             {/* ── Next Shift ── */}
             {nextShift && (
@@ -1793,7 +1999,7 @@ export default function WorkerHomeScreen() {
 
 
           </Animated.View>
-        </ScrollView>
+        </View>
 
         {false ? (
           <View style={styles.gameGateOverlay}>
@@ -2067,7 +2273,7 @@ export default function WorkerHomeScreen() {
           <Animated.View
             style={[
               styles.bottomSheet,
-              { backgroundColor: colors.surface, borderColor: colors.border },
+              { backgroundColor: "#ffffff", borderColor: "#e5e5e5" },
               {
                 transform: [{
                   translateY: moodSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [400, 0] }),
@@ -2080,7 +2286,7 @@ export default function WorkerHomeScreen() {
               onSelect={setMood}
               onClose={() => setShowMoodSheet(false)}
               onOpenCalendar={() => { setShowMoodSheet(false); setShowMoodCalendar(true); }}
-              colors={colors}
+              colors={{ text: "#1a1a1a", surface: "#ffffff", border: "#e5e5e5", textMuted: "#6b7280" }}
             />
           </Animated.View>
         </View>
@@ -3294,11 +3500,6 @@ function makeStyles(c: ReturnType<typeof useTheme>["colors"]) {
     borderRadius: 18,
     padding: 14,
     marginBottom: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
   },
   moodPill: {
     flexDirection: "row",
