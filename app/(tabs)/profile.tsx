@@ -1,6 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Award, BarChart2, Bell, ChevronDown, ChevronRight, FileText, LogOut, Mail, Menu, Moon, Sparkles, Sun, Target, User } from "lucide-react-native";
+import { Award, BarChart2, Bell, BellRing, ChevronDown, ChevronRight, FileText, LogOut, Mail, Menu, Moon, Sparkles, Sun, Target, User } from "lucide-react-native";
+import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { onAuthStateChanged, signOut, updateEmail, updateProfile } from "firebase/auth";
 import {
   collection,
@@ -96,6 +98,9 @@ export default function ProfileScreen() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const editSlideAnim = useRef(new Animated.Value(400)).current;
+  const [moodReminderEnabled, setMoodReminderEnabled] = useState(false);
+  const [moodReminderHour, setMoodReminderHour] = useState(9);
+  const [moodReminderMinute, setMoodReminderMinute] = useState(0);
   const [showStats, setShowStats] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -120,6 +125,49 @@ export default function ProfileScreen() {
     goalsCount: 0,
     overtimeHours: 0,
   });
+
+  // Load saved reminder preference
+  useEffect(() => {
+    AsyncStorage.getItem("moodReminderEnabled").then(v => { if (v) setMoodReminderEnabled(v === "true"); });
+    AsyncStorage.getItem("moodReminderHour").then(v => { if (v) setMoodReminderHour(Number(v)); });
+    AsyncStorage.getItem("moodReminderMinute").then(v => { if (v) setMoodReminderMinute(Number(v)); });
+  }, []);
+
+  const scheduleMoodReminder = async (hour: number, minute: number) => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== "granted") { Alert.alert("Permission needed", "Enable notifications in Settings to use mood reminders."); return; }
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    await Notifications.scheduleNotificationAsync({
+      content: { title: "How are you feeling? 😊", body: "Take a moment to log your mood in Spendly.", sound: true },
+      trigger: { hour, minute, repeats: true } as any,
+    });
+    await AsyncStorage.setItem("moodReminderEnabled", "true");
+    await AsyncStorage.setItem("moodReminderHour", String(hour));
+    await AsyncStorage.setItem("moodReminderMinute", String(minute));
+    setMoodReminderEnabled(true);
+    setMoodReminderHour(hour);
+    setMoodReminderMinute(minute);
+  };
+
+  const cancelMoodReminder = async () => {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    await AsyncStorage.setItem("moodReminderEnabled", "false");
+    setMoodReminderEnabled(false);
+  };
+
+  const toggleMoodReminder = () => {
+    if (moodReminderEnabled) {
+      cancelMoodReminder();
+    } else {
+      scheduleMoodReminder(moodReminderHour, moodReminderMinute);
+    }
+  };
+
+  const formatReminderTime = (h: number, m: number) => {
+    const period = h >= 12 ? "PM" : "AM";
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -691,6 +739,43 @@ export default function ProfileScreen() {
                   <Text style={styles.settingText}>Notifications</Text>
                 </View>
               </View>
+              <View style={styles.settingDivider} />
+              <TouchableOpacity style={styles.settingRow} onPress={toggleMoodReminder} activeOpacity={0.7}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.settingIconWrap, { backgroundColor: moodReminderEnabled ? "#22c55e" : c.text }]}>
+                    <BellRing size={16} color={c.backgroundStart} />
+                  </View>
+                  <View>
+                    <Text style={styles.settingText}>Daily Mood Reminder</Text>
+                    <Text style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>
+                      {moodReminderEnabled ? `On · ${formatReminderTime(moodReminderHour, moodReminderMinute)}` : "Off"}
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  {moodReminderEnabled && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newH = (moodReminderHour + 1) % 24;
+                        scheduleMoodReminder(newH, moodReminderMinute);
+                      }}
+                      style={{ paddingHorizontal: 8, paddingVertical: 4, backgroundColor: c.surfaceAlt, borderRadius: 8 }}
+                    >
+                      <Text style={{ fontSize: 11, color: c.text, fontWeight: "600" }}>+1h</Text>
+                    </TouchableOpacity>
+                  )}
+                  <View style={{
+                    width: 40, height: 24, borderRadius: 12,
+                    backgroundColor: moodReminderEnabled ? "#22c55e" : c.border,
+                    justifyContent: "center", paddingHorizontal: 3,
+                  }}>
+                    <View style={{
+                      width: 18, height: 18, borderRadius: 9, backgroundColor: "#fff",
+                      alignSelf: moodReminderEnabled ? "flex-end" : "flex-start",
+                    }} />
+                  </View>
+                </View>
+              </TouchableOpacity>
               <View style={styles.settingDivider} />
               <TouchableOpacity style={styles.settingRow} onPress={handleGenerateReport}>
                 <View style={styles.settingLeft}>

@@ -7,6 +7,13 @@ const MOOD_ICONS: Record<string, React.ComponentType<any>> = {
   awful: Angry, sad: Frown, okay: Meh, good: Smile, great: Laugh,
 };
 
+const MOOD_BG: Record<string, string> = {
+  awful: "#fecaca", sad: "#fed7aa", okay: "#e5e7eb", good: "#bbf7d0", great: "#fef08a",
+};
+const MOOD_ICON_COLOR: Record<string, string> = {
+  awful: "#dc2626", sad: "#ea580c", okay: "#6b7280", good: "#16a34a", great: "#ca8a04",
+};
+
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const MONTHS = [
@@ -91,16 +98,19 @@ export default function MoodCalendarSheet({ moodHistory, onClose, colors }: Mood
           const Icon = moodKey ? MOOD_ICONS[moodKey] : null;
           const isToday = year === now.getFullYear() && month === now.getMonth() && day === now.getDate();
 
+          const moodBg      = moodKey ? MOOD_BG[moodKey]        : undefined;
+          const moodIconClr = moodKey ? MOOD_ICON_COLOR[moodKey] : undefined;
+
           return (
             <View key={i} style={s.cell}>
               <View style={[
                 s.dayCircle,
                 { backgroundColor: colors.surfaceAlt },
-                Icon && { backgroundColor: colors.text },
-                isToday && !Icon && { backgroundColor: colors.surfaceAlt, borderWidth: 1.5, borderColor: colors.text },
+                moodBg && { backgroundColor: moodBg },
+                isToday && !moodKey && { backgroundColor: colors.surfaceAlt, borderWidth: 1.5, borderColor: colors.text },
               ]}>
                 {Icon
-                  ? <Icon size={18} color={colors.surface} strokeWidth={1.8} />
+                  ? <Icon size={18} color={moodIconClr ?? colors.text} strokeWidth={1.8} />
                   : <Text style={[s.dayNum, { color: colors.textMuted }, isToday && { color: colors.text, fontWeight: "700" }]}>{day}</Text>
                 }
               </View>

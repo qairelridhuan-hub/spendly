@@ -13,9 +13,10 @@ export function subscribeMoods(
   });
 }
 
-export async function saveMood(userId: string, date: string, moodKey: string) {
+export async function saveMood(userId: string, date: string, moodKey: string, note?: string) {
   await setDoc(doc(db, "users", userId, "moods", date), {
     mood: moodKey,
+    note: note ?? "",
     timestamp: Timestamp.now(),
   });
 }

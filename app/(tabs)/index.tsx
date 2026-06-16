@@ -649,9 +649,9 @@ export default function WorkerHomeScreen() {
     });
   }, [userId]);
 
-  const setMood = useCallback((m: Mood) => {
+  const setMood = useCallback((m: Mood, note?: string) => {
     setMoodState(m);
-    if (userId) saveMood(userId, formatDateKey(new Date()), m.key);
+    if (userId) saveMood(userId, formatDateKey(new Date()), m.key, note);
   }, [userId]);
 
   useEffect(() => {
@@ -2304,7 +2304,7 @@ export default function WorkerHomeScreen() {
           <Animated.View
             style={[
               styles.bottomSheet,
-              { backgroundColor: "#ffffff", borderColor: "#e5e5e5" },
+              { borderWidth: 0, padding: 0 },
               {
                 transform: [{
                   translateY: moodSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [400, 0] }),
@@ -2317,6 +2317,7 @@ export default function WorkerHomeScreen() {
               onSelect={setMood}
               onClose={() => setShowMoodSheet(false)}
               onOpenCalendar={() => { setShowMoodSheet(false); setShowMoodCalendar(true); }}
+              onOpenMoodChart={() => { setShowMoodSheet(false); router.push("/charts" as any); }}
               colors={{ text: "#1a1a1a", surface: "#ffffff", border: "#e5e5e5", textMuted: "#6b7280" }}
             />
           </Animated.View>

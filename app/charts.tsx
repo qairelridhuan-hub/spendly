@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Bell, ChevronRight, LogOut, Menu, Minus, Moon, Sun, Target, TrendingDown, TrendingUp } from "lucide-react-native";
-import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Path, Stop, Text as SvgText, Circle as SvgCircle } from "react-native-svg";
+import { ArrowLeft, Bell, ChevronRight, LogOut, Menu, Minus, Moon, SmilePlus, Sun, Target, TrendingDown, TrendingUp } from "lucide-react-native";
+import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Path, Rect, Stop, Text as SvgText, Circle as SvgCircle } from "react-native-svg";
 import { router } from "expo-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { safeSnapshot } from "@/lib/firebase/safeSnapshot";
 import { useTheme } from "@/lib/context";
@@ -296,6 +296,111 @@ function Shimmer({ width, height, borderRadius, colors }: { width: number; heigh
   );
 }
 
+// ── Mood helpers ────────────────────────────────────────────────────────────
+const MOOD_ORDER = ["awful", "sad", "okay", "good", "great"] as const;
+type MoodKey = typeof MOOD_ORDER[number];
+
+const MOOD_COLOR: Record<MoodKey, string> = {
+  awful: "#ef4444", sad: "#f97316", okay: "#a3a3a3", good: "#22c55e", great: "#eab308",
+};
+const MOOD_LABEL: Record<MoodKey, string> = {
+  awful: "Awful", sad: "Sad", okay: "Okay", good: "Good", great: "Great",
+};
+const MOOD_SCORE: Record<MoodKey, number> = {
+  awful: 1, sad: 2, okay: 3, good: 4, great: 5,
+};
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function getLast7Days(): { key: string; label: string }[] {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    days.push({ key, label: DAY_NAMES[d.getDay()] });
+  }
+  return days;
+}
+
+function getMoodInsights(history: Record<string, string>): string[] {
+  const entries = Object.entries(history);
+  if (entries.length === 0) return ["Log your mood daily to see insights here."];
+
+  const insights: string[] = [];
+
+  // Most common mood
+  const counts: Record<string, number> = {};
+  entries.forEach(([, m]) => { counts[m] = (counts[m] || 0) + 1; });
+  const topMood = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  if (topMood) insights.push(`Your most common mood is ${MOOD_LABEL[topMood[0] as MoodKey] ?? topMood[0]}.`);
+
+  // Day-of-week analysis
+  const dayScores: Record<number, number[]> = {};
+  entries.forEach(([date, m]) => {
+    const day = new Date(`${date}T00:00:00`).getDay();
+    if (!dayScores[day]) dayScores[day] = [];
+    dayScores[day].push(MOOD_SCORE[m as MoodKey] ?? 3);
+  });
+  const dayAvgs = Object.entries(dayScores).map(([d, scores]) => ({
+    day: Number(d), avg: scores.reduce((a, b) => a + b, 0) / scores.length,
+  }));
+  if (dayAvgs.length >= 3) {
+    const best  = dayAvgs.sort((a, b) => b.avg - a.avg)[0];
+    const worst = dayAvgs.sort((a, b) => a.avg - b.avg)[0];
+    if (best.avg > worst.avg + 0.5) {
+      insights.push(`You feel best on ${DAY_NAMES[best.day]}s.`);
+      insights.push(`${DAY_NAMES[worst.day]}s tend to be your toughest days.`);
+    }
+  }
+
+  // Last 7 days trend
+  const last7 = getLast7Days().map(({ key }) => history[key]).filter(Boolean);
+  if (last7.length >= 4) {
+    const half = Math.floor(last7.length / 2);
+    const early = last7.slice(0, half).reduce((s, m) => s + (MOOD_SCORE[m as MoodKey] ?? 3), 0) / half;
+    const recent = last7.slice(half).reduce((s, m) => s + (MOOD_SCORE[m as MoodKey] ?? 3), 0) / (last7.length - half);
+    if (recent - early > 0.5) insights.push("Your mood has been improving this week. 📈");
+    else if (early - recent > 0.5) insights.push("Your mood has dipped a bit this week — take it easy. 🤍");
+  }
+
+  return insights.slice(0, 3);
+}
+
+function MoodBarChart({ history, colors }: { history: Record<string, string>; colors: any }) {
+  const days = getLast7Days();
+  const BAR_H = 80;
+  const BAR_W = 28;
+  const anims = useRef(days.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    Animated.stagger(60, days.map((d, i) => {
+      const mood = history[d.key] as MoodKey | undefined;
+      return Animated.timing(anims[i], {
+        toValue: mood ? MOOD_SCORE[mood] / 5 : 0,
+        duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: false,
+      });
+    })).start();
+  }, [history]);
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: 16 }}>
+      {days.map((d, i) => {
+        const mood = history[d.key] as MoodKey | undefined;
+        const color = mood ? MOOD_COLOR[mood] : colors.border;
+        const barHeight = anims[i].interpolate({ inputRange: [0, 1], outputRange: [4, BAR_H] });
+        return (
+          <View key={d.key} style={{ alignItems: "center", gap: 6 }}>
+            <View style={{ height: BAR_H, justifyContent: "flex-end" }}>
+              <Animated.View style={{ width: BAR_W, height: barHeight, borderRadius: 8, backgroundColor: color }} />
+            </View>
+            <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: "600" }}>{d.label}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function ChartsScreen() {
   const { colors, mode, toggleTheme, pillExpanded, togglePill } = useTheme();
   const { unreadCount: unreadNotifications } = useNotifications();
@@ -308,6 +413,9 @@ export default function ChartsScreen() {
   const [payrollLoaded, setPayrollLoaded] = useState(false);
   const [ready, setReady] = useState(false);
   const [showYAxis, setShowYAxis] = useState(true);
+  const [moodHistory, setMoodHistory] = useState<Record<string, string>>({});
+  const [showMoodChart, setShowMoodChart] = useState(false);
+  const moodChartAnim = useRef(new Animated.Value(0)).current;
   const [showXAxis, setShowXAxis] = useState(true);
   const pillAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -344,7 +452,13 @@ export default function ChartsScreen() {
       setPayrollRecords(snapshot.docs.map((d: any) => d.data() as any));
       setPayrollLoaded(true);
     });
-    return () => { unsubGoals(); unsubPayroll(); };
+    const moodsRef = collection(db, "users", userId, "moods");
+    const unsubMoods = safeSnapshot(moodsRef, snapshot => {
+      const h: Record<string, string> = {};
+      snapshot.docs.forEach((d: any) => { h[d.id] = d.data().mood; });
+      setMoodHistory(h);
+    });
+    return () => { unsubGoals(); unsubPayroll(); unsubMoods(); };
   }, [userId]);
 
   useEffect(() => {
@@ -376,6 +490,14 @@ export default function ChartsScreen() {
     ? totalEarnings6m / earningsData.filter(d => d.earnings > 0).length
     : 0;
 
+  const toggleMoodChart = () => {
+    const next = !showMoodChart;
+    setShowMoodChart(next);
+    Animated.spring(moodChartAnim, { toValue: next ? 1 : 0, useNativeDriver: false, damping: 18, stiffness: 160 }).start();
+  };
+
+  const moodInsights = getMoodInsights(moodHistory);
+
   /* Animated display values */
   const dispCompleted    = useCountUp(completedCount, 0, ready);
   const dispInProgress   = useCountUp(total - completedCount, 0, ready);
@@ -402,6 +524,14 @@ export default function ChartsScreen() {
                 <Text style={{ fontSize: 12, color: colors.textMuted }}>Hey, {displayName}!</Text>
               </View>
             </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <TouchableOpacity
+              onPress={toggleMoodChart}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: showMoodChart ? colors.text : colors.surfaceAlt, alignItems: "center", justifyContent: "center" }}
+              activeOpacity={0.8}
+            >
+              <SmilePlus size={18} color={showMoodChart ? colors.backgroundStart : colors.text} strokeWidth={2} />
+            </TouchableOpacity>
             <View style={[s.iconPill, !pillExpanded && { backgroundColor: "transparent", borderColor: "transparent", shadowOpacity: 0, elevation: 0 }]}>
               <Animated.View style={{ overflow: "hidden", width: pillAnim.interpolate({ inputRange: [0, 1], outputRange: [36, 0] }), opacity: pillAnim.interpolate({ inputRange: [0, 0.3, 1], outputRange: [1, 0, 0] }) }}>
                 <TouchableOpacity style={{ backgroundColor: "#000000", borderRadius: 999, width: 32, height: 32, alignItems: "center", justifyContent: "center" }} onPress={togglePill}>
@@ -432,6 +562,7 @@ export default function ChartsScreen() {
                   <ChevronRight size={20} color={colors.text} />
                 </TouchableOpacity>
               </Animated.View>
+            </View>
             </View>
           </View>
 
@@ -600,6 +731,57 @@ export default function ChartsScreen() {
 
             </Animated.View>
           </ScrollView>
+
+          {/* ── Mood Sheet Modal ── */}
+          {showMoodChart && (
+            <TouchableOpacity
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)" }}
+              activeOpacity={1}
+              onPress={toggleMoodChart}
+            />
+          )}
+          <Animated.View style={{
+            position: "absolute", left: 0, right: 0, bottom: 0,
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            padding: 24, paddingBottom: 40,
+            transform: [{ translateY: moodChartAnim.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) }],
+            shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20,
+          }}>
+            {/* Handle */}
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: 20 }} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: colors.text, alignItems: "center", justifyContent: "center" }}>
+                <SmilePlus size={16} color={colors.backgroundStart} strokeWidth={2} />
+              </View>
+              <View>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>Mood This Week</Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted }}>How you've been feeling</Text>
+              </View>
+            </View>
+
+            <MoodBarChart history={moodHistory} colors={colors} />
+
+            {/* Legend */}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+              {MOOD_ORDER.map(k => (
+                <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: MOOD_COLOR[k] }} />
+                  <Text style={{ fontSize: 10, color: colors.textMuted }}>{MOOD_LABEL[k]}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Insights */}
+            <View style={{ marginTop: 14, gap: 8 }}>
+              {moodInsights.map((insight, i) => (
+                <View key={i} style={{ backgroundColor: colors.surfaceAlt, borderRadius: 10, padding: 10 }}>
+                  <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 18 }}>{insight}</Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+
         </SafeAreaView>
       </View>
     </ScreenTransition>
