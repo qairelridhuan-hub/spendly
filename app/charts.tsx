@@ -436,14 +436,16 @@ export default function ChartsScreen() {
   const activeCardRef = useRef(0);
   const [moodCardH, setMoodCardH] = useState(200);
 
+  // Front card sits at Y=PEEK2; back cards peek from above (order-1 at PEEK2-PEEK1, order-2 at 0)
+  const frontY = () => PEEK2;
   const c0X  = useRef(new Animated.Value(0)).current;
-  const c0Y  = useRef(new Animated.Value(0)).current;
+  const c0Y  = useRef(new Animated.Value(PEEK2)).current;   // card 0 starts as front
   const c0Op = useRef(new Animated.Value(1)).current;
   const c1X  = useRef(new Animated.Value(0)).current;
-  const c1Y  = useRef(new Animated.Value(0)).current;
+  const c1Y  = useRef(new Animated.Value(PEEK2 - PEEK1)).current; // order-1
   const c1Op = useRef(new Animated.Value(BACK_OPACITY)).current;
   const c2X  = useRef(new Animated.Value(0)).current;
-  const c2Y  = useRef(new Animated.Value(0)).current;
+  const c2Y  = useRef(new Animated.Value(0)).current;              // order-2
   const c2Op = useRef(new Animated.Value(BACK_OPACITY)).current;
 
   const c0Href = useRef(goalsCardH);
@@ -460,15 +462,17 @@ export default function ChartsScreen() {
 
   const getH = (idx: number) => cHref[idx].current;
 
+  // Back cards peek from ABOVE the front card
+  // order-1: Y = PEEK2 - PEEK1, order-2: Y = 0
   const calcBackY = (frontIdx: number, backIdx: number) => {
     const ord = backOrder(frontIdx, backIdx);
-    const peek = ord === 2 ? PEEK2 : PEEK1;
-    return getH(frontIdx) + peek - getH(backIdx);
+    return ord === 2 ? 0 : PEEK2 - PEEK1;
   };
 
-  // Position non-front cards below on height change
+  // Sync back-card positions on height change
   useEffect(() => {
     const curr = activeCardRef.current;
+    cY[curr].setValue(PEEK2);
     for (let i = 0; i < NUM_CARDS; i++) {
       if (i !== curr) cY[i].setValue(calcBackY(curr, i));
     }
@@ -485,7 +489,7 @@ export default function ChartsScreen() {
 
   const snapToFront = (idx: number) =>
     Animated.parallel([
-      sp(cX[idx], 0), sp(cY[idx], 0),
+      sp(cX[idx], 0), sp(cY[idx], PEEK2),
       Animated.timing(cOp[idx], { toValue: 1, duration: 200, useNativeDriver: true }),
     ]);
 
@@ -513,7 +517,7 @@ export default function ChartsScreen() {
     Animated.parallel([
       sp(cX[curr], dir * -W),
       Animated.timing(cOp[curr], { toValue: 0, duration: 220, useNativeDriver: true }),
-      sp(cX[next], 0), sp(cY[next], 0),
+      sp(cX[next], 0), sp(cY[next], PEEK2),
       Animated.timing(cOp[next], { toValue: 1, duration: 250, useNativeDriver: true }),
     ]).start(() => {
       for (let i = 0; i < NUM_CARDS; i++) {
@@ -564,20 +568,18 @@ export default function ChartsScreen() {
         const next = dragDir.current === "horizontal"
           ? (dragSign.current > 0 ? (curr - 1 + NUM_CARDS) % NUM_CARDS : (curr + 1) % NUM_CARDS)
           : (curr + 1) % NUM_CARDS;
-        const fH  = getH(curr);
-        const bY  = calcBackY(curr, next);
+        const nextBackY = calcBackY(next, curr); // where curr goes after transition
+        const currBackY = calcBackY(curr, next); // where next currently sits
         if (dragDir.current === "vertical") {
-          const p = Math.max(0, Math.min(1, absY / Math.max(1, fH)));
-          cY[curr].setValue(bY * p);
-          cOp[curr].setValue(1 - (1 - BACK_OPACITY) * p);
-          cY[next].setValue(bY * (1 - p));
-          cOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
+          const p = Math.max(0, Math.min(1, absY / Math.max(1, PEEK2)));
+          // curr: PEEK2 → nextBackY; next: currBackY → PEEK2
+          cY[curr].setValue(PEEK2 + (nextBackY - PEEK2) * p);
+          cY[next].setValue(currBackY + (PEEK2 - currBackY) * p);
         } else {
           cX[curr].setValue(g.dx);
           const p = Math.max(0, Math.min(1, absX / SCREEN_W));
           cX[next].setValue(-dragSign.current * SCREEN_W * (1 - p));
-          cY[next].setValue(bY * (1 - p));
-          cOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
+          cY[next].setValue(currBackY + (PEEK2 - currBackY) * p);
         }
       },
       onPanResponderRelease: (_, g) => {
@@ -753,7 +755,7 @@ export default function ChartsScreen() {
 
               {/* ── Card Stack: Goals (0) + Earnings (1) + Mood (2) ── */}
               <View style={{
-                height: Math.max(goalsCardH, earningsCardH, moodCardH) + PEEK2,
+                height: PEEK2 + Math.max(goalsCardH, earningsCardH, moodCardH),
                 overflow: "hidden",
               }} {...chartCardPan.panHandlers}>
 
