@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Dimensions, Easing, PanResponder, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Bell, ChevronRight, LogOut, Menu, Minus, Moon, SmilePlus, Sun, Target, TrendingDown, TrendingUp } from "lucide-react-native";
 import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Path, Rect, Stop, Text as SvgText, Circle as SvgCircle } from "react-native-svg";
@@ -417,6 +417,188 @@ export default function ChartsScreen() {
   const [showMoodChart, setShowMoodChart] = useState(false);
   const moodChartAnim = useRef(new Animated.Value(0)).current;
   const [showXAxis, setShowXAxis] = useState(true);
+  const [goalsCardH, setGoalsCardH] = useState(200);
+  const [earningsCardH, setEarningsCardH] = useState(200);
+
+  // ── Card stack (Goals=0, Earnings=1, Mood=2) ────────────────────────────────
+  const PEEK1        = 130;  // px of 1st-behind card visible below front
+  const PEEK2        = 162;  // px of 2nd-behind card bottom from front (32px peeks below PEEK1)
+  const BACK_INSET   = 10;   // extra inset per order level
+  const BACK_OPACITY = 1;
+  const NUM_CARDS    = 3;
+  const SP_CFG       = { damping: 26, stiffness: 180, useNativeDriver: true } as const;
+
+  // order: 0=front, 1=next, 2=furthest back
+  const backOrder = (curr: number, i: number) =>
+    i === curr ? 0 : ((i - curr + NUM_CARDS) % NUM_CARDS);
+
+  const [activeCard, setActiveCard] = useState(0);
+  const activeCardRef = useRef(0);
+  const [moodCardH, setMoodCardH] = useState(200);
+
+  const c0X  = useRef(new Animated.Value(0)).current;
+  const c0Y  = useRef(new Animated.Value(0)).current;
+  const c0Op = useRef(new Animated.Value(1)).current;
+  const c1X  = useRef(new Animated.Value(0)).current;
+  const c1Y  = useRef(new Animated.Value(0)).current;
+  const c1Op = useRef(new Animated.Value(BACK_OPACITY)).current;
+  const c2X  = useRef(new Animated.Value(0)).current;
+  const c2Y  = useRef(new Animated.Value(0)).current;
+  const c2Op = useRef(new Animated.Value(BACK_OPACITY)).current;
+
+  const c0Href = useRef(goalsCardH);
+  const c1Href = useRef(earningsCardH);
+  const c2Href = useRef(moodCardH);
+  useEffect(() => { c0Href.current = goalsCardH; }, [goalsCardH]);
+  useEffect(() => { c1Href.current = earningsCardH; }, [earningsCardH]);
+  useEffect(() => { c2Href.current = moodCardH; }, [moodCardH]);
+
+  const cX  = [c0X,  c1X,  c2X];
+  const cY  = [c0Y,  c1Y,  c2Y];
+  const cOp = [c0Op, c1Op, c2Op];
+  const cHref = [c0Href, c1Href, c2Href];
+
+  const getH = (idx: number) => cHref[idx].current;
+
+  const calcBackY = (frontIdx: number, backIdx: number) => {
+    const ord = backOrder(frontIdx, backIdx);
+    const peek = ord === 2 ? PEEK2 : PEEK1;
+    return getH(frontIdx) + peek - getH(backIdx);
+  };
+
+  // Position non-front cards below on height change
+  useEffect(() => {
+    const curr = activeCardRef.current;
+    for (let i = 0; i < NUM_CARDS; i++) {
+      if (i !== curr) cY[i].setValue(calcBackY(curr, i));
+    }
+  }, [goalsCardH, earningsCardH, moodCardH]);
+
+  const sp = (val: Animated.Value, toValue: number) =>
+    Animated.spring(val, { toValue, ...SP_CFG });
+
+  const snapToBack = (idx: number, frontIdx: number) =>
+    Animated.parallel([
+      sp(cX[idx], 0), sp(cY[idx], calcBackY(frontIdx, idx)),
+      Animated.timing(cOp[idx], { toValue: BACK_OPACITY, duration: 200, useNativeDriver: true }),
+    ]);
+
+  const snapToFront = (idx: number) =>
+    Animated.parallel([
+      sp(cX[idx], 0), sp(cY[idx], 0),
+      Animated.timing(cOp[idx], { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]);
+
+  const goToCard = (next: number) => {
+    const curr = activeCardRef.current;
+    const anims = [snapToFront(next)];
+    for (let i = 0; i < NUM_CARDS; i++) {
+      if (i !== next) anims.push(snapToBack(i, next));
+    }
+    Animated.parallel(anims).start();
+    setActiveCard(next);
+    activeCardRef.current = next;
+  };
+
+  const doVertToggle = (curr: number) => {
+    const next = (curr + 1) % NUM_CARDS;
+    goToCard(next);
+  };
+
+  const doHorzToggle = (curr: number, dir: number) => {
+    const next = dir > 0
+      ? (curr - 1 + NUM_CARDS) % NUM_CARDS
+      : (curr + 1) % NUM_CARDS;
+    const W = SCREEN_W * 1.2;
+    Animated.parallel([
+      sp(cX[curr], dir * -W),
+      Animated.timing(cOp[curr], { toValue: 0, duration: 220, useNativeDriver: true }),
+      sp(cX[next], 0), sp(cY[next], 0),
+      Animated.timing(cOp[next], { toValue: 1, duration: 250, useNativeDriver: true }),
+    ]).start(() => {
+      for (let i = 0; i < NUM_CARDS; i++) {
+        if (i !== next) {
+          cX[i].setValue(0);
+          cY[i].setValue(calcBackY(next, i));
+          cOp[i].setValue(BACK_OPACITY);
+        }
+      }
+    });
+    setActiveCard(next);
+    activeCardRef.current = next;
+  };
+
+  const snapBack = (curr: number) => {
+    const anims = [snapToFront(curr)];
+    for (let i = 0; i < NUM_CARDS; i++) {
+      if (i !== curr) anims.push(snapToBack(i, curr));
+    }
+    Animated.parallel(anims).start();
+  };
+
+  const doVertRef   = useRef(doVertToggle);
+  const doHorzRef   = useRef(doHorzToggle);
+  const snapBackRef = useRef(snapBack);
+  useEffect(() => { doVertRef.current   = doVertToggle; });
+  useEffect(() => { doHorzRef.current   = doHorzToggle; });
+  useEffect(() => { snapBackRef.current = snapBack; });
+
+  const dragDir  = useRef<"none"|"vertical"|"horizontal">("none");
+  const dragSign = useRef(0);
+
+  const chartCardPan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder:        () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 || Math.abs(g.dy) > 8,
+      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 8 || Math.abs(g.dy) > 8,
+      onPanResponderGrant: () => { dragDir.current = "none"; dragSign.current = 0; },
+      onPanResponderMove: (_, g) => {
+        const absX = Math.abs(g.dx), absY = Math.abs(g.dy);
+        if (dragDir.current === "none") {
+          if (absX < 8 && absY < 8) return;
+          dragDir.current = absX > absY ? "horizontal" : "vertical";
+          if (dragDir.current === "horizontal") dragSign.current = g.dx > 0 ? 1 : -1;
+        }
+        const curr = activeCardRef.current;
+        const next = dragDir.current === "horizontal"
+          ? (dragSign.current > 0 ? (curr - 1 + NUM_CARDS) % NUM_CARDS : (curr + 1) % NUM_CARDS)
+          : (curr + 1) % NUM_CARDS;
+        const fH  = getH(curr);
+        const bY  = calcBackY(curr, next);
+        if (dragDir.current === "vertical") {
+          const p = Math.max(0, Math.min(1, absY / Math.max(1, fH)));
+          cY[curr].setValue(bY * p);
+          cOp[curr].setValue(1 - (1 - BACK_OPACITY) * p);
+          cY[next].setValue(bY * (1 - p));
+          cOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
+        } else {
+          cX[curr].setValue(g.dx);
+          const p = Math.max(0, Math.min(1, absX / SCREEN_W));
+          cX[next].setValue(-dragSign.current * SCREEN_W * (1 - p));
+          cY[next].setValue(bY * (1 - p));
+          cOp[next].setValue(BACK_OPACITY + (1 - BACK_OPACITY) * p);
+        }
+      },
+      onPanResponderRelease: (_, g) => {
+        const curr = activeCardRef.current;
+        const fH   = Math.max(1, getH(curr));
+        if (dragDir.current === "vertical") {
+          if (Math.abs(g.dy) / fH > 0.22 || Math.abs(g.vy) > 0.35)
+            doVertRef.current(curr);
+          else
+            snapBackRef.current(curr);
+        } else if (dragDir.current === "horizontal") {
+          if (Math.abs(g.dx) / SCREEN_W > 0.22 || Math.abs(g.vx) > 0.35)
+            doHorzRef.current(curr, dragSign.current);
+          else
+            snapBackRef.current(curr);
+        }
+        dragDir.current = "none";
+      },
+      onPanResponderTerminationRequest: () => false,
+    })
+  ).current;
   const pillAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     Animated.timing(pillAnim, { toValue: pillExpanded ? 1 : 0, duration: pillExpanded ? 150 : 0, useNativeDriver: false }).start();
@@ -566,11 +748,25 @@ export default function ChartsScreen() {
             </View>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-            <Animated.View style={{ opacity: fadeIn, gap: 12 }}>
+          <View style={s.scroll}>
+            <Animated.View style={{ opacity: fadeIn }}>
 
-              {/* ── Goals Completion ── */}
-              <View style={s.card}>
+              {/* ── Card Stack: Goals (0) + Earnings (1) + Mood (2) ── */}
+              <View style={{
+                height: Math.max(goalsCardH, earningsCardH, moodCardH) + PEEK2,
+                overflow: "hidden",
+              }} {...chartCardPan.panHandlers}>
+
+              {/* Card 0 — Goals Completion */}
+              <Animated.View style={{
+                position: "absolute", top: 0,
+                left:  backOrder(activeCard, 0) * BACK_INSET,
+                right: backOrder(activeCard, 0) * BACK_INSET,
+                transform: [{ translateX: c0X }, { translateY: c0Y }],
+                opacity: c0Op,
+                zIndex: NUM_CARDS - backOrder(activeCard, 0),
+              }}>
+              <View style={s.card} onLayout={e => setGoalsCardH(e.nativeEvent.layout.height)}>
                 <View style={s.row}>
                   <View style={[s.iconWrap, { backgroundColor: colors.text }]}>
                     <Target size={13} color={colors.backgroundStart} strokeWidth={2} />
@@ -657,15 +853,24 @@ export default function ChartsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+              </Animated.View>
 
               {goals.length === 0 && ready && (
-                <View style={s.empty}>
+                <View style={[s.empty, { position: "absolute", top: 8, left: 0, right: 0 }]}>
                   <Text style={s.emptyText}>No goals added yet</Text>
                 </View>
               )}
 
-              {/* ── Monthly Earnings Trend ── */}
-              <View style={s.card}>
+              {/* Card 1 — Monthly Earnings */}
+              <Animated.View style={{
+                position: "absolute", top: 0,
+                left:  backOrder(activeCard, 1) * BACK_INSET,
+                right: backOrder(activeCard, 1) * BACK_INSET,
+                transform: [{ translateX: c1X }, { translateY: c1Y }],
+                opacity: c1Op,
+                zIndex: NUM_CARDS - backOrder(activeCard, 1),
+              }}>
+              <View style={s.card} onLayout={e => setEarningsCardH(e.nativeEvent.layout.height)}>
                 {/* Header */}
                 <View style={s.row}>
                   <View style={[s.iconWrap, { backgroundColor: colors.text }]}>
@@ -728,59 +933,63 @@ export default function ChartsScreen() {
                   <EarningsLineChart data={earningsData} colors={colors} ready={ready} showYAxis={showYAxis} showXAxis={showXAxis} />
                 )}
               </View>
+              </Animated.View>
+
+              {/* Card 2 — Mood This Week */}
+              <Animated.View style={{
+                position: "absolute", top: 0,
+                left:  backOrder(activeCard, 2) * BACK_INSET,
+                right: backOrder(activeCard, 2) * BACK_INSET,
+                transform: [{ translateX: c2X }, { translateY: c2Y }],
+                opacity: c2Op,
+                zIndex: NUM_CARDS - backOrder(activeCard, 2),
+              }}>
+              <View style={s.card} onLayout={e => setMoodCardH(e.nativeEvent.layout.height)}>
+                <View style={s.row}>
+                  <View style={[s.iconWrap, { backgroundColor: colors.text }]}>
+                    <SmilePlus size={13} color={colors.backgroundStart} strokeWidth={2} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.cardTitle}>Mood This Week</Text>
+                    <Text style={s.cardSub}>How you've been feeling</Text>
+                  </View>
+                </View>
+
+                <MoodBarChart history={moodHistory} colors={colors} />
+
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+                  {MOOD_ORDER.map(k => (
+                    <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: MOOD_COLOR[k] }} />
+                      <Text style={{ fontSize: 10, color: colors.textMuted }}>{MOOD_LABEL[k]}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={{ marginTop: 14, gap: 8 }}>
+                  {moodInsights.map((insight, i) => (
+                    <View key={i} style={{ backgroundColor: colors.surfaceAlt, borderRadius: 10, padding: 10 }}>
+                      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 18 }}>{insight}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              </Animated.View>
+
+              </View>{/* end card stack */}
+
+              {/* Dot indicators */}
+              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 14 }}>
+                {[0, 1, 2].map(i => (
+                  <View key={i} style={{
+                    width: activeCard === i ? 24 : 8, height: 8, borderRadius: 4,
+                    backgroundColor: activeCard === i ? colors.text : colors.border,
+                  }} />
+                ))}
+              </View>
 
             </Animated.View>
-          </ScrollView>
-
-          {/* ── Mood Sheet Modal ── */}
-          {showMoodChart && (
-            <TouchableOpacity
-              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)" }}
-              activeOpacity={1}
-              onPress={toggleMoodChart}
-            />
-          )}
-          <Animated.View style={{
-            position: "absolute", left: 0, right: 0, bottom: 0,
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: 24, borderTopRightRadius: 24,
-            padding: 24, paddingBottom: 40,
-            transform: [{ translateY: moodChartAnim.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) }],
-            shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20,
-          }}>
-            {/* Handle */}
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: 20 }} />
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: colors.text, alignItems: "center", justifyContent: "center" }}>
-                <SmilePlus size={16} color={colors.backgroundStart} strokeWidth={2} />
-              </View>
-              <View>
-                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>Mood This Week</Text>
-                <Text style={{ fontSize: 12, color: colors.textMuted }}>How you've been feeling</Text>
-              </View>
-            </View>
-
-            <MoodBarChart history={moodHistory} colors={colors} />
-
-            {/* Legend */}
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
-              {MOOD_ORDER.map(k => (
-                <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: MOOD_COLOR[k] }} />
-                  <Text style={{ fontSize: 10, color: colors.textMuted }}>{MOOD_LABEL[k]}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Insights */}
-            <View style={{ marginTop: 14, gap: 8 }}>
-              {moodInsights.map((insight, i) => (
-                <View key={i} style={{ backgroundColor: colors.surfaceAlt, borderRadius: 10, padding: 10 }}>
-                  <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 18 }}>{insight}</Text>
-                </View>
-              ))}
-            </View>
-          </Animated.View>
+          </View>
 
         </SafeAreaView>
       </View>
@@ -821,7 +1030,7 @@ const makeStyles = (c: any) => StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: "700", color: c.text },
   scroll: { padding: 16, paddingBottom: 48 },
 
-  card: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 18, marginBottom: 12, ...cardShadow },
+  card: { backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 18, marginBottom: 0 },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
   iconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   cardTitle: { fontSize: 14, fontWeight: "700", color: c.text },
