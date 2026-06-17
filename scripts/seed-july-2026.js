@@ -53,7 +53,7 @@ const timeToTs = (dateStr, time) => {
 
 // ─── date range ─────────────────────────────────────────────────────────────
 
-const ALL_DATES = Array.from({ length: 16 }, (_, i) => `2026-06-${pad(1 + i)}`);
+const ALL_DATES = Array.from({ length: 17 }, (_, i) => `2026-06-${pad(1 + i)}`);
 
 const isWeekend = dateStr => {
   const d = new Date(`${dateStr}T00:00:00`);
@@ -61,7 +61,7 @@ const isWeekend = dateStr => {
 };
 
 const WORK_DATES = ALL_DATES.filter(d => !isWeekend(d));
-// Jun 1,2,3,4,5,8,9,10,11,12,15,16  (12 days)
+// Jun 1,2,3,4,5,8,9,10,11,12,15,16,17  (13 days)
 
 // ─── mood helpers ────────────────────────────────────────────────────────────
 
@@ -218,7 +218,7 @@ async function run() {
   const snap = await db.collection("users").where("role", "==", "worker").get();
   if (snap.empty) { console.log("No workers found."); return; }
 
-  console.log(`Seeding ${snap.size} workers for June 1–16, 2026…\n`);
+  console.log(`Seeding ${snap.size} workers for June 1–17, 2026…\n`);
   for (const [i, doc] of snap.docs.entries()) {
     await seedWorker(doc, i);
   }

@@ -30,7 +30,7 @@ admin.initializeApp({ credential: admin.credential.cert(require(resolvedPath)) }
 const db = admin.firestore();
 
 const pad = v => String(v).padStart(2, "0");
-const ALL_DATES = Array.from({ length: 16 }, (_, i) => `2026-06-${pad(1 + i)}`);
+const ALL_DATES = Array.from({ length: 17 }, (_, i) => `2026-06-${pad(1 + i)}`);
 
 async function run() {
   const snap = await db.collection("users").where("role", "==", "worker").get();
@@ -51,16 +51,16 @@ async function run() {
       );
     }
 
-    // payroll 2026-07
+    // payroll 2026-06
     dels.push(
-      db.collection("users").doc(uid).collection("payroll").doc("2026-07").delete()
+      db.collection("users").doc(uid).collection("payroll").doc("2026-06").delete()
     );
 
     // shifts for this worker in the date range
     const shiftsSnap = await db.collection("shifts")
       .where("workerId", "==", uid)
-      .where("date", ">=", "2026-07-01")
-      .where("date", "<=", "2026-07-16")
+      .where("date", ">=", "2026-06-01")
+      .where("date", "<=", "2026-06-17")
       .get();
 
     shiftsSnap.docs.forEach(s => dels.push(s.ref.delete()));
