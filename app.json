@@ -21,7 +21,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.qairel.spendly"
+      "package": "com.qairel.spendly",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -65,6 +71,12 @@
         "projectId": "36f19bbf-f5a0-421a-9287-e43db9782c53"
       }
     },
-    "owner": "qairel"
+    "owner": "qairel",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/36f19bbf-f5a0-421a-9287-e43db9782c53"
+    }
   }
 }

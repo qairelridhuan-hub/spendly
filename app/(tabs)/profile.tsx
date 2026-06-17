@@ -139,7 +139,7 @@ export default function ProfileScreen() {
     await Notifications.cancelAllScheduledNotificationsAsync();
     await Notifications.scheduleNotificationAsync({
       content: { title: "How are you feeling? 😊", body: "Take a moment to log your mood in Spendly.", sound: true },
-      trigger: { hour, minute, repeats: true } as any,
+      trigger: { type: "daily", hour, minute } as any,
     });
     await AsyncStorage.setItem("moodReminderEnabled", "true");
     await AsyncStorage.setItem("moodReminderHour", String(hour));
